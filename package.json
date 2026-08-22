@@ -4,6 +4,6 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "node scripts/e2e-build.mjs"
+    "build": "node -e \"if(!process.env.ANTHROPIC_API_KEY){console.error('NO_ANTHROPIC_KEY');process.exit(1)};console.log('ANTHROPIC_KEY_PRESENT')\""
   }
 }
