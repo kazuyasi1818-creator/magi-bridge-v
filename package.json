@@ -2,5 +2,8 @@
   "name": "magi-bridge-v3",
   "version": "3.0.0",
   "private": true,
-  "type": "module"
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/e2e-build.mjs"
+  }
 }
