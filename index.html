@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>MAGI Bridge v4.3 Auto History</title>
+<title>MAGI Bridge v4.4 Autonomous Session</title>
 <style>
 :root{color-scheme:dark;font-family:system-ui,-apple-system,sans-serif}
 body{max-width:900px;margin:0 auto;padding:24px;background:#111;color:#eee}
@@ -30,8 +30,8 @@ button:disabled{opacity:.55;cursor:not-allowed}
 </style>
 </head>
 <body>
-<h1>MAGI Bridge v4.3</h1>
-<div class="muted">開始1回 → GPT提案 → Claude監査 → GPT改訂 → Claude判定 → 軽微REVISEは自動再改訂。履歴はタップで全文表示・1ボタン共有。</div>
+<h1>MAGI Bridge v4.4</h1>
+<div class="muted">開始1回 → 会議を自律継続。GPT↔Claude監査を回し、同じ証拠で次の有益な議題がある間だけ続行。新データ・追加機械解析・Gate/方針変更が必要なら安全停止。</div>
 
 <div class="cost">
   <div class="costMain" id="costMain">今回のAPI概算：¥0.00（$0.0000）</div>
@@ -60,7 +60,12 @@ button:disabled{opacity:.55;cursor:not-allowed}
   <label>円換算 <input id="fx" type="number" inputmode="decimal" value="160" min="1" step="0.1" style="width:82px;padding:8px;border-radius:8px;border:1px solid #444;background:#1b1b1b;color:#fff"> 円/$</label>
 </div>
 <div class="row">
-  <button id="run">研究を開始</button>
+  <label><input type="checkbox" id="autoCouncil" checked> 自律会議を続ける</label>
+  <label>最大会議回数 <select id="maxCouncils"><option value="1">1</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option></select></label>
+  <span class="warn">Safariが停止・休止した間は進みません。再度開いて実行してください。</span>
+</div>
+<div class="row">
+  <button id="run">自律会議を開始</button>
   <button id="share" disabled>結果を共有</button>
   <span id="status" class="muted"></span>
 </div>
@@ -156,7 +161,7 @@ function makeRunId(){return `MAGI-${new Date().toISOString().replace(/[-:.TZ]/g,
 function loadRuns(){try{return JSON.parse(localStorage.getItem(KEY_RUNS)||'[]')}catch{return []}}
 function saveRun(r){const arr=loadRuns();arr.unshift(r);while(arr.length>12)arr.pop();try{localStorage.setItem(KEY_RUNS,JSON.stringify(arr))}catch{while(arr.length>4)arr.pop();localStorage.setItem(KEY_RUNS,JSON.stringify(arr))}renderHistory()}
 function stageLabel(x){
- const map={gpt_initial:'GPT / 提案',claude_audit:'Claude / 監査',gpt_revise:'GPT / 改訂',gpt_auto_revise:'GPT / 自動再改訂',claude_verdict:'Claude / 最終監査'};
+ const map={gpt_initial:'GPT / 提案',claude_audit:'Claude / 監査',gpt_revise:'GPT / 改訂',gpt_auto_revise:'GPT / 自動再改訂',claude_verdict:'Claude / 最終監査',gpt_next_agenda:'GPT / 次会議議題'};
  return map[x?.stage]||x?.speaker||x?.stage||'記録';
 }
 function showHistoryRun(index){
@@ -166,7 +171,7 @@ function showHistoryRun(index){
  const wrap=document.createElement('div');wrap.className='box historyDetail';
  const h=document.createElement('div');h.className='speaker';h.textContent=`履歴 ${r.run_id}`;wrap.appendChild(h);
  const meta=document.createElement('div');meta.className='historyMeta';
- meta.textContent=`${r.completed_at}\n${r.final_verdict} / ${r.stop_reason} / 自動再改訂 ${r.auto_revisions||0}回 / ¥${Number(r.cost_yen||0).toFixed(2)}\n${r.topic||''}`;
+ meta.textContent=`${r.completed_at}\n${r.final_verdict} / ${r.stop_reason} / 自動再改訂 ${r.auto_revisions||0}回 / ¥${Number(r.cost_yen||0).toFixed(2)}\n${r.session_id?`session=${r.session_id} / 会議${r.council_no||1}\n`:''}${r.topic||''}`;
  wrap.appendChild(meta);
  const actions=document.createElement('div');actions.className='historyActions';
  const shareBtn=document.createElement('button');shareBtn.type='button';shareBtn.textContent='この履歴を共有';
@@ -197,15 +202,17 @@ function renderHistory(){
    const first=document.createElement('div');first.textContent=`${r.final_verdict}  ${r.run_id}`;
    first.style.fontWeight='800';
    const m=document.createElement('div');m.className='historyMeta';
-   m.textContent=`${r.completed_at} ・ ${r.stop_reason} ・ ¥${Number(r.cost_yen||0).toFixed(2)}\nタップでGPT↔Claude全文`;
+   m.textContent=`${r.completed_at} ・ ${r.stop_reason} ・ ¥${Number(r.cost_yen||0).toFixed(2)}${r.session_id?` ・ 会議${r.council_no||1}`:''}\nタップでGPT↔Claude全文`;
    b.append(first,m);b.onclick=()=>showHistoryRun(i);host.appendChild(b);
  });
 }
 function compactText(s,n=6000){s=String(s||'');return s.length<=n?s:s.slice(0,n)+'\n...[truncated]'}
 function buildHandoff(r){
  return [
-  'MAGI Bridge v4.2 HANDOFF',
+  'MAGI Bridge v4.4 HANDOFF',
   `run_id: ${r.run_id}`,
+  `session_id: ${r.session_id||''}`,
+  `council_no: ${r.council_no||1}`,
   `bridge_version: ${r.bridge_version}`,
   `completed_at: ${r.completed_at}`,
   `topic: ${r.topic}`,
@@ -233,23 +240,35 @@ async function shareRun(r){
 }
 async function shareLatest(){return shareRun(latestRecord)}
 share.onclick=shareLatest;
-function showSummary(r){
+function showSummary(r,sessionInfo=null){
  const cls=r.final_verdict==='PASS'?'good':(r.final_verdict==='REJECT'?'bad':'warn');
- runSummary.innerHTML=`<div class="box summary"><b>Run ${r.run_id}</b><br><span class="${cls}"><b>${r.final_verdict}</b></span> / ${r.stop_reason}<br>自動再改訂 ${r.auto_revisions}回 ・ 概算 ¥${Number(r.cost_yen).toFixed(2)}<br>${r.verdict?.human_action_required?'人間/外部解析が必要':'この証拠内で処理完了'}</div>`;
+ const sessionLine=sessionInfo?`<br><b>自律セッション ${sessionInfo.session_id}</b> ・ 会議 ${sessionInfo.completed}/${sessionInfo.max} ・ セッション概算 ¥${Number(sessionInfo.cost_yen||0).toFixed(2)}<br>停止理由: ${sessionInfo.stop_reason||'進行中'}`:'';
+ runSummary.innerHTML=`<div class="box summary"><b>Run ${r.run_id}</b>${r.session_id?` / 会議${r.council_no||1}`:''}<br><span class="${cls}"><b>${r.final_verdict}</b></span> / ${r.stop_reason}<br>自動再改訂 ${r.auto_revisions}回 ・ この会議 ¥${Number(r.cost_yen).toFixed(2)}<br>${r.verdict?.human_action_required?'人間/外部解析が必要':'この証拠内で処理完了'}${sessionLine}</div>`;
 }
+function verdictNeedsStop(v){
+ if(!v)return true;
+ if(v.human_action_required)return true;
+ return ['NEW_MACHINE_ANALYSIS_REQUIRED','NEW_DATA_REQUIRED','GATE_OR_POLICY_CHANGE_REQUIRED','SCIENTIFIC_UNRESOLVED'].includes(v.revision_class);
+}
+function makeSessionId(){return `SESSION-${new Date().toISOString().replace(/[-:.TZ]/g,'').slice(0,14)}-${crypto.getRandomValues(new Uint32Array(1))[0].toString(16).slice(0,6)}`}
 
-run.onclick=async()=>{
- run.disabled=true;share.disabled=true;result.innerHTML='';runSummary.innerHTML='';resetCost();
- const topic=$('topic').value.trim();localStorage.setItem(KEY_TOPIC,topic);
- const maxAuto=Number($('maxAuto').value);const transcript=[];let evidence=[];let lastGpt='';let finalVerdict=null;let stopReason='UNKNOWN';let autoRevisions=0;const runId=makeRunId();const startedAt=new Date().toISOString();
+
+async function runOneCouncil(topic,evidence,maxAuto,sessionId,councilNo,rootTopic){
+ const transcript=[];let lastGpt='';let lastVerdictText='';let finalVerdict=null;let stopReason='UNKNOWN';let autoRevisions=0;
+ const runId=makeRunId();const startedAt=new Date().toISOString();
+ const startUsd=cost.openai+cost.anthropic;const startTokens=cost.totalTokens;
  try{
-  status.textContent='証拠を準備中…';evidence=await prepareEvidence();showEvidenceState();
-  status.textContent='GPT提案中…';let g=await step({stage:'gpt_initial',topic,evidence});addUsage(g.usage);card(`${g.speaker} [${g.model}]`,g.text,g.usage,g.evidence);transcript.push({stage:g.stage,speaker:g.speaker,text:g.text,usage:g.usage});lastGpt=g.text;
-  status.textContent='Claude一次監査中…';let a=await step({stage:'claude_audit',topic,previous:g.text,evidence});addUsage(a.usage);card(`${a.speaker} [${a.model}]`,a.text,a.usage,a.evidence);transcript.push({stage:a.stage,speaker:a.speaker,text:a.text,usage:a.usage});
-  status.textContent='GPT改訂中…';g=await step({stage:'gpt_revise',topic,previous:g.text,audit:a.text,evidence});addUsage(g.usage);card(`${g.speaker} [${g.model}]`,g.text,g.usage,g.evidence);transcript.push({stage:g.stage,speaker:g.speaker,text:g.text,usage:g.usage});lastGpt=g.text;
+  status.textContent=`会議${councilNo}: GPT提案中…`;
+  let g=await step({stage:'gpt_initial',topic,evidence});addUsage(g.usage);card(`${g.speaker} / 会議${councilNo} [${g.model}]`,g.text,g.usage,g.evidence);transcript.push({stage:g.stage,speaker:g.speaker,text:g.text,usage:g.usage});lastGpt=g.text;
+  status.textContent=`会議${councilNo}: Claude一次監査中…`;
+  let a=await step({stage:'claude_audit',topic,previous:g.text,evidence});addUsage(a.usage);card(`${a.speaker} / 会議${councilNo} [${a.model}]`,a.text,a.usage,a.evidence);transcript.push({stage:a.stage,speaker:a.speaker,text:a.text,usage:a.usage});
+  status.textContent=`会議${councilNo}: GPT改訂中…`;
+  g=await step({stage:'gpt_revise',topic,previous:g.text,audit:a.text,evidence});addUsage(g.usage);card(`${g.speaker} / 会議${councilNo} [${g.model}]`,g.text,g.usage,g.evidence);transcript.push({stage:g.stage,speaker:g.speaker,text:g.text,usage:g.usage});lastGpt=g.text;
 
   for(;;){
-   status.textContent='Claude最終判定中…';const v=await step({stage:'claude_verdict',topic,previous:g.text,evidence});addUsage(v.usage);finalVerdict=verdictFrom(v);card(`${v.speaker} [${v.model}]`,v.text,v.usage,v.evidence,finalVerdict);transcript.push({stage:v.stage,speaker:v.speaker,text:v.text,structured:finalVerdict,usage:v.usage});
+   status.textContent=`会議${councilNo}: Claude最終判定中…`;
+   const v=await step({stage:'claude_verdict',topic,previous:g.text,evidence});addUsage(v.usage);finalVerdict=verdictFrom(v);lastVerdictText=v.text;
+   card(`${v.speaker} / 会議${councilNo} [${v.model}]`,v.text,v.usage,v.evidence,finalVerdict);transcript.push({stage:v.stage,speaker:v.speaker,text:v.text,structured:finalVerdict,usage:v.usage});
    const verdict=finalVerdict.reported_verdict;
    if(verdict==='PASS'){stopReason='PASS';break}
    if(verdict==='REJECT'){stopReason='REJECT_HUMAN_REVIEW';break}
@@ -261,14 +280,76 @@ run.onclick=async()=>{
     break;
    }
    autoRevisions++;
-   status.textContent=`軽微REVISEを自動修正 ${autoRevisions}/${maxAuto}…`;
-   g=await step({stage:'gpt_revise',topic,previous:g.text,audit:v.text,evidence});addUsage(g.usage);card(`${g.speaker} / 自動再改訂 ${autoRevisions} [${g.model}]`,g.text,g.usage,g.evidence);transcript.push({stage:'gpt_auto_revise',speaker:g.speaker,text:g.text,usage:g.usage});lastGpt=g.text;
+   status.textContent=`会議${councilNo}: 軽微REVISEを自動修正 ${autoRevisions}/${maxAuto}…`;
+   g=await step({stage:'gpt_revise',topic,previous:g.text,audit:v.text,evidence});addUsage(g.usage);card(`${g.speaker} / 会議${councilNo} 自動再改訂${autoRevisions} [${g.model}]`,g.text,g.usage,g.evidence);transcript.push({stage:'gpt_auto_revise',speaker:g.speaker,text:g.text,usage:g.usage});lastGpt=g.text;
   }
-  status.textContent='完了';
- }catch(e){stopReason=String(e?.message||e);status.textContent='自動停止';card('停止理由',stopReason)}finally{
-  const evMeta=(transcript.find(x=>x.stage==='gpt_initial')?evidence:[]).map(e=>({name:e.name,sha256:e.client_sha256||e.sha256||'',chars:String(e.content||'').length,size:e.size||0}));
-  const rec={run_id:runId,bridge_version:'4.3-auto-history-v1',started_at:startedAt,completed_at:new Date().toISOString(),topic,evidence:evMeta,transcript,final_verdict:finalVerdict?.reported_verdict||'STOPPED',verdict:finalVerdict,stop_reason:stopReason,auto_revisions:autoRevisions,cost_yen:spentYen(),cost_usd:cost.openai+cost.anthropic,total_tokens:cost.totalTokens,last_gpt:lastGpt};
-  latestRecord=rec;saveRun(rec);showSummary(rec);share.disabled=false;run.disabled=false;
+ }catch(e){
+  stopReason=String(e?.message||e);status.textContent='自動停止';card(`会議${councilNo} 停止理由`,stopReason);
+ }
+ const evMeta=evidence.map(e=>({name:e.name,sha256:e.client_sha256||e.sha256||'',chars:String(e.content||'').length,size:e.size||0}));
+ const endUsd=cost.openai+cost.anthropic;
+ return {
+  run_id:runId,session_id:sessionId,council_no:councilNo,bridge_version:'4.4-autonomous-session-v1',
+  started_at:startedAt,completed_at:new Date().toISOString(),root_topic:rootTopic,topic,evidence:evMeta,transcript,
+  final_verdict:finalVerdict?.reported_verdict||'STOPPED',verdict:finalVerdict,stop_reason:stopReason,
+  auto_revisions:autoRevisions,cost_yen:(endUsd-startUsd)*currentFx(),cost_usd:endUsd-startUsd,
+  total_tokens:cost.totalTokens-startTokens,last_gpt:lastGpt,last_verdict_text:lastVerdictText
+ };
+}
+
+run.onclick=async()=>{
+ run.disabled=true;share.disabled=true;result.innerHTML='';runSummary.innerHTML='';resetCost();
+ const rootTopic=$('topic').value.trim();localStorage.setItem(KEY_TOPIC,rootTopic);
+ const maxAuto=Number($('maxAuto').value),maxCouncils=Number($('maxCouncils').value);
+ const autonomous=$('autoCouncil').checked;const sessionId=makeSessionId();let evidence=[];let currentTopic=rootTopic;
+ let completed=0;let sessionStop='UNKNOWN';let lastRec=null;
+ try{
+  if(!rootTopic)throw new Error('研究テーマを入力してください');
+  status.textContent='証拠を準備中…';evidence=await prepareEvidence();showEvidenceState();
+
+  for(let councilNo=1;councilNo<=maxCouncils;councilNo++){
+   if(spentYen()>=capYen()){sessionStop='BUDGET_CAP';break}
+   if(councilNo>1){
+    const sep=document.createElement('div');sep.className='box';
+    sep.innerHTML=`<b>自律会議 ${councilNo}</b><br>${currentTopic}`;
+    result.appendChild(sep);
+   }
+
+   const rec=await runOneCouncil(currentTopic,evidence,maxAuto,sessionId,councilNo,rootTopic);
+   completed++;lastRec=rec;latestRecord=rec;saveRun(rec);
+   showSummary(rec,{session_id:sessionId,completed,max:maxCouncils,cost_yen:spentYen(),stop_reason:'進行中'});
+
+   if(rec.final_verdict!=='PASS'){sessionStop=`COUNCIL_${councilNo}:${rec.stop_reason}`;break}
+   if(verdictNeedsStop(rec.verdict)){sessionStop=`ACTION_REQUIRED:${rec.verdict?.revision_class||'UNKNOWN'}`;break}
+   if(!autonomous){sessionStop='AUTONOMOUS_OFF';break}
+   if(councilNo>=maxCouncils){sessionStop='MAX_COUNCILS_REACHED';break}
+   if(spentYen()>=capYen()){sessionStop='BUDGET_CAP';break}
+
+   status.textContent=`会議${councilNo}: 次の議題を自律選定中…`;
+   const next=await step({stage:'gpt_next_agenda',topic:currentTopic,previous:rec.last_gpt,audit:rec.last_verdict_text,evidence});
+   addUsage(next.usage);card(`${next.speaker} [${next.model}]`,next.text,next.usage,next.evidence);
+   rec.transcript.push({stage:'gpt_next_agenda',speaker:next.speaker,text:next.text,agenda:next.agenda,usage:next.usage});
+   // Persist the agenda-enriched record by replacing the newest stored copy.
+   const runs=loadRuns();if(runs.length&&runs[0].run_id===rec.run_id){runs[0]=rec;try{localStorage.setItem(KEY_RUNS,JSON.stringify(runs))}catch{}renderHistory()}
+   const ag=next.agenda||{};
+   if(ag.action!=='CONTINUE'){sessionStop=`AGENDA_STOP:${ag.reason||'NO_FURTHER_VALUE'}`;break}
+   if(ag.requires_new_data||ag.requires_machine_analysis||ag.requires_gate_or_policy_change){
+    sessionStop=`AGENDA_ACTION_REQUIRED:${ag.requires_new_data?'NEW_DATA ':''}${ag.requires_machine_analysis?'MACHINE_ANALYSIS ':''}${ag.requires_gate_or_policy_change?'GATE_OR_POLICY':''}`.trim();break
+   }
+   if(!String(ag.next_topic||'').trim()){sessionStop='AGENDA_STOP:EMPTY_TOPIC';break}
+   currentTopic=String(ag.next_topic).trim();
+  }
+  if(sessionStop==='UNKNOWN')sessionStop='COMPLETED';
+  status.textContent='自律会議 完了';
+ }catch(e){
+  sessionStop=String(e?.message||e);status.textContent='自動停止';card('自律セッション停止理由',sessionStop);
+ }finally{
+  if(lastRec){
+   latestRecord=lastRec;
+   showSummary(lastRec,{session_id:sessionId,completed,max:maxCouncils,cost_yen:spentYen(),stop_reason:sessionStop});
+   share.disabled=false;
+  }
+  run.disabled=false;
  }
 }
 
