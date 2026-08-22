@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>MAGI Bridge v4.2 Auto</title>
+<title>MAGI Bridge v4.3 Auto History</title>
 <style>
 :root{color-scheme:dark;font-family:system-ui,-apple-system,sans-serif}
 body{max-width:900px;margin:0 auto;padding:24px;background:#111;color:#eee}
@@ -19,11 +19,19 @@ button:disabled{opacity:.55;cursor:not-allowed}
 .costMain{font-size:1.15rem;font-weight:850}.costSub{margin-top:5px;color:#bbb;font-size:.92rem;line-height:1.45}.stepCost{margin-top:10px;color:#aaa;font-size:.85rem}
 .fileInput{width:100%;box-sizing:border-box;padding:11px;border:1px solid #444;border-radius:10px;background:#1b1b1b;color:#fff}.fileList{margin-top:8px;color:#bbb;font-size:.88rem;line-height:1.5;white-space:pre-wrap}
 .tag{display:inline-block;padding:3px 8px;border-radius:999px;background:#2b2b2b;margin-right:6px;font-size:.82rem}.summary{font-size:.95rem}.history{font-size:.87rem;color:#bbb;white-space:pre-wrap}
+.historyItem{display:block;width:100%;text-align:left;background:#202020;color:#eee;border:1px solid #3a3a3a;padding:12px;margin:8px 0;border-radius:10px}
+.historyItem:active{transform:scale(.995)}
+.historyMeta{color:#aaa;font-size:.82rem;margin-top:4px}
+.historyDetail{margin-top:14px}
+.historyTranscript{background:#151515;border:1px solid #333;border-radius:10px;padding:12px;margin:10px 0;white-space:pre-wrap;line-height:1.5}
+.historyStage{font-weight:800;margin-bottom:6px}
+.historyActions{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
+
 </style>
 </head>
 <body>
-<h1>MAGI Bridge v4.2</h1>
-<div class="muted">開始1回 → GPT提案 → Claude監査 → GPT改訂 → Claude判定 → 軽微REVISEは自動再改訂。人間が必要な時だけ停止。</div>
+<h1>MAGI Bridge v4.3</h1>
+<div class="muted">開始1回 → GPT提案 → Claude監査 → GPT改訂 → Claude判定 → 軽微REVISEは自動再改訂。履歴はタップで全文表示・1ボタン共有。</div>
 
 <div class="cost">
   <div class="costMain" id="costMain">今回のAPI概算：¥0.00（$0.0000）</div>
@@ -62,17 +70,18 @@ button:disabled{opacity:.55;cursor:not-allowed}
 
 <h3>この端末の履歴</h3>
 <div class="box history" id="historyInfo">履歴なし</div>
+<div id="historyDetail"></div>
 
 <script>
 const $=id=>document.getElementById(id);
 const run=$('run'),share=$('share'),result=$('result'),status=$('status'),runSummary=$('runSummary');
 const costMain=$('costMain'),costSub=$('costSub'),tokenInfo=$('tokenInfo'),fxEl=$('fx');
-const evidenceFilesEl=$('evidenceFiles'),evidenceInfo=$('evidenceInfo');
+const evidenceFilesEl=$('evidenceFiles'),evidenceInfo=$('evidenceInfo'),historyDetail=$('historyDetail');
 const MAX_FILES=5,MAX_TOTAL_CHARS=80000,MAX_FILE_CHARS=60000;
 const KEY_EVIDENCE='magi_v42_evidence_cache_v1',KEY_RUNS='magi_v42_runs_v1',KEY_TOPIC='magi_v42_topic_v1';
 const AUTO_FIXABLE=new Set(['REPORTING_OR_INFERENCE','EVIDENCE_RECONCILIATION']);
 let cost={openai:0,anthropic:0,totalTokens:0,steps:0,unknown:false};
-let latestRecord=null;
+let latestRecord=null;let selectedHistoryRecord=null;
 
 function fmtUsd(n,d=4){return '$'+Number(n||0).toFixed(d)}
 function currentFx(){const n=Number(fxEl.value);return Number.isFinite(n)&&n>0?n:160}
@@ -146,7 +155,52 @@ function verdictFrom(d){
 function makeRunId(){return `MAGI-${new Date().toISOString().replace(/[-:.TZ]/g,'').slice(0,14)}-${crypto.getRandomValues(new Uint32Array(1))[0].toString(16).slice(0,6)}`}
 function loadRuns(){try{return JSON.parse(localStorage.getItem(KEY_RUNS)||'[]')}catch{return []}}
 function saveRun(r){const arr=loadRuns();arr.unshift(r);while(arr.length>12)arr.pop();try{localStorage.setItem(KEY_RUNS,JSON.stringify(arr))}catch{while(arr.length>4)arr.pop();localStorage.setItem(KEY_RUNS,JSON.stringify(arr))}renderHistory()}
-function renderHistory(){const arr=loadRuns();if(!arr.length){$('historyInfo').textContent='履歴なし';return}$('historyInfo').textContent=arr.slice(0,5).map(r=>`${r.completed_at}  ${r.run_id}\n  ${r.final_verdict} / ${r.stop_reason} / ¥${Number(r.cost_yen||0).toFixed(2)}`).join('\n\n')}
+function stageLabel(x){
+ const map={gpt_initial:'GPT / 提案',claude_audit:'Claude / 監査',gpt_revise:'GPT / 改訂',gpt_auto_revise:'GPT / 自動再改訂',claude_verdict:'Claude / 最終監査'};
+ return map[x?.stage]||x?.speaker||x?.stage||'記録';
+}
+function showHistoryRun(index){
+ const arr=loadRuns();const r=arr[index];if(!r)return;
+ selectedHistoryRecord=r;
+ historyDetail.innerHTML='';
+ const wrap=document.createElement('div');wrap.className='box historyDetail';
+ const h=document.createElement('div');h.className='speaker';h.textContent=`履歴 ${r.run_id}`;wrap.appendChild(h);
+ const meta=document.createElement('div');meta.className='historyMeta';
+ meta.textContent=`${r.completed_at}\n${r.final_verdict} / ${r.stop_reason} / 自動再改訂 ${r.auto_revisions||0}回 / ¥${Number(r.cost_yen||0).toFixed(2)}\n${r.topic||''}`;
+ wrap.appendChild(meta);
+ const actions=document.createElement('div');actions.className='historyActions';
+ const shareBtn=document.createElement('button');shareBtn.type='button';shareBtn.textContent='この履歴を共有';
+ shareBtn.onclick=()=>shareRun(r);
+ const closeBtn=document.createElement('button');closeBtn.type='button';closeBtn.textContent='閉じる';
+ closeBtn.onclick=()=>{historyDetail.innerHTML='';selectedHistoryRecord=null};
+ actions.append(shareBtn,closeBtn);wrap.appendChild(actions);
+ for(const x of (r.transcript||[])){
+   const c=document.createElement('div');c.className='historyTranscript';
+   const s=document.createElement('div');s.className='historyStage';s.textContent=stageLabel(x);
+   const t=document.createElement('div');t.textContent=x.text||'';
+   c.append(s,t);
+   if(x.structured){
+     const st=document.createElement('div');st.className='historyMeta';
+     st.textContent=`reported_verdict=${x.structured.reported_verdict||''} / revision_class=${x.structured.revision_class||''}`;
+     c.appendChild(st);
+   }
+   wrap.appendChild(c);
+ }
+ historyDetail.appendChild(wrap);
+ historyDetail.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function renderHistory(){
+ const host=$('historyInfo');const arr=loadRuns();host.innerHTML='';
+ if(!arr.length){host.textContent='履歴なし';historyDetail.innerHTML='';return}
+ arr.slice(0,5).forEach((r,i)=>{
+   const b=document.createElement('button');b.type='button';b.className='historyItem';
+   const first=document.createElement('div');first.textContent=`${r.final_verdict}  ${r.run_id}`;
+   first.style.fontWeight='800';
+   const m=document.createElement('div');m.className='historyMeta';
+   m.textContent=`${r.completed_at} ・ ${r.stop_reason} ・ ¥${Number(r.cost_yen||0).toFixed(2)}\nタップでGPT↔Claude全文`;
+   b.append(first,m);b.onclick=()=>showHistoryRun(i);host.appendChild(b);
+ });
+}
 function compactText(s,n=6000){s=String(s||'');return s.length<=n?s:s.slice(0,n)+'\n...[truncated]'}
 function buildHandoff(r){
  return [
@@ -169,14 +223,15 @@ function buildHandoff(r){
   'last_gpt_report:',compactText(r.last_gpt,5000)
  ].join('\n')
 }
-async function shareLatest(){
- if(!latestRecord)return;
- const text=buildHandoff(latestRecord);
+async function shareRun(r){
+ if(!r)return;
+ const text=buildHandoff(r);
  try{
-  if(navigator.share){await navigator.share({title:`MAGI ${latestRecord.run_id}`,text});status.textContent='共有しました';return}
+  if(navigator.share){await navigator.share({title:`MAGI ${r.run_id}`,text});status.textContent='共有しました';return}
   await navigator.clipboard.writeText(text);status.textContent='共有用テキストをコピーしました';
  }catch(e){if(e?.name!=='AbortError')status.textContent='共有をキャンセル/失敗'}
 }
+async function shareLatest(){return shareRun(latestRecord)}
 share.onclick=shareLatest;
 function showSummary(r){
  const cls=r.final_verdict==='PASS'?'good':(r.final_verdict==='REJECT'?'bad':'warn');
@@ -212,12 +267,13 @@ run.onclick=async()=>{
   status.textContent='完了';
  }catch(e){stopReason=String(e?.message||e);status.textContent='自動停止';card('停止理由',stopReason)}finally{
   const evMeta=(transcript.find(x=>x.stage==='gpt_initial')?evidence:[]).map(e=>({name:e.name,sha256:e.client_sha256||e.sha256||'',chars:String(e.content||'').length,size:e.size||0}));
-  const rec={run_id:runId,bridge_version:'4.2-auto-v1',started_at:startedAt,completed_at:new Date().toISOString(),topic,evidence:evMeta,transcript,final_verdict:finalVerdict?.reported_verdict||'STOPPED',verdict:finalVerdict,stop_reason:stopReason,auto_revisions:autoRevisions,cost_yen:spentYen(),cost_usd:cost.openai+cost.anthropic,total_tokens:cost.totalTokens,last_gpt:lastGpt};
+  const rec={run_id:runId,bridge_version:'4.3-auto-history-v1',started_at:startedAt,completed_at:new Date().toISOString(),topic,evidence:evMeta,transcript,final_verdict:finalVerdict?.reported_verdict||'STOPPED',verdict:finalVerdict,stop_reason:stopReason,auto_revisions:autoRevisions,cost_yen:spentYen(),cost_usd:cost.openai+cost.anthropic,total_tokens:cost.totalTokens,last_gpt:lastGpt};
   latestRecord=rec;saveRun(rec);showSummary(rec);share.disabled=false;run.disabled=false;
  }
 }
 
 const savedTopic=localStorage.getItem(KEY_TOPIC);if(savedTopic)$('topic').value=savedTopic;
+const existingRuns=loadRuns();if(existingRuns.length){latestRecord=existingRuns[0];share.disabled=false}
 showEvidenceState();renderHistory();resetCost();
 </script>
 </body>
