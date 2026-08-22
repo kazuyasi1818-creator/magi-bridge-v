@@ -3,24 +3,29 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>MAGI Bridge v4</title>
+<title>MAGI Bridge v4.1 Evidence</title>
 <style>
 :root{color-scheme:dark;font-family:system-ui,-apple-system,sans-serif}
 body{max-width:900px;margin:0 auto;padding:24px;background:#111;color:#eee}
-h1{margin-bottom:4px}.muted{color:#aaa}textarea,select,button{font:inherit}
+h1{margin-bottom:4px}.muted{color:#aaa}textarea,select,button,input{font:inherit}
 textarea{width:100%;min-height:150px;box-sizing:border-box;padding:12px;border-radius:10px;border:1px solid #444;background:#1b1b1b;color:#fff}
 .row{display:flex;gap:12px;align-items:center;margin:12px 0;flex-wrap:wrap}
 button{padding:10px 18px;border:0;border-radius:10px;cursor:pointer;font-weight:700}
+button:disabled{opacity:.55;cursor:not-allowed}
 .card{background:#1a1a1a;border:1px solid #333;border-radius:12px;padding:16px;margin:14px 0;white-space:pre-wrap;line-height:1.55}
 .speaker{font-weight:800;margin-bottom:8px}.error{color:#ff9a9a}.progress{font-weight:700}
-.cost{background:#171717;border:1px solid #3b3b3b;border-radius:12px;padding:14px 16px;margin:14px 0}
+.cost,.evidenceBox{background:#171717;border:1px solid #3b3b3b;border-radius:12px;padding:14px 16px;margin:14px 0}
 .costMain{font-size:1.15rem;font-weight:850}.costSub{margin-top:5px;color:#bbb;font-size:.92rem;line-height:1.45}
 .stepCost{margin-top:10px;color:#aaa;font-size:.85rem}
+.fileInput{width:100%;box-sizing:border-box;padding:11px;border:1px solid #444;border-radius:10px;background:#1b1b1b;color:#fff}
+.fileList{margin-top:8px;color:#bbb;font-size:.88rem;line-height:1.5;white-space:pre-wrap}
+.warn{color:#e4c878;font-size:.86rem;line-height:1.5;margin-top:8px}
+.good{color:#9fe3a7}
 </style>
 </head>
 <body>
-<h1>MAGI Bridge v4</h1>
-<div class="muted">GPT提案 → Claude監査 → GPT改訂 → Claude最終判定（最終判定を短く安定化・実使用トークンから料金を概算）</div>
+<h1>MAGI Bridge v4.1</h1>
+<div class="muted">GPT提案 → Claude監査 → GPT改訂 → Claude最終判定 ＋ 証拠ファイル共有</div>
 
 <div class="cost">
   <div class="costMain" id="costMain">今回のAPI概算：¥0.00（$0.0000）</div>
@@ -29,7 +34,15 @@ button{padding:10px 18px;border:0;border-radius:10px;cursor:pointer;font-weight:
 </div>
 
 <h3>研究テーマ</h3>
-<textarea id="topic">競馬MAGI：回収率100%超を目標に、過学習を避けながら買うレースを絞る検証設計を作る。</textarea>
+<textarea id="topic">競馬MAGI：T009R収益性FAILの原因分解を継続し、prior_starts × model-market disagreement の交差分析とfeature-levelの原因候補を監査する。</textarea>
+
+<h3>証拠ファイル（任意）</h3>
+<div class="evidenceBox">
+  <input class="fileInput" id="evidenceFiles" type="file" multiple accept=".json,.csv,.txt,.md,application/json,text/csv,text/plain,text/markdown" />
+  <div class="fileList" id="evidenceInfo">未選択</div>
+  <div class="warn">UTF-8の JSON / CSV / TXT / MD、最大5ファイル。合計80,000文字まで。証拠は4段階すべてへ送るため、ファイルが大きいほどAPI料金が増えます。APIキー等の秘密情報を含むファイルは送らないでください。</div>
+</div>
+
 <div class="row">
 <label>往復回数 <select id="rounds"><option value="1" selected>1</option><option value="2">2</option><option value="3">3</option></select></label>
 <label>円換算 <input id="fx" type="number" inputmode="decimal" value="160" min="1" step="0.1" style="width:82px;padding:8px;border-radius:8px;border:1px solid #444;background:#1b1b1b;color:#fff"> 円/$</label>
@@ -39,7 +52,10 @@ button{padding:10px 18px;border:0;border-radius:10px;cursor:pointer;font-weight:
 <script>
 const run=document.getElementById('run'),result=document.getElementById('result'),status=document.getElementById('status');
 const costMain=document.getElementById('costMain'),costSub=document.getElementById('costSub'),tokenInfo=document.getElementById('tokenInfo'),fxEl=document.getElementById('fx');
+const evidenceFilesEl=document.getElementById('evidenceFiles'),evidenceInfo=document.getElementById('evidenceInfo');
+const MAX_FILES=5,MAX_TOTAL_CHARS=80000,MAX_FILE_CHARS=60000;
 let cost={openai:0,anthropic:0,totalTokens:0,steps:0,unknown:false};
+
 function fmtUsd(n,d=4){return '$'+Number(n||0).toFixed(d)}
 function currentFx(){const n=Number(fxEl.value);return Number.isFinite(n)&&n>0?n:160}
 function refreshCost(){
@@ -59,13 +75,48 @@ function addUsage(u){
  if(u.provider==='anthropic')cost.anthropic+=Number(u.usd||0);
  refreshCost();
 }
-function card(speaker,text,usage){
+function card(speaker,text,usage,evidence){
  const c=document.createElement('div');c.className='card';
  const s=document.createElement('div');s.className='speaker';s.textContent=speaker;
  const t=document.createElement('div');t.textContent=text;c.append(s,t);
+ if(evidence?.length){
+  const e=document.createElement('div');e.className='stepCost';
+  e.textContent='証拠: '+evidence.map(x=>`${x.name} [${String(x.sha256||'').slice(0,12)}…]`).join(' / ');
+  c.appendChild(e);
+ }
  if(usage){const x=document.createElement('div');x.className='stepCost';const yen=usage.usd==null?'?':(usage.usd*currentFx()).toFixed(2);x.textContent=`この呼び出し: ${usage.total_tokens||0} tokens / ${usage.usd==null?'料金未登録':fmtUsd(usage.usd,5)+' ≈ ¥'+yen}`;c.appendChild(x)}
  result.appendChild(c)
 }
+async function sha256(text){
+ const data=new TextEncoder().encode(text);
+ const hash=await crypto.subtle.digest('SHA-256',data);
+ return [...new Uint8Array(hash)].map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function allowedFile(file){
+ const name=file.name.toLowerCase();
+ return ['.json','.csv','.txt','.md'].some(ext=>name.endsWith(ext));
+}
+async function prepareEvidence(){
+ const files=[...evidenceFilesEl.files];
+ if(files.length>MAX_FILES)throw new Error(`証拠ファイルは最大${MAX_FILES}個です`);
+ const out=[];let total=0;
+ for(const file of files){
+  if(!allowedFile(file))throw new Error(`未対応形式です: ${file.name}`);
+  const content=await file.text();
+  if(content.length>MAX_FILE_CHARS)throw new Error(`${file.name} が大きすぎます（最大${MAX_FILE_CHARS.toLocaleString()}文字）`);
+  total+=content.length;
+  if(total>MAX_TOTAL_CHARS)throw new Error(`証拠ファイル合計が${MAX_TOTAL_CHARS.toLocaleString()}文字を超えています`);
+  out.push({name:file.name,type:file.type||'text/plain',size:file.size,content,client_sha256:await sha256(content)});
+ }
+ return out;
+}
+async function refreshEvidenceInfo(){
+ const files=[...evidenceFilesEl.files];
+ if(!files.length){evidenceInfo.textContent='未選択';return}
+ evidenceInfo.textContent=`${files.length}ファイルを選択中。実行時にSHA-256を計算してサーバー側でも照合します。\n`+files.map(f=>`・${f.name} (${(f.size/1024).toFixed(1)} KB)`).join('\n');
+}
+evidenceFilesEl.addEventListener('change',refreshEvidenceInfo);
+
 async function step(payload){
  const r=await fetch('/api/step',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload)});
  const raw=await r.text();let d;try{d=JSON.parse(raw)}catch{throw new Error(`サーバー応答を読めませんでした (${r.status}): ${raw.slice(0,300)}`)}
@@ -75,13 +126,15 @@ run.onclick=async()=>{
  run.disabled=true;result.innerHTML='';resetCost();
  const topic=document.getElementById('topic').value;const rounds=Number(document.getElementById('rounds').value);
  try{
-  status.textContent='1/4 GPTが提案中…';let g=await step({stage:'gpt_initial',topic});addUsage(g.usage);card(`${g.speaker} [${g.model}]`,g.text,g.usage);
+  status.textContent='証拠を準備中…';const evidence=await prepareEvidence();
+  if(evidence.length)evidenceInfo.innerHTML=`<span class="good">証拠 ${evidence.length}件を準備完了</span>\n`+evidence.map(e=>`・${e.name} SHA-256 ${e.client_sha256.slice(0,16)}…`).join('\n');
+  status.textContent='1/4 GPTが提案中…';let g=await step({stage:'gpt_initial',topic,evidence});addUsage(g.usage);card(`${g.speaker} [${g.model}]`,g.text,g.usage,g.evidence);
   for(let i=1;i<=rounds;i++){
-   status.textContent=`Claude監査 ${i}/${rounds}…`;let a=await step({stage:'claude_audit',topic,previous:g.text});addUsage(a.usage);card(`${a.speaker} ${i} [${a.model}]`,a.text,a.usage);
-   status.textContent=`GPT改訂 ${i}/${rounds}…`;g=await step({stage:'gpt_revise',topic,previous:g.text,audit:a.text});addUsage(g.usage);card(`${g.speaker} ${i} [${g.model}]`,g.text,g.usage);
+   status.textContent=`Claude監査 ${i}/${rounds}…`;let a=await step({stage:'claude_audit',topic,previous:g.text,evidence});addUsage(a.usage);card(`${a.speaker} ${i} [${a.model}]`,a.text,a.usage,a.evidence);
+   status.textContent=`GPT改訂 ${i}/${rounds}…`;g=await step({stage:'gpt_revise',topic,previous:g.text,audit:a.text,evidence});addUsage(g.usage);card(`${g.speaker} ${i} [${g.model}]`,g.text,g.usage,g.evidence);
   }
-  status.textContent='最終判定中…';let v=await step({stage:'claude_verdict',topic,previous:g.text});addUsage(v.usage);card(`${v.speaker} [${v.model}]`,v.text,v.usage);status.textContent='完了';
- }catch(e){status.textContent='エラー';const msg=e?.message||String(e);card('エラー',msg + (msg.includes('Load failed')?'\n\n最終通信が長引いた可能性があります。v4では最終判定を短くして安定化しています。再実行するとAPI料金が追加で発生する可能性があります。':''))}finally{run.disabled=false}
+  status.textContent='最終判定中…';let v=await step({stage:'claude_verdict',topic,previous:g.text,evidence});addUsage(v.usage);card(`${v.speaker} [${v.model}]`,v.text,v.usage,v.evidence);status.textContent='完了';
+ }catch(e){status.textContent='エラー';const msg=e?.message||String(e);card('エラー',msg)}finally{run.disabled=false}
 }
 resetCost();
 </script>
