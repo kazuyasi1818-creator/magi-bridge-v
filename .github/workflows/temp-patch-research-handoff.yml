@@ -1,0 +1,130 @@
+name: TEMP Patch MAGI Research Handoff
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.magi/trigger-handoff-patch.txt'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Patch Bridge research handoff persistence
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+
+          def rep(old,new,label):
+              global s
+              if old not in s:
+                  raise SystemExit(f'marker not found: {label}')
+              s=s.replace(old,new,1)
+
+          rep(
+            '<button id="share" disabled>結果を共有</button>',
+            '<button id="share" disabled>結果を共有</button>\n  <button id="researchHandoff" disabled>研究HANDOFFを保存</button>',
+            'handoff button')
+
+          rep(
+            "const KEY_EVIDENCE='magi_v44_evidence_cache_v2',KEY_RUNS='magi_v42_runs_v1',KEY_TOPIC='magi_v42_topic_v1';",
+            "const KEY_EVIDENCE='magi_v44_evidence_cache_v2',KEY_RUNS='magi_v42_runs_v1',KEY_TOPIC='magi_v42_topic_v1',KEY_HANDOFFS='magi_v44_research_handoffs_v1';",
+            'handoff storage key')
+
+          marker='async function shareRun(r){\n'
+          insert=r'''function buildResearchHandoffObject(r){
+ return {
+  schema:'MAGI_RESEARCH_HANDOFF_V1',
+  generated_at:new Date().toISOString(),
+  source:{system:'MAGI Bridge',bridge_version:r.bridge_version||'4.4-autonomous-session-v2-structured-verdict'},
+  identity:{run_id:r.run_id,session_id:r.session_id||'',council_no:r.council_no||1},
+  research:{root_topic:r.root_topic||r.topic||'',topic:r.topic||''},
+  completed_at:r.completed_at||'',
+  final:{
+   verdict:r.final_verdict||'STOPPED',
+   revision_class:r.verdict?.revision_class||'',
+   human_action_required:Boolean(r.verdict?.human_action_required),
+   parse_error:Boolean(r.verdict?.parse_error),
+   stop_reason:r.stop_reason||'',
+   next_action:r.verdict?.next_action||'',
+   confirmed_facts:r.verdict?.confirmed_facts||[],
+   unresolved:r.verdict?.unresolved||[],
+   required_machine_tests:r.verdict?.required_machine_tests||[]
+  },
+  evidence:(r.evidence||[]).map(e=>({name:e.name,sha256:e.sha256||e.client_sha256||'',chars:e.chars||0,size:e.size||0})),
+  transcript:(r.transcript||[]).map(x=>({
+   stage:x.stage||'',speaker:x.speaker||'',text:x.text||'',structured:x.structured||null,agenda:x.agenda||null,
+   usage:x.usage?{provider:x.usage.provider||'',model:x.usage.model||'',total_tokens:x.usage.total_tokens||0,usd:x.usage.usd??null}:null
+  })),
+  reports:{last_gpt:r.last_gpt||'',last_verdict_text:r.last_verdict_text||''},
+  accounting:{auto_revisions:r.auto_revisions||0,cost_yen:r.cost_yen||0,cost_usd:r.cost_usd||0,total_tokens:r.total_tokens||0},
+  research_ingest:{status:'LOCAL_READY',rule:'Do not treat Bridge PASS as Gate promotion. Research side must ingest verdict, evidence hashes, transcript, unresolved items and required machine tests into the correct lineage.'}
+ }
+}
+function loadResearchHandoffs(){try{const a=JSON.parse(localStorage.getItem(KEY_HANDOFFS)||'[]');return Array.isArray(a)?a:[]}catch{return []}}
+function saveResearchHandoff(r){
+ if(!r?.run_id)return null;
+ const obj=buildResearchHandoffObject(r),arr=loadResearchHandoffs(),i=arr.findIndex(x=>x?.identity?.run_id===r.run_id);
+ if(i>=0)arr[i]=obj;else arr.unshift(obj);
+ try{localStorage.setItem(KEY_HANDOFFS,JSON.stringify(arr.slice(0,30)))}catch{}
+ return obj
+}
+async function exportResearchHandoff(r){
+ if(!r)return;
+ const obj=saveResearchHandoff(r),text=JSON.stringify(obj,null,2),name=`MAGI_RESEARCH_HANDOFF_${r.run_id}.json`;
+ try{
+  const file=new File([text],name,{type:'application/json'});
+  if(navigator.canShare?.({files:[file]})&&navigator.share){await navigator.share({title:name,files:[file]});status.textContent='研究HANDOFFを共有しました';return}
+ }catch(e){if(e?.name==='AbortError')return}
+ const blob=new Blob([text],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+ a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+ status.textContent='研究HANDOFF JSONを保存しました';
+}
+$('researchHandoff').onclick=()=>exportResearchHandoff(latestRecord);
+'''
+          rep(marker,insert+marker,'handoff functions')
+
+          rep(
+            "run.disabled=true;share.disabled=true;result.innerHTML='';runSummary.innerHTML='';resetCost();",
+            "run.disabled=true;share.disabled=true;$('researchHandoff').disabled=true;result.innerHTML='';runSummary.innerHTML='';resetCost();",
+            'run start disable')
+
+          rep(
+            "completed++;lastRec=rec;latestRecord=rec;saveRun(rec);",
+            "completed++;lastRec=rec;latestRecord=rec;saveRun(rec);saveResearchHandoff(rec);",
+            'save handoff after council')
+
+          rep(
+            "const runs=loadRuns();if(runs.length&&runs[0].run_id===rec.run_id){runs[0]=rec;try{localStorage.setItem(KEY_RUNS,JSON.stringify(runs))}catch{}renderHistory()}",
+            "const runs=loadRuns();if(runs.length&&runs[0].run_id===rec.run_id){runs[0]=rec;try{localStorage.setItem(KEY_RUNS,JSON.stringify(runs))}catch{}renderHistory()}saveResearchHandoff(rec);",
+            'save agenda-enriched handoff')
+
+          rep(
+            "share.disabled=false;\n  }\n  run.disabled=false;",
+            "share.disabled=false;$('researchHandoff').disabled=false;saveResearchHandoff(lastRec);\n  }\n  run.disabled=false;",
+            'final handoff save')
+
+          rep(
+            "const existingRuns=loadRuns();if(existingRuns.length){latestRecord=existingRuns[0];share.disabled=false}",
+            "const existingRuns=loadRuns();if(existingRuns.length){latestRecord=existingRuns[0];share.disabled=false;$('researchHandoff').disabled=false;saveResearchHandoff(latestRecord)}",
+            'existing run handoff')
+
+          s=s.replace("bridge_version:'4.4-autonomous-session-v1'","bridge_version:'4.4-autonomous-session-v2-structured-verdict'",1)
+          p.write_text(s,encoding='utf-8')
+          PY
+          node -e "const fs=require('fs');const s=fs.readFileSync('index.html','utf8'); for(const x of ['MAGI_RESEARCH_HANDOFF_V1','researchHandoff','saveResearchHandoff(rec)','4.4-autonomous-session-v2-structured-verdict']) if(!s.includes(x)) throw new Error('missing '+x); console.log('handoff patch markers OK')"
+      - name: Commit patch
+        run: |
+          git config user.name "MAGI Bridge Automation"
+          git config user.email "actions@users.noreply.github.com"
+          git add index.html
+          git commit -m "feat: persist research handoffs from Bridge runs"
+          git push origin HEAD:main
