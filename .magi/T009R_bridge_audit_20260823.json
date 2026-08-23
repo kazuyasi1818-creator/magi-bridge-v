@@ -9,6 +9,20 @@
   "workflow_run_id": 32615296915,
   "workflow_job_id": 97134929433,
   "estimated_cost_yen": 16.95,
+  "research_ingestion": {
+    "ingested": true,
+    "ingested_at_jst": "2026-08-23T13:01:00+09:00",
+    "lineage": "KEIBA/T009R",
+    "ingest_policy": "MAGI_BRIDGE_RESULT_INGEST_POLICY_V1",
+    "effect_on_gate": "NONE",
+    "carry_forward": [
+      "Historical odds/popularity features remain a subgroup-local partial-contribution hypothesis only.",
+      "The preregistered mechanism AND condition is not satisfied because disagreement-tail diagnostics are mixed and global metrics worsen slightly.",
+      "2025H2 is retrospective diagnostic evidence, not untouched OOS.",
+      "No Gate, threshold, odds filter, current-odds feature, subgroup, snapshot, metric, or production change is authorized.",
+      "Next valid progress requires frozen testing on genuinely untouched/sealed outcomes or a separately preregistered new study."
+    ]
+  },
   "final_verdict": {
     "reported_verdict": "PASS",
     "revision_class": "NONE",
