@@ -1,0 +1,74 @@
+{
+  "prereg_id": "T009R_SIGNED_BODYWEIGHT_ODDS_DECOMPOSITION_PREREG_CANDIDATE_V1",
+  "created_at_jst": "2026-08-23T15:19:00+09:00",
+  "status": "FROZEN_CANDIDATE_BEFORE_EXACT_T009R_RESULT",
+  "purpose": "Test whether the exploratory signed race-day bodyweight-change association survives adjustment for the previously observed odds-deterioration diagnostic association in exact T009R row-level data.",
+  "governance": {
+    "2026_outcomes": "PROHIBITED",
+    "gate_effect": "NONE",
+    "feature_adoption_authority": "NONE",
+    "strategy_threshold_odds_filter_authority": "NONE",
+    "retrospective_warning": "If executed on 2025H2, this is retrospective diagnostic replication/decomposition because the signed-bodyweight hypothesis was formed after inspecting an adjacent-lineage 2025H2 screen. It is not untouched OOS or confirmatory evidence.",
+    "no_posthoc_predictor_or_cutoff_change": true
+  },
+  "required_exact_inputs": {
+    "model_lineage": "T009R exact only; T011/T009-parent substitution prohibited",
+    "model_probability": "frozen T009R race-normalized calibrated probability",
+    "market_probability": "10-minute pre-race win odds snapshot normalized within race, using the existing frozen timing convention",
+    "historical_odds": "previous-start odds under the existing T009R historical-feature definition",
+    "bodyweight": "current race-day bodyweight and previous-start bodyweight",
+    "keys": "race_key + horse identifier/number with uniqueness checks"
+  },
+  "fixed_variables": {
+    "signed_bodyweight_change": "(current_bodyweight - previous_bodyweight) / previous_bodyweight",
+    "odds_deterioration": "log(odds_10m / previous_start_odds); positive means current market odds deteriorated versus previous start",
+    "disagreement": "log(t009r_model_probability / normalized_10m_market_probability)",
+    "interaction": "signed_bodyweight_change * odds_deterioration"
+  },
+  "population": {
+    "period": "2025H2 if exact historical artifacts are recovered; no 2026 rows",
+    "rows": "actual starters with valid exact T009R probability, valid 10m odds, previous-start odds > 0, current bodyweight > 0, previous bodyweight > 0",
+    "selection": "no ROI/result-driven subgroup selection"
+  },
+  "primary_models": [
+    {
+      "id": "M0_TRANSFER_CHECK",
+      "formula": "disagreement ~ 1 + signed_bodyweight_change",
+      "standard_errors": "race_key cluster-robust",
+      "predeclared_direction": "beta_signed < 0",
+      "purpose": "Check whether the adjacent-lineage signed association transfers directionally to exact T009R."
+    },
+    {
+      "id": "M1_DECOMPOSITION_PRIMARY",
+      "formula": "disagreement ~ 1 + signed_bodyweight_change + odds_deterioration + signed_bodyweight_change:odds_deterioration",
+      "standard_errors": "race_key cluster-robust",
+      "primary_parameter": "beta_signed_bodyweight_change",
+      "predeclared_direction": "beta_signed < 0",
+      "significance": "two-sided p < 0.05 and 95% CI excludes 0",
+      "purpose": "Determine whether signed bodyweight change retains an independent conditional association after odds-deterioration adjustment."
+    }
+  ],
+  "predeclared_interpretation": {
+    "NO_TRANSFER": "M0 beta_signed is not negative with two-sided p < 0.05. Stop: adjacent-lineage signal does not transfer to exact T009R on this retrospective diagnostic period.",
+    "TRANSFER_BUT_NOT_INDEPENDENT": "M0 is negative/significant but M1 beta_signed is not negative/significant after odds-deterioration adjustment. Treat signed bodyweight as consistent with confounding/mediation by the previously observed odds-deterioration association; do not call it an independent mechanism.",
+    "INDEPENDENT_CANDIDATE_ONLY": "M0 and M1 beta_signed are both negative/significant. This qualifies only as a retrospective independent-candidate signal requiring genuinely sealed/untouched confirmation; it does not authorize feature adoption or Gate promotion.",
+    "interaction": "Report beta_interaction and CI as predeclared secondary context; do not let interaction significance override the primary M1 beta_signed classification."
+  },
+  "effect_scale_reporting": [
+    "Report raw beta per 1.0 proportion change and rescale to disagreement change per 1 percentage-point bodyweight change.",
+    "Report median, IQR, 1st/99th percentiles, min/max of signed bodyweight change.",
+    "Report unadjusted-to-adjusted beta attenuation continuously as 1 - abs(beta_M1)/abs(beta_M0) when beta_M0 != 0; no post-hoc attenuation cutoff will determine the verdict."
+  ],
+  "robustness_sensitivity": {
+    "status": "PREDECLARED_SECONDARY",
+    "winsorization": "Repeat M0 and M1 after winsorizing signed_bodyweight_change at the sample 1st and 99th percentiles; this sensitivity cannot upgrade a failed primary result.",
+    "extreme_influence": "Report race-cluster influence diagnostics or leave-one-race-out maximum coefficient shift if computationally feasible; diagnostic only.",
+    "no_quantile_regression_as_gate": true
+  },
+  "falsification": [
+    "Failure of exact T009R row-level artifact integrity or timing provenance => INCONCLUSIVE, not a substitute-data result.",
+    "M0 fails directional/significance criterion => NO_TRANSFER.",
+    "M0 passes but M1 fails => TRANSFER_BUT_NOT_INDEPENDENT.",
+    "No result from 2025H2 can be described as fresh OOS or confirmatory for this hypothesis."
+  ]
+}
