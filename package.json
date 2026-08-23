@@ -2,8 +2,5 @@
   "name": "magi-bridge-v3",
   "version": "3.0.0",
   "private": true,
-  "type": "module",
-  "scripts": {
-    "build": "node -e \"if(!process.env.ANTHROPIC_API_KEY){console.error('NO_ANTHROPIC_KEY');process.exit(1)};console.log('ANTHROPIC_KEY_PRESENT')\""
-  }
+  "type": "module"
 }
