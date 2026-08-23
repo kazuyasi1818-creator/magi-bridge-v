@@ -1,0 +1,38 @@
+--- T009R_checker_C_v3_1_candidate.py
++++ T009R_checker_C_v3_1_1_candidate.py
+@@ -1,6 +1,6 @@
+ #!/usr/bin/env python3
+ """
+-T009R deterministic reconciliation checker C v3.1 CANDIDATE.
++T009R deterministic reconciliation checker C v3.1.1 CANDIDATE.
+@@
+-    invalid_policy = inference.get("invalid_bootstrap_replicate_policy") or {}
+-    float_cmp = recon.get("float_comparison") or {}
++    invalid_policy = inference.get("invalid_bootstrap_replicate_policy") or {}
++    float_cmp = recon.get("float_comparison") or {}
++    raw_partition_set = recon.get("partition_set")
++    if raw_partition_set is None:
++        partitions = ()
++    elif isinstance(raw_partition_set, (list, tuple)):
++        partitions = tuple(raw_partition_set)
++    else:
++        partitions = ()
++        errors.append({
++            "scope": "prereg_binding", "error": "partition_set_invalid_type",
++            "actual_type": type(raw_partition_set).__name__
++        })
+     rules = {
+-        "partitions": tuple(recon.get("partition_set") or ()),
++        "partitions": partitions,
+@@
+-            "checker_id": "T009R_CHECKER_C_V3_1_CANDIDATE",
++            "checker_id": "T009R_CHECKER_C_V3_1_1_CANDIDATE",
+@@
+-        "checker_id": "T009R_CHECKER_C_V3_1_CANDIDATE",
++        "checker_id": "T009R_CHECKER_C_V3_1_1_CANDIDATE",
+@@
+-                    "checker_id": "T009R_CHECKER_C_V3_1_CANDIDATE",
++                    "checker_id": "T009R_CHECKER_C_V3_1_1_CANDIDATE",
+@@
+-            "checker_id": "T009R_CHECKER_C_V3_1_CANDIDATE",
++            "checker_id": "T009R_CHECKER_C_V3_1_1_CANDIDATE",
