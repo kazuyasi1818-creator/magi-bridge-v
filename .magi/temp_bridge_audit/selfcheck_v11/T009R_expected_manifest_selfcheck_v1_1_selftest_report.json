@@ -2,18 +2,126 @@
   "all_passed": true,
   "case_count": 12,
   "cases": [
-    {"error_codes": [], "exit_code": 0, "id": "valid_manifest", "out_exists": true, "status": "PASS", "test_pass": true},
-    {"error_codes": ["FULL_NOT_A_PLUS_B"], "exit_code": 2, "id": "FULL_race_count_not_A_plus_B", "out_exists": true, "status": "PROTOCOL_INVALID", "test_pass": true},
-    {"error_codes": ["FULL_NOT_A_PLUS_B"], "exit_code": 2, "id": "FULL_subgroup_not_A_plus_B", "out_exists": true, "status": "PROTOCOL_INVALID", "test_pass": true},
-    {"error_codes": ["FULL_NOT_A_PLUS_B", "FULL_DATES_NOT_TOTAL"], "exit_code": 2, "id": "FULL_dates_not_A_plus_B", "out_exists": true, "status": "PROTOCOL_INVALID", "test_pass": true},
-    {"error_codes": ["TOTAL_DATES_NOT_A_PLUS_B", "FULL_DATES_NOT_TOTAL"], "exit_code": 2, "id": "total_dates_not_A_plus_B", "out_exists": true, "status": "PROTOCOL_INVALID", "test_pass": true},
-    {"error_codes": ["not_object"], "exit_code": 2, "id": "top_level_list", "out_exists": true, "status": "PROTOCOL_INVALID", "test_pass": true},
-    {"error_codes": ["not_object"], "exit_code": 2, "id": "top_level_number", "out_exists": true, "status": "PROTOCOL_INVALID", "test_pass": true},
-    {"error_codes": ["not_object"], "exit_code": 2, "id": "top_level_string", "out_exists": true, "status": "PROTOCOL_INVALID", "test_pass": true},
-    {"error_codes": ["not_object"], "exit_code": 2, "id": "top_level_null", "out_exists": true, "status": "PROTOCOL_INVALID", "test_pass": true},
-    {"error_codes": ["invalid_partitions"], "exit_code": 2, "id": "partitions_list", "out_exists": true, "status": "PROTOCOL_INVALID", "test_pass": true},
-    {"error_codes": ["not_object"], "exit_code": 2, "id": "feasibility_null", "out_exists": true, "status": "PROTOCOL_INVALID", "test_pass": true},
-    {"error_codes": ["invalid_json"], "exit_code": 2, "id": "invalid_json", "out_exists": true, "status": "PROTOCOL_INVALID", "test_pass": true}
+    {
+      "error_codes": [],
+      "exit_code": 0,
+      "id": "valid_manifest",
+      "out_exists": true,
+      "status": "PASS",
+      "test_pass": true
+    },
+    {
+      "error_codes": [
+        "FULL_NOT_A_PLUS_B"
+      ],
+      "exit_code": 2,
+      "id": "FULL_race_count_not_A_plus_B",
+      "out_exists": true,
+      "status": "PROTOCOL_INVALID",
+      "test_pass": true
+    },
+    {
+      "error_codes": [
+        "FULL_NOT_A_PLUS_B"
+      ],
+      "exit_code": 2,
+      "id": "FULL_subgroup_not_A_plus_B",
+      "out_exists": true,
+      "status": "PROTOCOL_INVALID",
+      "test_pass": true
+    },
+    {
+      "error_codes": [
+        "FULL_NOT_A_PLUS_B",
+        "FULL_DATES_NOT_TOTAL"
+      ],
+      "exit_code": 2,
+      "id": "FULL_dates_not_A_plus_B",
+      "out_exists": true,
+      "status": "PROTOCOL_INVALID",
+      "test_pass": true
+    },
+    {
+      "error_codes": [
+        "TOTAL_DATES_NOT_A_PLUS_B",
+        "FULL_DATES_NOT_TOTAL"
+      ],
+      "exit_code": 2,
+      "id": "total_dates_not_A_plus_B",
+      "out_exists": true,
+      "status": "PROTOCOL_INVALID",
+      "test_pass": true
+    },
+    {
+      "error_codes": [
+        "not_object"
+      ],
+      "exit_code": 2,
+      "id": "top_level_list",
+      "out_exists": true,
+      "status": "PROTOCOL_INVALID",
+      "test_pass": true
+    },
+    {
+      "error_codes": [
+        "not_object"
+      ],
+      "exit_code": 2,
+      "id": "top_level_number",
+      "out_exists": true,
+      "status": "PROTOCOL_INVALID",
+      "test_pass": true
+    },
+    {
+      "error_codes": [
+        "not_object"
+      ],
+      "exit_code": 2,
+      "id": "top_level_string",
+      "out_exists": true,
+      "status": "PROTOCOL_INVALID",
+      "test_pass": true
+    },
+    {
+      "error_codes": [
+        "not_object"
+      ],
+      "exit_code": 2,
+      "id": "top_level_null",
+      "out_exists": true,
+      "status": "PROTOCOL_INVALID",
+      "test_pass": true
+    },
+    {
+      "error_codes": [
+        "invalid_partitions"
+      ],
+      "exit_code": 2,
+      "id": "partitions_list",
+      "out_exists": true,
+      "status": "PROTOCOL_INVALID",
+      "test_pass": true
+    },
+    {
+      "error_codes": [
+        "not_object"
+      ],
+      "exit_code": 2,
+      "id": "feasibility_null",
+      "out_exists": true,
+      "status": "PROTOCOL_INVALID",
+      "test_pass": true
+    },
+    {
+      "error_codes": [
+        "invalid_json"
+      ],
+      "exit_code": 2,
+      "id": "invalid_json",
+      "out_exists": true,
+      "status": "PROTOCOL_INVALID",
+      "test_pass": true
+    }
   ],
   "required_user_cases": {
     "feasibility_null_exit2": true,
