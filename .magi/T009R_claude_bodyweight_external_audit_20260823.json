@@ -1,0 +1,41 @@
+{
+  "audit_id": "T009R_CLAUDE_BODYWEIGHT_EXTERNAL_AUDIT_20260823",
+  "lineage": "KEIBA/T009R",
+  "source": "Claude external audit supplied by user",
+  "ingested_at_jst": "2026-08-23T15:19:00+09:00",
+  "gate_effect": "NONE",
+  "accepted_findings": [
+    "The preregistered adjacent-lineage screen correctly resolves to NO_SCREEN_SUPPORT because the primary absolute-bodyweight-change coefficient is negative/non-significant and the fixed extreme-band direction is also opposite the support direction.",
+    "The T011/T009-parent result must not be generalized to T009R; it is candidate triage only.",
+    "The signed bodyweight-change association is secondary/exploratory and must not be promoted post hoc to primary evidence or feature-adoption evidence.",
+    "The absolute bodyweight-change hypothesis is weakened/rejected within this adjacent-lineage screen, but not proven absent in exact T009R."
+  ],
+  "terminology_correction": {
+    "claude_wording": "odds deterioration as an already known mechanism",
+    "magi_wording": "previously observed odds-deterioration diagnostic association / subgroup-local partial contribution",
+    "reason": "Historical odds/popularity and odds-deterioration evidence has not established a universal or primary root cause under the frozen T009R governance."
+  },
+  "secondary_signal": {
+    "signed_bodyweight_beta": -2.198,
+    "p_approx": 6.2e-10,
+    "status": "EXPLORATORY_SECONDARY_ADJACENT_LINEAGE_ONLY",
+    "notes": [
+      "Large sample size can make p-values very small; effect-scale interpretation and robustness remain unresolved.",
+      "Possible confounding/mediation by the previously observed odds-deterioration association is unresolved.",
+      "Exact-T009R transfer is unresolved."
+    ]
+  },
+  "next_test_adopted_with_constraints": {
+    "name": "Exact-T009R signed-bodyweight / odds-deterioration decomposition",
+    "status": "PREREG_CANDIDATE_NOT_YET_EXECUTABLE",
+    "reason_not_yet_executable": "Exact T009R row-level prediction/market-detail artifacts are not currently retrievable.",
+    "interpretation": "If run on previously inspected 2025H2 it is retrospective diagnostic replication/decomposition only, not confirmatory evidence and not Gate-authorizing.",
+    "required_inputs": [
+      "Exact T009R row-level model probability for the frozen period",
+      "Frozen pre-cutoff market odds snapshot (10m primary if using the existing mechanism definition)",
+      "Previous-start odds using the already frozen historical-feature definition",
+      "Current and previous bodyweight",
+      "race_key/horse key and outcome for diagnostic calibration"
+    ]
+  }
+}
