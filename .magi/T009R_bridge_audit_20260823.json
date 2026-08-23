@@ -22,20 +22,27 @@
   },
   "scientific_interpretation": {
     "fixed_ge_2x_subgroup": "Subgroup-local improvement is supported: CONTROL drift10_gap 0.02206430879050906 -> VALUES_ABLATION 0.01616026616312078, reduction about 26.7583%.",
-    "disagreement_tail": "Preregistered non-worsening condition is NOT met at 10m: q5_10_gap CONTROL 0.042423049526441346 -> VALUES_ABLATION 0.04367084144441051, worsening about 0.00124779.",
+    "disagreement_tail_q5": "Preregistered Q5 gap worsens at 10m: CONTROL 0.042423049526441346 -> VALUES_ABLATION 0.04367084144441051, delta about +0.00124779.",
+    "disagreement_tail_offset_glm": "The preregistered offset-logit GLM log_ratio coefficient moves closer to zero at 10m: CONTROL -1.372557987064978 -> VALUES_ABLATION -1.3356615240473628. Thus tail diagnostics are mixed rather than uniformly improved.",
     "global_metrics": "VALUES_ABLATION slightly worsens Brier/logloss/AUC versus CONTROL; FULL_BLOCK also worsens them.",
-    "mechanism_status": "Historical odds/popularity are not established as the universal or primary root cause. Current evidence supports at most a subgroup-local partial contribution.",
+    "mechanism_status": "Historical odds/popularity are not established as the universal or primary root cause. Current evidence supports at most a subgroup-local partial contribution. Because preregistered disagreement-tail diagnostics are mixed, the conservative AND interpretation remains not satisfied.",
     "gate_status": "No Gate promotion, strategy change, threshold change, odds filter, feature adoption, subgroup mutation, snapshot mutation, or metric mutation is authorized.",
     "oos_status": "2025H2 remains retrospective/hypothesis-forming diagnostic evidence, not untouched OOS. 2026 sealed outcomes remain prohibited."
   },
+  "inferential_followup": {
+    "preregistered_q5_difference_test": false,
+    "prereg_search": "No bootstrap, permutation, significance, or clustering procedure for an arm-to-arm Q5 gap difference was preregistered in T009R_HISTORICAL_MARKET_FEATURE_ABLATION_PREREG_V1.",
+    "current_row_level_arm_predictions_available": false,
+    "validity_note": "Do not manufacture a confirmatory p-value from aggregate Q5 summaries. Q5 membership is recomputed per arm, so a valid arm-difference test requires row/race-level predictions for both arms or exact reproducible regeneration. Any newly chosen inferential test on 2025H2 is retrospective sensitivity analysis only."
+  },
   "unresolved": [
     "A genuinely sealed/untouched outcome period has not yet tested reproduction of the fixed >=2x CONTROL calibration gap and frozen ablation effect.",
-    "Statistical significance of the observed 10m q5_10_gap worsening (~+0.00124779) is not yet established.",
+    "The sampling uncertainty of the 10m Q5 arm difference (~+0.00124779) cannot be validly estimated from the stored aggregate summaries alone; row/race-level per-arm outputs or exact regeneration are required.",
     "Candidate pre-cutoff race-day information sources that could explain market/model disagreement remain untested."
   ],
   "required_machine_tests": [
     "On a genuinely untouched/sealed outcome period, run the frozen CONTROL vs frozen ablation comparison for the fixed >=2x subgroup with no post-outcome mutation.",
-    "Test the q5 disagreement-tail difference under the frozen design (e.g. preregistered bootstrap/permutation) and report global Brier/logloss/AUC simultaneously.",
+    "If row/race-level CONTROL and ablation predictions are recovered or regenerated, run a separately labeled retrospective paired/clustered sensitivity analysis of disagreement-tail differences; do not use it for Gate promotion.",
     "Only in a separately preregistered study, test candidate pre-cutoff race-day information sources; do not infer or adopt current odds as a feature from the present diagnostic."
   ],
   "pass_semantics": "PASS means the revised report accurately reflects the current evidence and its limitations. It is not a strategy/Gate PASS."
