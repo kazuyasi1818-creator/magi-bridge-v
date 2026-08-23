@@ -1,4 +1,4 @@
-name: temp-bridge-checkerc-v2-audit
+name: temp-bridge-checkerc-v3-followup
 on:
   pull_request:
     branches:
@@ -14,13 +14,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Run production MAGI Bridge audit
-        run: node .magi/temp_bridge_audit/run_bridge_audit.mjs
-      - name: Upload Bridge result
+      - name: Run production MAGI Bridge follow-up
+        run: node .magi/temp_bridge_audit/run_bridge_followup.mjs
+      - name: Upload Bridge follow-up result
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: checker-c-v2-bridge-result
-          path: bridge_result.json
+          name: checker-c-v3-bridge-followup-result
+          path: bridge_followup_result.json
           if-no-files-found: error
           retention-days: 7
