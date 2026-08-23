@@ -1,0 +1,50 @@
+{
+  "policy_id": "MAGI_BRIDGE_RESULT_INGEST_POLICY_V1",
+  "effective_at": "2026-08-23T13:01:00+09:00",
+  "purpose": "Ensure research performed in MAGI Bridge is not lost and is carried into the appropriate MAGI research lineage.",
+  "authoritative_rules": [
+    "Every completed MAGI Bridge council is a research artifact, not disposable chat.",
+    "Bridge PASS means the submitted report is acceptable at the stated evidence strength; it never grants Gate promotion by itself.",
+    "AI/Claude cannot promote a Gate. Gate promotion requires the existing deterministic MAGI governance transition and persisted evidence.",
+    "A Bridge result must be routed into the correct research lineage and retained even when the verdict is REVISE, REJECT, STOPPED, or structured output fails.",
+    "Corrections do not erase prior records. A corrected record must identify what it supersedes and why."
+  ],
+  "required_ingest_fields": [
+    "run_id",
+    "session_id",
+    "council_no",
+    "bridge_version",
+    "completed_at",
+    "root_topic",
+    "topic",
+    "evidence filenames and sha256 hashes",
+    "GPT/Claude transcript or a lossless reference to it",
+    "final structured verdict",
+    "revision_class",
+    "human_action_required",
+    "parse_error",
+    "stop_reason",
+    "confirmed_facts",
+    "unresolved items",
+    "required_machine_tests",
+    "next_action",
+    "API cost/tokens when available"
+  ],
+  "ingest_behavior": {
+    "assistant_or_automation_initiated_bridge_run": "Persist the resulting research handoff into .magi and update the relevant research record before declaring the task complete.",
+    "manual_browser_bridge_run": "The browser currently retains the full run locally. The run becomes part of the central MAGI research record when its HANDOFF/result is shared into ChatGPT; on receipt it must be ingested without asking the user to reformat it.",
+    "invalid_or_truncated_output": "Retain the research submission and failure evidence; do not silently discard the run.",
+    "gate_effect": "NONE unless a separate deterministic Gate transition is executed under the frozen policy."
+  },
+  "lineage_routing": {
+    "競馬|JRA|TARGET|T009": "KEIBA",
+    "BTC|Bitcoin": "BTC",
+    "USDJPY|USD/JPY|ドル円": "USDJPY",
+    "せどり|化粧品": "RESELL"
+  },
+  "retention": {
+    "mode": "append_only_or_superseding_record",
+    "do_not_delete_failed_runs": true,
+    "do_not_overwrite_history_with_posthoc_summary": true
+  }
+}
