@@ -1,4 +1,4 @@
-name: temp-bridge-checkerc-v3-1-reaudit
+name: temp-checkerc-v3-1-required-machine-tests
 on:
   pull_request:
     branches:
@@ -6,15 +6,12 @@ on:
 permissions:
   contents: read
 jobs:
-  bridge-audit:
+  machine-tests:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 6
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - name: Reconstruct audited v3 baseline and exact v3.1 patch package
+      - name: Reconstruct exact v3.1 artifacts
         shell: bash
         run: |
           set -euo pipefail
@@ -36,15 +33,7 @@ jobs:
           base64 -d /tmp/base.b64 > /tmp/base.tar.gz
           echo '7528245c909deb37af1294198e7ede1de7f0159a5985afc92969223fea139ab6  /tmp/base.tar.gz' | sha256sum -c -
           tar -xzf /tmp/base.tar.gz -C /tmp/pkg1
-          echo '3cb1ff60df8463e63cf113b350099e80029a349f9e0270145c83d070792ef4d8  /tmp/pkg1/T009R_checker_C_v3_candidate_final.py' | sha256sum -c -
-          echo '00f72b616bd14dea6a9befcb45b15cdbf3bf15c3f99d8537eda178ec20456e5c  /tmp/pkg1/T009R_Confirmatory_Prereg_DRAFT_v0.5_snapshot_00f72b61.json' | sha256sum -c -
           PATCH=.magi/temp_bridge_audit/v31patch
-          cat > /tmp/patch_chunks.sha256 <<'EOF'
-          db58e89753ee44af04e0a3ce66c83a567bf2408889a4bef01058857414755b16  .magi/temp_bridge_audit/v31patch/chunk_00.b64
-          c3125992cb8562aca82bb742d092c7292b534463b3eff11055e5c5236368587f  .magi/temp_bridge_audit/v31patch/chunk_01.b64
-          d119dbfcba40878a824401a035140c7fccdfeed779b35936ad9dfe80712c437c  .magi/temp_bridge_audit/v31patch/chunk_02.b64
-          EOF
-          sha256sum -c /tmp/patch_chunks.sha256
           cat "$PATCH"/chunk_0{0..2}.b64 > /tmp/patch.b64
           base64 -d /tmp/patch.b64 > /tmp/v31patch.tar.gz
           echo 'f4a655783ae128146c30e0d55ee426bfa47d2e7a87c2ce2b26c87ac8be0e8b9b  /tmp/v31patch.tar.gz' | sha256sum -c -
@@ -52,20 +41,22 @@ jobs:
           patch -o /tmp/pkg1/T009R_checker_C_v3_1_candidate.py /tmp/pkg1/T009R_checker_C_v3_candidate_final.py < /tmp/v31patch/checker_v3_to_v31.patch
           patch -o /tmp/pkg1/T009R_Confirmatory_Prereg_DRAFT_v0.6_preanchor.json /tmp/pkg1/T009R_Confirmatory_Prereg_DRAFT_v0.5_snapshot_00f72b61.json < /tmp/v31patch/prereg_v05_to_v06.patch
           cp /tmp/v31patch/T009R_expected_manifest_selfcheck_v1.py /tmp/pkg1/
-          cp /tmp/v31patch/T009R_v3_1_bridge_context.json /tmp/pkg1/
           echo 'c7aac7e6c5d31f3710849a1c20ec76bbe7364356ee45d027b6fce5c93a3d9f64  /tmp/pkg1/T009R_checker_C_v3_1_candidate.py' | sha256sum -c -
           echo '139ef218362dc121e72cacf57ea87b2abcda6f5754f5adf0e0211cc7f48c2afd  /tmp/pkg1/T009R_Confirmatory_Prereg_DRAFT_v0.6_preanchor.json' | sha256sum -c -
           echo 'd09fc155384ee3aee842c19e19a27fbc882635aaea59bf870cb35ac3899d5d29  /tmp/pkg1/T009R_expected_manifest_selfcheck_v1.py' | sha256sum -c -
-          echo 'c7c6b6908331c233c2a5ada598d82151777dec1bfb3322581b67c3725ff046ea  /tmp/pkg1/T009R_v3_1_bridge_context.json' | sha256sum -c -
-          python -m py_compile /tmp/pkg1/T009R_checker_C_v3_1_candidate.py /tmp/pkg1/T009R_expected_manifest_selfcheck_v1.py
-          printf '%s\n' 'V31_PATCH_AND_HASH_CHAIN=PASS' 'A_B_IMPLEMENTATION_STARTED=false' 'LOCK=PROHIBITED' | tee /tmp/pkg1/v31_pre_bridge_status.txt
-      - name: Run production MAGI Bridge v3.1 targeted re-audit
-        run: node .magi/temp_bridge_audit/run_bridge_followup.mjs
-      - name: Upload Bridge v3.1 result
+      - name: Run Claude-required machine reproductions
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo '022ecf53d225e0ec4941abade79c4ac214785e5c5e1d9d8f4242554e417b9757  .magi/temp_bridge_audit/v31patch/required_machine_tests.b64' | sha256sum -c -
+          base64 -d .magi/temp_bridge_audit/v31patch/required_machine_tests.b64 > /tmp/pkg1/T009R_v3_1_required_machine_tests.py
+          echo '0fc78a271224ffc3bffe398548f2bf82a3762be3b4a4910a61dae9b2c276a737  /tmp/pkg1/T009R_v3_1_required_machine_tests.py' | sha256sum -c -
+          python /tmp/pkg1/T009R_v3_1_required_machine_tests.py
+      - name: Upload required machine-test result
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: checker-c-v3-1-bridge-reaudit-result
-          path: bridge_followup_result.json
+          name: checker-c-v3-1-required-machine-tests
+          path: T009R_v3_1_required_machine_tests_result.json
           if-no-files-found: error
           retention-days: 30
