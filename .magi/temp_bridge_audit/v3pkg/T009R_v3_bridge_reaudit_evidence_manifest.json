@@ -1,0 +1,28 @@
+{
+  "package_id": "T009R-CHECKER-C-V3-BRIDGE-REAUDIT-EVIDENCE-V1",
+  "lock_status": "NOT_LOCKED",
+  "lock_prohibited": true,
+  "prereg_snapshot_raw_sha256": "00f72b616bd14dea6a9befcb45b15cdbf3bf15c3f99d8537eda178ec20456e5c",
+  "selftest_case_count": 18,
+  "selftest_all_passed": true,
+  "v3_code_sha256": "3cb1ff60df8463e63cf113b350099e80029a349f9e0270145c83d070792ef4d8",
+  "schema_v2_sha256": "2c19b35d2a72b224e6c96d52395bbc42db9c5625b90baffcae9373e48af5e84d",
+  "files": {
+    "T009R_Confirmatory_Prereg_DRAFT_v0.5_snapshot_00f72b61.json": "00f72b616bd14dea6a9befcb45b15cdbf3bf15c3f99d8537eda178ec20456e5c",
+    "T009R_Ra_gt_1_diagnostic_sample.json": "7505d13d78d592db5084b082cbe485f105fc33bb41f4d73c9ad129506ed6702d",
+    "T009R_checker_C_v2_to_v3_summary.json": "5ee8e8ced4d9b070260eb1b8192b0b3605af0f50bb9927f3a62255d3be213710",
+    "T009R_checker_C_v3_candidate_final.py": "3cb1ff60df8463e63cf113b350099e80029a349f9e0270145c83d070792ef4d8",
+    "T009R_checker_C_v3_selftest_report.json": "64bdc000e912ffdf0ae50b1542800eee129ac1d5e8b072610367fff0ae21f1bd",
+    "T009R_checker_C_v3_selftest_stdout.txt": "69c2542b79f9bae05e1fc08c9ea860f5250527cc4beb1762d214a78af1c40980",
+    "T009R_prereg_v0_5_collision_incident_20260823.json": "7282b1d2f3679e3b3d778d357a55d2147f4b5781857fbf7e426e8e66595f97c3",
+    "T009R_result_bundle_schema_v2_candidate.json": "2c19b35d2a72b224e6c96d52395bbc42db9c5625b90baffcae9373e48af5e84d",
+    "T009R_transfer_failure_run_32639578452.json": "f85cdc09170d0db8974f074a094512cf7c7989af51f6970abb4451732ed44c8e",
+    "T009R_v3_v2_adversarial_id_mapping.json": "7c3c68348854537ae9f38009db5bed7de14528b05a6472c31a0c09abf6f2effd"
+  },
+  "bridge_requirements": [
+    "Bridge must receive prereg snapshot whose measured raw SHA-256 is exactly 00f72b616bd14dea6a9befcb45b15cdbf3bf15c3f99d8537eda178ec20456e5c.",
+    "Bridge must receive v3 code whose measured SHA-256 is exactly 3cb1ff60df8463e63cf113b350099e80029a349f9e0270145c83d070792ef4d8.",
+    "Bridge evidence must include the preserved transport-decode failure record.",
+    "No LOCK may be declared by this package; expected pre-outcome manifest human anchor remains unresolved."
+  ]
+}
