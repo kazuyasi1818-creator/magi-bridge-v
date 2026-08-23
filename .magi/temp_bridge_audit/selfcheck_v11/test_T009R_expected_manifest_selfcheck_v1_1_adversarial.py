@@ -64,6 +64,7 @@ def main():
         x=copy.deepcopy(b); x['feasibility']['distinct_race_dates_total']=13
         cases.append(run_case(td,'total_dates_not_A_plus_B',x))
 
+        # User-requested adversarial non-object and malformed nested inputs.
         cases.append(run_case(td,'top_level_list',[]))
         cases.append(run_case(td,'top_level_number',123))
         cases.append(run_case(td,'top_level_string','bad'))
