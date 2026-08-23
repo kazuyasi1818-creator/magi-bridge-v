@@ -1,6 +1,6 @@
 {
   "registry_id": "MAGI_RESEARCH_RESULT_REGISTRY_V1",
-  "updated_at_jst": "2026-08-23T13:01:00+09:00",
+  "updated_at_jst": "2026-08-23T15:19:00+09:00",
   "ingest_policy": "MAGI_BRIDGE_RESULT_INGEST_POLICY_V1",
   "entries": [
     {
@@ -11,6 +11,31 @@
       "bridge_verdict": "PASS_REPORTING_ONLY_NO_GATE_PROMOTION",
       "gate_effect": "NONE",
       "carry_forward_summary": "Historical odds/popularity show subgroup-local partial contribution only; preregistered mechanism AND condition remains unsatisfied; no strategy/Gate mutation authorized; untouched/sealed confirmation remains required."
+    },
+    {
+      "lineage": "KEIBA/T009R",
+      "artifact": ".magi/T009R_bodyweight_adjacent_screen_20260823.json",
+      "audit_id": "T009R_BODYWEIGHT_ADJACENT_SCREEN_20260823",
+      "status": "INGESTED_NO_SCREEN_SUPPORT",
+      "bridge_verdict": "PREREG_DESIGN_PASS_MACHINE_RESULT_NO_SCREEN_SUPPORT",
+      "gate_effect": "NONE",
+      "carry_forward_summary": "Absolute race-day bodyweight change did not support the preregistered adjacent-lineage disagreement hypothesis. Signed bodyweight change is exploratory secondary only and cannot be promoted post hoc. Exact-T009R transfer remains unresolved."
+    },
+    {
+      "lineage": "KEIBA/T009R",
+      "artifact": ".magi/T009R_claude_bodyweight_external_audit_20260823.json",
+      "audit_id": "T009R_CLAUDE_BODYWEIGHT_EXTERNAL_AUDIT_20260823",
+      "status": "INGESTED_EXTERNAL_AUDIT",
+      "gate_effect": "NONE",
+      "carry_forward_summary": "Claude independently agreed with NO_SCREEN_SUPPORT and no post-hoc promotion of the signed secondary signal. Wording corrected: odds deterioration is a prior diagnostic association/partial contribution, not an established primary mechanism."
+    },
+    {
+      "lineage": "KEIBA/T009R",
+      "artifact": ".magi/T009R_signed_bodyweight_odds_decomposition_prereg_candidate_v1.json",
+      "audit_id": "T009R_SIGNED_BODYWEIGHT_ODDS_DECOMPOSITION_PREREG_CANDIDATE_V1",
+      "status": "FROZEN_CANDIDATE_BLOCKED_ON_EXACT_T009R_ROWS",
+      "gate_effect": "NONE",
+      "carry_forward_summary": "Next machine test is frozen before exact-T009R result inspection: test whether signed bodyweight association transfers to exact T009R and remains after adjustment for the prior odds-deterioration diagnostic association. T011 substitution is prohibited."
     }
   ]
 }
