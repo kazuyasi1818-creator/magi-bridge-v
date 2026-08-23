@@ -1,0 +1,1 @@
+trigger research handoff persistence patch 2026-08-23
