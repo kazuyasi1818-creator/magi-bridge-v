@@ -7,14 +7,14 @@ const CAP_YEN = 50;
 let spentUsd = 0;
 const dir = '.magi/temp_bridge_audit';
 const files = [
-  'T009R_checker_C_v2_candidate.py',
-  'T009R_checker_C_self_audit_v1_to_v2.json',
-  'T009R_CheckerC_Audit_Context_from_Prereg_v0.4.json'
+  {path:'T009R_checker_C_v2_candidate.py', uploadName:'T009R_checker_C_v2_candidate.txt', type:'text/plain'},
+  {path:'T009R_checker_C_self_audit_v1_to_v2.json', uploadName:'T009R_checker_C_self_audit_v1_to_v2.json', type:'application/json'},
+  {path:'T009R_CheckerC_Audit_Context_from_Prereg_v0.4.json', uploadName:'T009R_CheckerC_Audit_Context_from_Prereg_v0.4.json', type:'application/json'}
 ];
 const sha = s => crypto.createHash('sha256').update(s, 'utf8').digest('hex');
-const evidence = files.map(name => {
-  const content = fs.readFileSync(`${dir}/${name}`, 'utf8');
-  return {name, type: name.endsWith('.py') ? 'text/plain' : 'application/json', size: Buffer.byteLength(content), content, client_sha256: sha(content)};
+const evidence = files.map(f => {
+  const content = fs.readFileSync(`${dir}/${f.path}`, 'utf8');
+  return {name:f.uploadName, type:f.type, size:Buffer.byteLength(content), content, client_sha256:sha(content)};
 });
 const topic = `T009R confirmatory trialのChecker C v2 candidateをLOCK前に敵対的監査する。提示コードを実際に読んで、共有バグ・schema抜け・precedence bug・hash/canonicalization穴・bootstrap/verdict再計算の矛盾・zero-event処理・prereg v0.4との不一致を探す。自己監査を鵜呑みにせず、LOCK可能か判定する。修正が必要なら具体的なコード箇所と修正方針を示す。新holdout結果は使わず、ガバナンス変更やGate緩和は禁止。`;
 
@@ -44,6 +44,9 @@ try {
     auto++;
     g = await step({stage:'gpt_revise',topic,previous:g.text,audit:v.text,evidence}); push(g);
     v = await step({stage:'claude_verdict',topic,previous:g.text,evidence}); push(v);
+  }
+  if (transcript.length < 5 && v?.structured?.reported_verdict === 'PASS' && !v?.structured?.human_action_required) {
+    const n = await step({stage:'gpt_next_agenda',topic,previous:g.text,audit:v.text,evidence}); push(n);
   }
   const out = {
     run_kind:'TEMP_BRANCH_DIRECT_PRODUCTION_BRIDGE_AUDIT',
