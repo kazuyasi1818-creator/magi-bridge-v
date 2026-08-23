@@ -1,0 +1,42 @@
+{
+  "audit_id": "T009R_BRIDGE_REAUDIT_20260823_V1_2",
+  "status": "PASS_REPORTING_ONLY_NO_GATE_PROMOTION",
+  "production_url": "https://magi-bridge-v4.vercel.app",
+  "bridge_version": "4.4-autonomous-session-v2-structured-verdict",
+  "evidence_file": "T009R_bridge_audit_packet_v1_2_compact.json",
+  "evidence_sha256": "3b92e3b445c7d91bb221aafd5edf3adb8e8758df283bf0d4b19a8c4640bedc00",
+  "source_root_packet_sha256": "c89ec3d75e78f820ac7dafd0b7053618f10ca5986be262ded73f9ad9193c0f09",
+  "workflow_run_id": 32615296915,
+  "workflow_job_id": 97134929433,
+  "estimated_cost_yen": 16.95,
+  "final_verdict": {
+    "reported_verdict": "PASS",
+    "revision_class": "NONE",
+    "human_action_required": false,
+    "parse_error": false,
+    "provider_stop_reason": "end_turn"
+  },
+  "important_intermediate_note": {
+    "claude_audit_provider_stop_reason": "max_tokens",
+    "effect": "The intermediate audit was truncated, but its decisive prereg-AND critique was captured and incorporated by GPT revise. Final structured Claude verdict completed with end_turn and parse_error=false."
+  },
+  "scientific_interpretation": {
+    "fixed_ge_2x_subgroup": "Subgroup-local improvement is supported: CONTROL drift10_gap 0.02206430879050906 -> VALUES_ABLATION 0.01616026616312078, reduction about 26.7583%.",
+    "disagreement_tail": "Preregistered non-worsening condition is NOT met at 10m: q5_10_gap CONTROL 0.042423049526441346 -> VALUES_ABLATION 0.04367084144441051, worsening about 0.00124779.",
+    "global_metrics": "VALUES_ABLATION slightly worsens Brier/logloss/AUC versus CONTROL; FULL_BLOCK also worsens them.",
+    "mechanism_status": "Historical odds/popularity are not established as the universal or primary root cause. Current evidence supports at most a subgroup-local partial contribution.",
+    "gate_status": "No Gate promotion, strategy change, threshold change, odds filter, feature adoption, subgroup mutation, snapshot mutation, or metric mutation is authorized.",
+    "oos_status": "2025H2 remains retrospective/hypothesis-forming diagnostic evidence, not untouched OOS. 2026 sealed outcomes remain prohibited."
+  },
+  "unresolved": [
+    "A genuinely sealed/untouched outcome period has not yet tested reproduction of the fixed >=2x CONTROL calibration gap and frozen ablation effect.",
+    "Statistical significance of the observed 10m q5_10_gap worsening (~+0.00124779) is not yet established.",
+    "Candidate pre-cutoff race-day information sources that could explain market/model disagreement remain untested."
+  ],
+  "required_machine_tests": [
+    "On a genuinely untouched/sealed outcome period, run the frozen CONTROL vs frozen ablation comparison for the fixed >=2x subgroup with no post-outcome mutation.",
+    "Test the q5 disagreement-tail difference under the frozen design (e.g. preregistered bootstrap/permutation) and report global Brier/logloss/AUC simultaneously.",
+    "Only in a separately preregistered study, test candidate pre-cutoff race-day information sources; do not infer or adopt current odds as a feature from the present diagnostic."
+  ],
+  "pass_semantics": "PASS means the revised report accurately reflects the current evidence and its limitations. It is not a strategy/Gate PASS."
+}
