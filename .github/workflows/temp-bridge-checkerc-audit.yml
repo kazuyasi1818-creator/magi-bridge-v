@@ -19,6 +19,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p /tmp/pkg1
+          for f in .magi/temp_bridge_audit/v3pkg/chunk_0{0..7}.b64; do wc -c "$f"; sha256sum "$f"; done
           cat \
             .magi/temp_bridge_audit/v3pkg/chunk_00.b64 \
             .magi/temp_bridge_audit/v3pkg/chunk_01.b64 \
@@ -39,11 +40,7 @@ jobs:
           cp .magi/temp_bridge_audit/v3pkg/T009R_v3_v2_adversarial_id_mapping.json /tmp/pkg1/
           cp .magi/temp_bridge_audit/v3pkg/T009R_transfer_failure_run_32639578452.json /tmp/pkg1/
           cp .magi/temp_bridge_audit/v3pkg/T009R_Ra_gt_1_diagnostic_sample.json /tmp/pkg1/
-          sha256sum \
-            /tmp/pkg1/T009R_v3_v2_adversarial_id_mapping.json \
-            /tmp/pkg1/T009R_transfer_failure_run_32639578452.json \
-            /tmp/pkg1/T009R_Ra_gt_1_diagnostic_sample.json \
-            | tee /tmp/pkg1/extra_evidence_sha256.txt
+          sha256sum /tmp/pkg1/T009R_v3_v2_adversarial_id_mapping.json /tmp/pkg1/T009R_transfer_failure_run_32639578452.json /tmp/pkg1/T009R_Ra_gt_1_diagnostic_sample.json | tee /tmp/pkg1/extra_evidence_sha256.txt
       - name: Run production MAGI Bridge fresh v3 re-audit
         run: node .magi/temp_bridge_audit/run_bridge_followup.mjs
       - name: Upload Bridge follow-up result
