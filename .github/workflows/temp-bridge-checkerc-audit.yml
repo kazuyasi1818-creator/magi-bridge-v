@@ -1,4 +1,4 @@
-name: temp-bridge-checkerc-v3-followup
+name: temp-bridge-checkerc-v3-exact-reaudit
 on:
   pull_request:
     branches:
@@ -14,100 +14,51 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Reconstruct and verify coherent v3 audit snapshot
+      - name: Verify exact transport and evidence snapshot
         shell: bash
         run: |
           set -euo pipefail
-          rm -rf /tmp/pkg1 /tmp/fixed_chunks /tmp/pkg1.zip
-          mkdir -p /tmp/pkg1 /tmp/fixed_chunks
-          python - <<'PY'
-          from pathlib import Path
-          import base64, hashlib, json
-
-          src = Path('.magi/temp_bridge_audit/v3pkg')
-          dst = Path('/tmp/fixed_chunks')
-          expected = {
-              0:'f34d336677bcd4f0d33f45020eeeac07829d61dd3a3d9fff98422c7e6853ff64',
-              1:'5139d6f963047e77ebe1470189df66c0a4d71df5e0ee29a2e324ee9c1a6bfd2b',
-              2:'b3200a4f094ee4e1b5c3ef6fb1511aa5ce54d75dc154eca705a4c23909d58996',
-              3:'199535475400555721ec34f51ff683ac4b50ef8fc6f667cc8be3af571d7b876d',
-              4:'1e21cadc922b7ae6ec70ef8cb7619464023510f604bab0627945ca774015cde9',
-              5:'d1e0ff23cfdf05e640a26f348b89913e6d664726ae7a6ee2d46f0e738002c1ef',
-              6:'e9d9b39fb2e15f646225d90c9a442f929b2e8330074c367eefe4f704eefefe0a',
-              7:'d9ae443279463279813eda239177465e7ac7a6eff32114cb9ef244fa727e78de',
-          }
-          def h(s): return hashlib.sha256(s.encode('ascii')).hexdigest()
-          repair_log=[]
-          fixed=[]
-          for i in range(8):
-              p=src/f'chunk_{i:02d}.b64'
-              s=p.read_text(encoding='ascii')
-              before=h(s)
-              action='none'
-              detail=None
-              if before != expected[i]:
-                  if i == 2:
-                      old='LionyM3'; new='LconyM3'
-                      if s.count(old) != 1:
-                          raise SystemExit(f'chunk02 anchor count={s.count(old)}; refuse repair')
-                      s=s.replace(old,new,1)
-                      action='single_char_substitution'
-                      detail={'old_anchor':old,'new_anchor':new}
-                  elif i == 6:
-                      if len(s) != 5999:
-                          raise SystemExit(f'chunk06 unexpected length {len(s)}')
-                      alphabet='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/='
-                      found=[]
-                      for pos in range(len(s)+1):
-                          left=s[:pos]; right=s[pos:]
-                          for ch in alphabet:
-                              cand=left+ch+right
-                              if h(cand)==expected[i]:
-                                  found.append((pos,ch,cand))
-                                  if len(found)>1:
-                                      break
-                          if len(found)>1:
-                              break
-                      if len(found)!=1:
-                          raise SystemExit(f'chunk06 repair candidates={[(x[0],x[1]) for x in found]}')
-                      pos,ch,s=found[0]
-                      action='single_char_insertion_recovered_by_expected_sha256'
-                      detail={'position_zero_based':pos,'inserted_char':ch}
-                  else:
-                      raise SystemExit(f'unexpected corrupted chunk {i}: {before}')
-              after=h(s)
-              if after != expected[i]:
-                  raise SystemExit(f'chunk {i} hash mismatch after repair: {after}')
-              (dst/f'chunk_{i:02d}.b64').write_text(s,encoding='ascii')
-              fixed.append(s)
-              repair_log.append({'chunk':i,'length':len(s),'before_sha256':before,'after_sha256':after,'action':action,'detail':detail})
-          joined=''.join(fixed)
-          raw=base64.b64decode(joined,validate=True)
-          zsha=hashlib.sha256(raw).hexdigest()
-          if zsha!='73dc656b65303bea2362ae0cbb9e65eec58d87b99bc00471fd76dba678a3761b':
-              raise SystemExit(f'zip sha mismatch {zsha}')
-          Path('/tmp/pkg1.zip').write_bytes(raw)
-          Path('/tmp/transfer_repair_runtime.json').write_text(json.dumps({'status':'PASS','zip_sha256':zsha,'repairs':repair_log},indent=2),encoding='utf-8')
-          print(json.dumps({'status':'PASS','zip_sha256':zsha,'repairs':repair_log},indent=2))
-          PY
-          unzip -q /tmp/pkg1.zip -d /tmp/pkg1
-          echo '3cb1ff60df8463e63cf113b350099e80029a349f9e0270145c83d070792ef4d8  /tmp/pkg1/T009R_checker_C_v3_candidate_final.py' | sha256sum -c -
-          echo '00f72b616bd14dea6a9befcb45b15cdbf3bf15c3f99d8537eda178ec20456e5c  /tmp/pkg1/T009R_Confirmatory_Prereg_DRAFT_v0.5.json' | sha256sum -c -
-          echo '2c19b35d2a72b224e6c96d52395bbc42db9c5625b90baffcae9373e48af5e84d  /tmp/pkg1/T009R_result_bundle_schema_v2_candidate.json' | sha256sum -c -
-          echo '69c2542b79f9bae05e1fc08c9ea860f5250527cc4beb1762d214a78af1c40980  /tmp/pkg1/T009R_checker_C_v3_selftest_stdout.txt' | sha256sum -c -
-          echo '5ee8e8ced4d9b070260eb1b8192b0b3605af0f50bb9927f3a62255d3be213710  /tmp/pkg1/T009R_checker_C_v2_to_v3_summary.json' | sha256sum -c -
-          cp .magi/temp_bridge_audit/v3pkg/T009R_v3_v2_adversarial_id_mapping.json /tmp/pkg1/
-          cp .magi/temp_bridge_audit/v3pkg/T009R_transfer_failure_run_32639578452.json /tmp/pkg1/
-          cp .magi/temp_bridge_audit/v3pkg/T009R_Ra_gt_1_diagnostic_sample.json /tmp/pkg1/
-          cp /tmp/transfer_repair_runtime.json /tmp/pkg1/T009R_transfer_repair_runtime.json
-          sha256sum /tmp/pkg1/T009R_v3_v2_adversarial_id_mapping.json /tmp/pkg1/T009R_transfer_failure_run_32639578452.json /tmp/pkg1/T009R_Ra_gt_1_diagnostic_sample.json /tmp/pkg1/T009R_transfer_repair_runtime.json | tee /tmp/pkg1/extra_evidence_sha256.txt
+          SRC=.magi/temp_bridge_audit/v3reaudit_exact_7528245c
+          rm -rf /tmp/pkg1 /tmp/T009R_CheckerC_v3_reaudit_exact.tar.gz /tmp/pkg.b64
+          mkdir -p /tmp/pkg1
+          cat > /tmp/chunks.sha256 <<'EOF'
+          3539008771589d929e070b7296806cfcde6cd0a049891feb382de55da277a0ba  .magi/temp_bridge_audit/v3reaudit_exact_7528245c/chunk_00.b64
+          f7439154a9dcbda17a0f9b53e6970e781bb536b6a11c56507a0ff6387c718f41  .magi/temp_bridge_audit/v3reaudit_exact_7528245c/chunk_01.b64
+          873f2ffaad3b2d13ca97ea7c09ce3bcb314738e1e300a96ce87e8eb6af78e67e  .magi/temp_bridge_audit/v3reaudit_exact_7528245c/chunk_02.b64
+          5a3c066ce12872dcbadcec0c886d83421735584d2e523ee0265a3f05770bf159  .magi/temp_bridge_audit/v3reaudit_exact_7528245c/chunk_03.b64
+          9bfb4005c2bb22047c53fe2b13f14bc236f3d9ba6197d4555cd89929da3caf0c  .magi/temp_bridge_audit/v3reaudit_exact_7528245c/chunk_04.b64
+          5e62cce24694c97525d8ccb33b40c1ab60b9fb07e045a386d2d9068c2d2f6768  .magi/temp_bridge_audit/v3reaudit_exact_7528245c/chunk_05.b64
+          a1b9ad0a6f066eebe6bcfea6b2b05724110b458fa21270cc4136e543465231fe  .magi/temp_bridge_audit/v3reaudit_exact_7528245c/chunk_06.b64
+          22d54415d498a9beaa22c21c3a623dfa629a8e353da7302f022a94153141bf82  .magi/temp_bridge_audit/v3reaudit_exact_7528245c/chunk_07.b64
+          EOF
+          sha256sum -c /tmp/chunks.sha256
+          cat "$SRC"/chunk_0{0..7}.b64 > /tmp/pkg.b64
+          base64 -d /tmp/pkg.b64 > /tmp/T009R_CheckerC_v3_reaudit_exact.tar.gz
+          echo '7528245c909deb37af1294198e7ede1de7f0159a5985afc92969223fea139ab6  /tmp/T009R_CheckerC_v3_reaudit_exact.tar.gz' | sha256sum -c -
+          tar -xzf /tmp/T009R_CheckerC_v3_reaudit_exact.tar.gz -C /tmp/pkg1
+          cat > /tmp/evidence.sha256 <<'EOF'
+          3cb1ff60df8463e63cf113b350099e80029a349f9e0270145c83d070792ef4d8  /tmp/pkg1/T009R_checker_C_v3_candidate_final.py
+          00f72b616bd14dea6a9befcb45b15cdbf3bf15c3f99d8537eda178ec20456e5c  /tmp/pkg1/T009R_Confirmatory_Prereg_DRAFT_v0.5_snapshot_00f72b61.json
+          2c19b35d2a72b224e6c96d52395bbc42db9c5625b90baffcae9373e48af5e84d  /tmp/pkg1/T009R_result_bundle_schema_v2_candidate.json
+          69c2542b79f9bae05e1fc08c9ea860f5250527cc4beb1762d214a78af1c40980  /tmp/pkg1/T009R_checker_C_v3_selftest_stdout.txt
+          5ee8e8ced4d9b070260eb1b8192b0b3605af0f50bb9927f3a62255d3be213710  /tmp/pkg1/T009R_checker_C_v2_to_v3_summary_reaudit.json
+          7c3c68348854537ae9f38009db5bed7de14528b05a6472c31a0c09abf6f2effd  /tmp/pkg1/T009R_v3_v2_adversarial_id_mapping.json
+          f85cdc09170d0db8974f074a094512cf7c7989af51f6970abb4451732ed44c8e  /tmp/pkg1/T009R_transfer_failure_run_32639578452.json
+          7505d13d78d592db5084b082cbe485f105fc33bb41f4d73c9ad129506ed6702d  /tmp/pkg1/T009R_Ra_gt_1_diagnostic_sample.json
+          7282b1d2f3679e3b3d778d357a55d2147f4b5781857fbf7e426e8e66595f97c3  /tmp/pkg1/T009R_prereg_v0_5_collision_incident_20260823.json
+          EOF
+          sha256sum -c /tmp/evidence.sha256
+          cp /tmp/chunks.sha256 /tmp/pkg1/transport_chunk_sha256.txt
+          cp /tmp/evidence.sha256 /tmp/pkg1/pre_bridge_evidence_sha256.txt
+          printf '%s\n' 'TRANSPORT_AND_EVIDENCE_HASH_CHAIN=PASS' 'PREREG_SELFTEST_SHA=00f72b616bd14dea6a9befcb45b15cdbf3bf15c3f99d8537eda178ec20456e5c' 'PREREG_BRIDGE_INPUT_SHA=00f72b616bd14dea6a9befcb45b15cdbf3bf15c3f99d8537eda178ec20456e5c' | tee /tmp/pkg1/pre_bridge_hash_continuity.txt
       - name: Run production MAGI Bridge fresh v3 re-audit
         run: node .magi/temp_bridge_audit/run_bridge_followup.mjs
       - name: Upload Bridge follow-up result
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: checker-c-v3-bridge-followup-result
-          path: bridge_followup_result.json
+          name: checker-c-v3-exact-bridge-reaudit-result
+          path: |
+            bridge_followup_result.json
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 30
