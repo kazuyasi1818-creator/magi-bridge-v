@@ -1,0 +1,24 @@
+{
+  "status": "PASS",
+  "production_commit": "681c53d99cbebdc0acda8e5ea45dbf68486c432b",
+  "production_url": "https://magi-bridge-v4.vercel.app",
+  "bridge_version": "4.4-autonomous-session-v2-structured-verdict",
+  "model": "claude-sonnet-4-6",
+  "e2e_run_id": 32614465113,
+  "e2e_job_id": 97132762803,
+  "verified_at_utc": "2026-08-23T03:06:14Z",
+  "reject_case": {
+    "http": 200,
+    "reported_verdict": "REJECT",
+    "parse_error": false,
+    "structured_verdict_parse_failed": false
+  },
+  "pass_case": {
+    "http": 200,
+    "reported_verdict": "PASS",
+    "revision_class": "NONE",
+    "human_action_required": false,
+    "parse_error": false,
+    "structured_verdict_parse_failed": false
+  }
+}
