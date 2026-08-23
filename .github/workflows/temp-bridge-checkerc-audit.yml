@@ -18,19 +18,78 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p /tmp/pkg1
-          for f in .magi/temp_bridge_audit/v3pkg/chunk_0{0..7}.b64; do wc -c "$f"; sha256sum "$f"; done
-          cat \
-            .magi/temp_bridge_audit/v3pkg/chunk_00.b64 \
-            .magi/temp_bridge_audit/v3pkg/chunk_01.b64 \
-            .magi/temp_bridge_audit/v3pkg/chunk_02.b64 \
-            .magi/temp_bridge_audit/v3pkg/chunk_03.b64 \
-            .magi/temp_bridge_audit/v3pkg/chunk_04.b64 \
-            .magi/temp_bridge_audit/v3pkg/chunk_05.b64 \
-            .magi/temp_bridge_audit/v3pkg/chunk_06.b64 \
-            .magi/temp_bridge_audit/v3pkg/chunk_07.b64 \
-            | base64 -d > /tmp/pkg1.zip
-          echo '73dc656b65303bea2362ae0cbb9e65eec58d87b99bc00471fd76dba678a3761b  /tmp/pkg1.zip' | sha256sum -c -
+          rm -rf /tmp/pkg1 /tmp/fixed_chunks /tmp/pkg1.zip
+          mkdir -p /tmp/pkg1 /tmp/fixed_chunks
+          python - <<'PY'
+          from pathlib import Path
+          import base64, hashlib, json
+
+          src = Path('.magi/temp_bridge_audit/v3pkg')
+          dst = Path('/tmp/fixed_chunks')
+          expected = {
+              0:'f34d336677bcd4f0d33f45020eeeac07829d61dd3a3d9fff98422c7e6853ff64',
+              1:'5139d6f963047e77ebe1470189df66c0a4d71df5e0ee29a2e324ee9c1a6bfd2b',
+              2:'b3200a4f094ee4e1b5c3ef6fb1511aa5ce54d75dc154eca705a4c23909d58996',
+              3:'199535475400555721ec34f51ff683ac4b50ef8fc6f667cc8be3af571d7b876d',
+              4:'1e21cadc922b7ae6ec70ef8cb7619464023510f604bab0627945ca774015cde9',
+              5:'d1e0ff23cfdf05e640a26f348b89913e6d664726ae7a6ee2d46f0e738002c1ef',
+              6:'e9d9b39fb2e15f646225d90c9a442f929b2e8330074c367eefe4f704eefefe0a',
+              7:'d9ae443279463279813eda239177465e7ac7a6eff32114cb9ef244fa727e78de',
+          }
+          def h(s): return hashlib.sha256(s.encode('ascii')).hexdigest()
+          repair_log=[]
+          fixed=[]
+          for i in range(8):
+              p=src/f'chunk_{i:02d}.b64'
+              s=p.read_text(encoding='ascii')
+              before=h(s)
+              action='none'
+              detail=None
+              if before != expected[i]:
+                  if i == 2:
+                      old='LionyM3'; new='LconyM3'
+                      if s.count(old) != 1:
+                          raise SystemExit(f'chunk02 anchor count={s.count(old)}; refuse repair')
+                      s=s.replace(old,new,1)
+                      action='single_char_substitution'
+                      detail={'old_anchor':old,'new_anchor':new}
+                  elif i == 6:
+                      if len(s) != 5999:
+                          raise SystemExit(f'chunk06 unexpected length {len(s)}')
+                      alphabet='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/='
+                      found=[]
+                      for pos in range(len(s)+1):
+                          left=s[:pos]; right=s[pos:]
+                          for ch in alphabet:
+                              cand=left+ch+right
+                              if h(cand)==expected[i]:
+                                  found.append((pos,ch,cand))
+                                  if len(found)>1:
+                                      break
+                          if len(found)>1:
+                              break
+                      if len(found)!=1:
+                          raise SystemExit(f'chunk06 repair candidates={[(x[0],x[1]) for x in found]}')
+                      pos,ch,s=found[0]
+                      action='single_char_insertion_recovered_by_expected_sha256'
+                      detail={'position_zero_based':pos,'inserted_char':ch}
+                  else:
+                      raise SystemExit(f'unexpected corrupted chunk {i}: {before}')
+              after=h(s)
+              if after != expected[i]:
+                  raise SystemExit(f'chunk {i} hash mismatch after repair: {after}')
+              (dst/f'chunk_{i:02d}.b64').write_text(s,encoding='ascii')
+              fixed.append(s)
+              repair_log.append({'chunk':i,'length':len(s),'before_sha256':before,'after_sha256':after,'action':action,'detail':detail})
+          joined=''.join(fixed)
+          raw=base64.b64decode(joined,validate=True)
+          zsha=hashlib.sha256(raw).hexdigest()
+          if zsha!='73dc656b65303bea2362ae0cbb9e65eec58d87b99bc00471fd76dba678a3761b':
+              raise SystemExit(f'zip sha mismatch {zsha}')
+          Path('/tmp/pkg1.zip').write_bytes(raw)
+          Path('/tmp/transfer_repair_runtime.json').write_text(json.dumps({'status':'PASS','zip_sha256':zsha,'repairs':repair_log},indent=2),encoding='utf-8')
+          print(json.dumps({'status':'PASS','zip_sha256':zsha,'repairs':repair_log},indent=2))
+          PY
           unzip -q /tmp/pkg1.zip -d /tmp/pkg1
           echo '3cb1ff60df8463e63cf113b350099e80029a349f9e0270145c83d070792ef4d8  /tmp/pkg1/T009R_checker_C_v3_candidate_final.py' | sha256sum -c -
           echo '00f72b616bd14dea6a9befcb45b15cdbf3bf15c3f99d8537eda178ec20456e5c  /tmp/pkg1/T009R_Confirmatory_Prereg_DRAFT_v0.5.json' | sha256sum -c -
@@ -40,7 +99,8 @@ jobs:
           cp .magi/temp_bridge_audit/v3pkg/T009R_v3_v2_adversarial_id_mapping.json /tmp/pkg1/
           cp .magi/temp_bridge_audit/v3pkg/T009R_transfer_failure_run_32639578452.json /tmp/pkg1/
           cp .magi/temp_bridge_audit/v3pkg/T009R_Ra_gt_1_diagnostic_sample.json /tmp/pkg1/
-          sha256sum /tmp/pkg1/T009R_v3_v2_adversarial_id_mapping.json /tmp/pkg1/T009R_transfer_failure_run_32639578452.json /tmp/pkg1/T009R_Ra_gt_1_diagnostic_sample.json | tee /tmp/pkg1/extra_evidence_sha256.txt
+          cp /tmp/transfer_repair_runtime.json /tmp/pkg1/T009R_transfer_repair_runtime.json
+          sha256sum /tmp/pkg1/T009R_v3_v2_adversarial_id_mapping.json /tmp/pkg1/T009R_transfer_failure_run_32639578452.json /tmp/pkg1/T009R_Ra_gt_1_diagnostic_sample.json /tmp/pkg1/T009R_transfer_repair_runtime.json | tee /tmp/pkg1/extra_evidence_sha256.txt
       - name: Run production MAGI Bridge fresh v3 re-audit
         run: node .magi/temp_bridge_audit/run_bridge_followup.mjs
       - name: Upload Bridge follow-up result
