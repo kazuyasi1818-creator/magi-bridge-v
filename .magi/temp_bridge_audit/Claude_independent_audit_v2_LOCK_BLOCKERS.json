@@ -1,0 +1,51 @@
+{
+  "audit_source": "Claude independent adversarial audit supplied by user",
+  "verdict": "LOCK_NOT_ALLOWED",
+  "verified": {
+    "v2_sha256_matches": true,
+    "seed_A": 15750943858760389252,
+    "seed_B": 10062759489719105277,
+    "seed_values_independently_recomputed_match_prereg": true,
+    "v2_recalculation_direction": "correct"
+  },
+  "critical": [
+    {"id":"C-1","finding":"expected manifest is not hash-bound; CLI JSON is trusted without --expected-manifest-sha256 or prereg binding, so a post-outcome reverse-generated manifest can pass."},
+    {"id":"C-2","finding":"malformed bundle with partitions.A non-dict causes TypeError, exit=1, and no reconciliation JSON; one-shot evidence is lost."},
+    {"id":"C-3","finding":"malformed expected manifest missing partitions causes KeyError after validation errors; checker fails closed incorrectly and loses reconciliation evidence."}
+  ],
+  "major": [
+    {"id":"M-4","finding":"No binding to prereg artifact/hash; TOL, reps, valid thresholds, RNG, quantile, seed derivation, partitions are hardcoded and can drift silently from prereg."},
+    {"id":"M-5","finding":"No FULL=A+B additive consistency checks for row_count, race_count, subgroup count, observed wins, control/ablation probability sums."},
+    {"id":"M-6","finding":"Blind feasibility minimums are not mechanically enforced: 12 distinct dates, >=120 races per half, >=300 subgroup rows per half."},
+    {"id":"M-7","finding":"A/B inference blocks are not compared. Exact equality of CI endpoints under independent seeds should be recorded as SUSPECT_NON_INDEPENDENT_EXECUTION, not automatic FAIL."}
+  ],
+  "minor_required": [
+    {"id":"m-8","finding":"Diff Checker allowlists against T009R_result_bundle_schema_v1.json and record zero-diff proof before lock."},
+    {"id":"m-9","finding":"Final verdict must use recomputed Rc/Ra/D values from primitives, not reported derived fields."},
+    {"id":"m-10","finding":"Rewrite seed ternary precedence expression as explicit if."},
+    {"id":"m-11","finding":"Use combined absolute/relative float tolerance, e.g. max(abs_tol=1e-10, rel_tol=1e-9*scale); mechanism must be fixed and documented."},
+    {"id":"m-12","finding":"Define exit codes 0=PASS, 2=REPORT_MISMATCH, 3=internal exception."}
+  ],
+  "diagnostic_required_nonverdict": {
+    "id":"note-13",
+    "finding":"For each FULL/A/B partition, output whether Ra > 1. This is secondary diagnostic only and MUST NOT alter D or SUPPORT verdict. It distinguishes reduced overprediction from overshoot into underprediction."
+  },
+  "required_adversarial_tests": [
+    "expected manifest hash mismatch -> FAIL",
+    "prereg hash mismatch -> FAIL",
+    "partition non-dict -> no crash; reconciliation JSON with PROTOCOL_INVALID",
+    "expected manifest partitions missing -> no crash; reconciliation JSON with PROTOCOL_INVALID",
+    "FULL != A+B counts -> FAIL",
+    "FULL != A+B probability sums -> FAIL",
+    "A/B CI endpoints exactly equal -> SUSPECT_NON_INDEPENDENT_EXECUTION recorded",
+    "feasibility minimum unmet -> INCONCLUSIVE_INSUFFICIENT_DATA"
+  ],
+  "change_constraint": "Do not change, loosen, or tighten scientific thresholds or verdict conditions. Only harden validation, binding, evidence preservation, and diagnostics.",
+  "requested_output": [
+    "v3 full code",
+    "v3 SHA-256",
+    "self-test stdout and exit codes",
+    "v2->v3 diff summary"
+  ],
+  "lock_policy": "No lock until Claude re-audits v3 from scratch; remediation checklist completion alone is insufficient."
+}
