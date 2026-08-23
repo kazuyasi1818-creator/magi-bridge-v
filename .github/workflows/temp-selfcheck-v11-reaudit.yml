@@ -1,0 +1,37 @@
+name: temp-selfcheck-v11-reaudit
+on:
+  push:
+    branches:
+      - audit-selfcheck-v11-20260824
+permissions:
+  contents: read
+jobs:
+  selfcheck-reaudit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Verify exact evidence and rerun adversarial suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd .magi/selfcheck_v11_audit
+          echo '70c48e722df9704ba2976111ce44d5e02b5775fddedab33f44b1d78e81c31833  T009R_expected_manifest_selfcheck_v1_1.py' | sha256sum -c -
+          echo '5feb1eb4ac464190a938862783d3c642b9fe1d40c85d9b4d9b64ffcccfbafea9  test_T009R_expected_manifest_selfcheck_v1_1_adversarial.py' | sha256sum -c -
+          echo '501ca04120a175886c7b2c96f4eb38ad4e1f9795212f399e3a22920a8a79e7a2  T009R_expected_manifest_selfcheck_v1_1_selftest_report.json' | sha256sum -c -
+          python test_T009R_expected_manifest_selfcheck_v1_1_adversarial.py > /tmp/selfcheck_v11_stdout.txt
+          echo '501ca04120a175886c7b2c96f4eb38ad4e1f9795212f399e3a22920a8a79e7a2  T009R_expected_manifest_selfcheck_v1_1_selftest_report.json' | sha256sum -c -
+          cat /tmp/selfcheck_v11_stdout.txt
+      - name: Run production MAGI Bridge selfcheck v1.1 re-audit
+        run: node .magi/selfcheck_v11_audit/run_selfcheck_v11_bridge.mjs
+      - name: Upload Bridge result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: selfcheck-v11-bridge-reaudit-result
+          path: selfcheck_v11_bridge_result.json
+          if-no-files-found: error
+          retention-days: 30
