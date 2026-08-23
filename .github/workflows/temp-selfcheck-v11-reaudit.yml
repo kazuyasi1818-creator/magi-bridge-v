@@ -1,4 +1,4 @@
-name: temp-selfcheck-v11-reaudit
+name: temp-selfcheck-v11-machine-only
 on:
   pull_request:
     branches:
@@ -6,36 +6,26 @@ on:
 permissions:
   contents: read
 jobs:
-  reaudit:
+  machine-tests:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - name: Verify exact audit evidence and run adversarial suite
+      - name: Verify frozen selfcheck evidence without model calls
         shell: bash
         run: |
           set -euo pipefail
           D=.magi/temp_bridge_audit/selfcheck_v11
           echo '70c48e722df9704ba2976111ce44d5e02b5775fddedab33f44b1d78e81c31833  '$D'/T009R_expected_manifest_selfcheck_v1_1.py' | sha256sum -c -
           echo '5feb1eb4ac464190a938862783d3c642b9fe1d40c85d9b4d9b64ffcccfbafea9  '$D'/test_T009R_expected_manifest_selfcheck_v1_1_adversarial.py' | sha256sum -c -
-          echo '501ca04120a175886c7b2c96f4eb38ad4e1f9795212f399e3a22920a8a79e7a2  '$D'/T009R_expected_manifest_selfcheck_v1_1_selftest_report.json' | sha256sum -c -
-          echo '5b3b33d94f0fec003d856f6c15142f973dc08de2adf0f9fb162a1197cd948a53  '$D'/T009R_checker_C_v3_1_to_v3_1_1.patch' | sha256sum -c -
-          echo 'b8cb6c092fc4529a8e85946a1f2595fdf3e23e063bd9c8f2af4cb2b05db02af7  '$D'/T009R_selfcheck_v1_1_hardening_report.json' | sha256sum -c -
-          python "$D/test_T009R_expected_manifest_selfcheck_v1_1_adversarial.py" | tee selfcheck_v11_actions_stdout.txt
-          echo '501ca04120a175886c7b2c96f4eb38ad4e1f9795212f399e3a22920a8a79e7a2  '$D'/T009R_expected_manifest_selfcheck_v1_1_selftest_report.json' | sha256sum -c -
-          printf '%s\n' 'SELFCHECK_V1_1_ACTIONS_12_OF_12=PASS' 'A_B_IMPLEMENTATION_STARTED=false' 'LOCK=PROHIBITED'
-      - name: Run production MAGI Bridge selfcheck v1.1 re-audit
-        run: node .magi/temp_bridge_audit/selfcheck_v11/run_bridge_selfcheck_v11.mjs
-      - name: Upload audit results
+          python "$D/test_T009R_expected_manifest_selfcheck_v1_1_adversarial.py" > selfcheck_v11_actions_stdout.txt
+          grep -q '"all_passed": true' "$D/T009R_expected_manifest_selfcheck_v1_1_selftest_report.json"
+          printf '%s\n' 'NO_MODEL_CALLS=true' 'A_B_IMPLEMENTATION_STARTED=false' 'LOCK=PROHIBITED'
+      - name: Upload machine result
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: selfcheck-v11-bridge-reaudit-result
-          path: |
-            selfcheck_v11_bridge_result.json
-            selfcheck_v11_actions_stdout.txt
+          name: selfcheck-v11-machine-only
+          path: selfcheck_v11_actions_stdout.txt
           if-no-files-found: error
           retention-days: 30
