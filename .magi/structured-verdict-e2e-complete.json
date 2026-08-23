@@ -10,8 +10,11 @@
   "reject_case": {
     "http": 200,
     "reported_verdict": "REJECT",
+    "revision_class": "GATE_OR_POLICY_CHANGE_REQUIRED",
+    "human_action_required": true,
     "parse_error": false,
-    "structured_verdict_parse_failed": false
+    "structured_verdict_parse_failed": false,
+    "note": "Current proposal was rejected correctly. human_action_required refers to future Gate-authorized reconsideration after new validation, not a parser fallback."
   },
   "pass_case": {
     "http": 200,
