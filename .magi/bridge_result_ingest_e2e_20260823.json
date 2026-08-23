@@ -1,0 +1,45 @@
+{
+  "test_id": "MAGI_BRIDGE_RESULT_INGEST_E2E_20260823",
+  "tested_at_jst": "2026-08-23T13:46:00+09:00",
+  "source_case": "T009R_BRIDGE_REAUDIT_20260823_V1_2",
+  "checks": [
+    {
+      "name": "source_artifact_persisted",
+      "expected": true,
+      "actual": true,
+      "evidence": ".magi/T009R_bridge_audit_20260823.json exists on main"
+    },
+    {
+      "name": "research_ingestion_flag",
+      "expected": "ingested=true and lineage=KEIBA/T009R",
+      "actual": "ingested=true and lineage=KEIBA/T009R",
+      "result": "PASS"
+    },
+    {
+      "name": "registry_resolves_to_artifact",
+      "expected": "registry entry points to .magi/T009R_bridge_audit_20260823.json with matching audit_id",
+      "actual": "matched",
+      "result": "PASS"
+    },
+    {
+      "name": "bridge_pass_does_not_promote_gate",
+      "expected": "gate_effect=NONE",
+      "actual": "gate_effect=NONE",
+      "result": "PASS"
+    },
+    {
+      "name": "carry_forward_preserved",
+      "expected": "mechanism remains subgroup-local partial contribution; untouched/sealed confirmation still required",
+      "actual": "preserved in artifact and registry summary",
+      "result": "PASS"
+    },
+    {
+      "name": "production_integrity_after_ingestion_changes",
+      "expected": "Vercel success",
+      "actual": "success on commit a34c05185662f2bd233a8cdeaea8238d0caebb6d",
+      "result": "PASS"
+    }
+  ],
+  "overall": "PASS",
+  "scope_note": "This E2E validates assistant/automation-side Bridge result ingestion into the central MAGI research record. Browser-only Safari runs are retained locally and still require sharing the HANDOFF/result into ChatGPT for central ingestion; direct browser-to-GitHub auto-sync is not implemented yet."
+}
