@@ -1,0 +1,110 @@
+{
+  "prereg_id": "T009R-CONFIRM-001",
+  "status": "DRAFT_PRE_UNLOCK_NOT_LOCKED",
+  "parent_protocol": {
+    "filename": "T009R_Confirmatory_Trial_Protocol_Final_v1.0.md",
+    "locked": true,
+    "raw_sha256": "ab2c5cccc3c2c45cb743ce8b077a452e6e6b92d7d471a17524c2abb8821460eb"
+  },
+  "primary_estimand": {
+    "D_formula": "abs(log(Rc)) - abs(log(Ra))",
+    "R_formula": "observed_win_rate / mean_predicted_probability",
+    "only_confirmatory_endpoint": "D",
+    "support_direction": "D > 0",
+    "directional_validity_gate": {
+      "requirements": ["Rc < 1 in HOLDOUT-A", "Rc < 1 in HOLDOUT-B", "Rc < 1 in FULL"]
+    },
+    "point_estimate_zero_event_policy": {
+      "no_continuity_correction": true,
+      "if_subgroup_observed_wins_zero": "D is undefined and MUST be serialized as null; Rc=Ra=0; implementation verdict is INCONCLUSIVE."
+    }
+  },
+  "primary_subgroup": {
+    "definition": "odds_10m / prev_odds >= 2.0",
+    "requires_finite_positive_odds_10m": true,
+    "requires_finite_positive_prev_odds": true,
+    "snapshot": "10m",
+    "threshold": 2.0,
+    "threshold_search_prohibited": true
+  },
+  "temporal_replication": {
+    "part_A_requires": "D > 0",
+    "part_B_requires": "D > 0",
+    "split_rule": "sort distinct eligible race_date ascending; A = first 6 dates; B = next 6 dates",
+    "split_unit": "race_date",
+    "required_distinct_race_dates_total": 12
+  },
+  "inference": {
+    "A_B_resample_sets": "independent",
+    "bootstrap_replications": 20000,
+    "bootstrap_type": "paired cluster bootstrap within implementation",
+    "cluster_unit": "race_key",
+    "confidence_level": 0.95,
+    "nan_policy": "invalid/nonfinite subgroup variables excluded from subgroup only; bootstrap replicate invalid if observed wins=0 or required R/D nonfinite",
+    "quantile_method": "linear",
+    "rng": "numpy.random.Generator(PCG64)",
+    "seed_A_derivation": "first 64 bits of SHA256(prereg_id + ':A') unsigned big-endian",
+    "seed_B_derivation": "first 64 bits of SHA256(prereg_id + ':B') unsigned big-endian",
+    "within_implementation_pairing": "CONTROL and ABLATION use identical resampled race sets within each replicate",
+    "zero_division_policy": "No continuity correction; invalid bootstrap replicates discarded; if valid fraction <0.999 or valid reps <19980/20000 => INCONCLUSIVE",
+    "seed_A": 15750943858760389252,
+    "seed_B": 10062759489719105277,
+    "ci_definition": "Two-sided percentile 95% CI of D using numpy quantile method='linear' over valid paired race-cluster bootstrap replicates."
+  },
+  "verdict_rules": {
+    "INCONCLUSIVE": "Data sufficiency or defined non-protocol data limitation prevents a valid statistical conclusion",
+    "NOT_SUPPORTED": "Protocol completes validly but any preregistered statistical support condition fails",
+    "PROTOCOL_INVALID": "Procedure, execution, locking, reconciliation, or one-shot integrity failure",
+    "SUPPORTED": [
+      "protocol_integrity_pass",
+      "virginity_pass",
+      "dry_run_pass",
+      "A_B_reconciliation_pass",
+      "temporal_A_D_gt_0",
+      "temporal_B_D_gt_0",
+      "full_holdout_cluster_bootstrap_CI_lower_gt_0",
+      "implementation_A_supported",
+      "implementation_B_supported",
+      "directional_validity_gate Rc<1 in A,B,FULL",
+      "blind feasibility minimums pass before outcomes"
+    ]
+  },
+  "machine_reconciliation": {
+    "checker_C_artifact": "T009R_checker_C_v2_candidate.py",
+    "checker_C_sha256": "bdb5f5a40bb8bb877c0424e65012327ec2e632d3387bef724dfba1878155bc07",
+    "float_absolute_tolerance": 1e-10,
+    "mismatch_status": "REPORT_MISMATCH -> PROTOCOL_INVALID",
+    "checker_C_status": "CANDIDATE_PENDING_CLAUDE_AUDIT_NOT_LOCKED",
+    "expected_preoutcome_manifest_requirement": {
+      "required": true,
+      "must_be_locked_before_outcomes": "yes",
+      "purpose": "Prevent A and B from passing merely by sharing the same wrong identity/subgroup/input hash implementation."
+    }
+  },
+  "blind_feasibility": {
+    "minimum_distinct_race_dates_total": 12,
+    "minimum_races_per_half": 120,
+    "minimum_primary_subgroup_rows_per_half": 300,
+    "feasibility_uses_outcomes": false,
+    "failure_status": "INCONCLUSIVE_INSUFFICIENT_DATA"
+  },
+  "population": {
+    "dead_heat_policy": "y=1 for every actual starter with target_finish==1",
+    "race_key_column": "race_key",
+    "outcome_column": "y",
+    "snapshot_odds_column": "odds_10m",
+    "previous_final_odds_feature": "prev_odds"
+  },
+  "lock_blockers": [
+    "Checker C v2 candidate requires Claude independent code audit before lock",
+    "human-only local anchor/custody unresolved",
+    "ABLATION model binary/hash unresolved",
+    "Implementation A unresolved",
+    "Implementation B unresolved",
+    "environment manifests unresolved",
+    "dry-run A/B/Checker C not yet signed off",
+    "prospective 12-date race manifest not fixed"
+  ],
+  "_source_file": "T009R_Confirmatory_Prereg_DRAFT_v0.4.json",
+  "_source_sha256": "b72404ad37960b8db124adef4d459e8b2ba86a83d7fcdc3668cf00fe9933beb7"
+}
