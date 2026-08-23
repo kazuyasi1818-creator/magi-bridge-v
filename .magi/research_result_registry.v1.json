@@ -1,0 +1,16 @@
+{
+  "registry_id": "MAGI_RESEARCH_RESULT_REGISTRY_V1",
+  "updated_at_jst": "2026-08-23T13:01:00+09:00",
+  "ingest_policy": "MAGI_BRIDGE_RESULT_INGEST_POLICY_V1",
+  "entries": [
+    {
+      "lineage": "KEIBA/T009R",
+      "artifact": ".magi/T009R_bridge_audit_20260823.json",
+      "audit_id": "T009R_BRIDGE_REAUDIT_20260823_V1_2",
+      "status": "INGESTED",
+      "bridge_verdict": "PASS_REPORTING_ONLY_NO_GATE_PROMOTION",
+      "gate_effect": "NONE",
+      "carry_forward_summary": "Historical odds/popularity show subgroup-local partial contribution only; preregistered mechanism AND condition remains unsatisfied; no strategy/Gate mutation authorized; untouched/sealed confirmation remains required."
+    }
+  ]
+}
