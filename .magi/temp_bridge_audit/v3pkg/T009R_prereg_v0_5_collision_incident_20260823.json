@@ -1,0 +1,31 @@
+{
+  "incident_id": "T009R-PREREG-V0.5-NAME-COLLISION-20260823",
+  "classification": "VERSION_MANAGEMENT_ACCIDENT_SEMANTIC_CONTENT_DIFFERENCE",
+  "not_formatting_only": true,
+  "same_filename": "T009R_Confirmatory_Prereg_DRAFT_v0.5.json",
+  "selftest_snapshot": {
+    "raw_sha256": "00f72b616bd14dea6a9befcb45b15cdbf3bf15c3f99d8537eda178ec20456e5c",
+    "canonical_json_sha256": "36d7bc9467ab08f6414657a9dede8b4d9b80a76759a6d0ea66d820f41ab2f272",
+    "checker_C_artifact": "T009R_checker_C_v3_candidate_final.py",
+    "immutable_alias": "T009R_Confirmatory_Prereg_DRAFT_v0.5_snapshot_00f72b61.json"
+  },
+  "library_current_same_name": {
+    "raw_sha256": "7639e5feb27bee4564e9f53931d90f188444a4f22edc3c76be1751f7ead1e5a5",
+    "canonical_json_sha256": "b43446f225942c7c4479081ee845f73e2c54800cf815a133d11873a018ab7371",
+    "checker_C_artifact": "T009R_checker_C_v3_candidate.py"
+  },
+  "semantic_diff_count": 1,
+  "semantic_diffs": [{
+    "json_path": "machine_reconciliation.checker_C_artifact",
+    "selftest_snapshot_value": "T009R_checker_C_v3_candidate_final.py",
+    "library_current_value": "T009R_checker_C_v3_candidate.py"
+  }],
+  "decision": {
+    "reuse_v0_5_name_prohibited": true,
+    "bridge_reaudit_must_address_snapshot_by_raw_sha256": "00f72b616bd14dea6a9befcb45b15cdbf3bf15c3f99d8537eda178ec20456e5c",
+    "future_edited_prereg_must_receive_new_version_id": "v0.6-DRAFT or later",
+    "do_not_overwrite_either_existing_v0_5_artifact": true
+  },
+  "scientific_threshold_change": false,
+  "created_at_utc": "2026-08-23T12:55:43.355252+00:00"
+}
