@@ -1,0 +1,56 @@
+{
+  "research_id": "T009R_BODYWEIGHT_ADJACENT_SCREEN_20260823",
+  "lineage": "KEIBA/T009R",
+  "screening_lineage": "T011/T009-parent adjacent lineage; NOT exact T009R",
+  "status": "NO_SCREEN_SUPPORT",
+  "gate_effect": "NONE",
+  "feature_adoption_effect": "NONE",
+  "period": "2025H2 only",
+  "2026_outcomes_used": false,
+  "prereg": {
+    "file": "T009R_bodyweight_adjacent_screen_prereg_v1.json",
+    "bridge_design_audit_run_id": 32619525562,
+    "bridge_design_audit_job_id": 97145419872,
+    "bridge_design_verdict": "PASS",
+    "bridge_design_parse_error": false,
+    "bridge_design_cost_yen_estimate": 18.91
+  },
+  "machine_result": {
+    "valid_rows": 20143,
+    "races": 1500,
+    "primary_abs_bodyweight_change": {
+      "beta_approx": -0.270,
+      "p_approx": 0.609,
+      "predeclared_support_direction": "beta > 0",
+      "condition_pass": false
+    },
+    "fixed_band_check": {
+      "lt_2pct": {"n": 17166, "mean_disagreement_approx": 0.288},
+      "ge_4pct": {"n": 314, "mean_disagreement_approx": 0.200},
+      "predeclared_condition": "mean disagreement in >=4% band > mean disagreement in <2% band",
+      "condition_pass": false
+    },
+    "binary_result": "NO_SCREEN_SUPPORT",
+    "secondary_signed_bodyweight_change": {
+      "beta_approx": -2.198,
+      "p_approx": 6.2e-10,
+      "status": "EXPLORATORY_SECONDARY_ONLY",
+      "may_override_primary": false
+    }
+  },
+  "interpretation": [
+    "The preregistered hypothesis that larger absolute race-day bodyweight change explains greater model-vs-market disagreement is not supported in this adjacent-lineage screen.",
+    "The signed-change association is an exploratory lead only and cannot be promoted post hoc to primary evidence.",
+    "Because the row-level screening lineage is T011/T009-parent, the result does not establish presence or absence of the effect in exact T009R.",
+    "Historical odds/popularity remain only a subgroup-local partial-contribution hypothesis, not an established universal/primary mechanism."
+  ],
+  "artifacts_in_library": [
+    "/MAGI/KEIBA/T009R_bodyweight_adjacent_screen_prereg_v1.json",
+    "/MAGI/KEIBA/T009R_bodyweight_adjacent_screen_result_v1.json",
+    "/MAGI/KEIBA/T009R_bodyweight_adjacent_screen_rows_v1.csv",
+    "/MAGI/KEIBA/run_T009R_bodyweight_adjacent_screen_v1.py"
+  ],
+  "external_claude_audit": ".magi/T009R_claude_bodyweight_external_audit_20260823.json",
+  "next_prereg_candidate": ".magi/T009R_signed_bodyweight_odds_decomposition_prereg_candidate_v1.json",
+  "next_blocker": "Exact T009R row-level model/market-detail artifacts are currently not retrievable; do not substitute T011 for the next decomposition test."
+}
