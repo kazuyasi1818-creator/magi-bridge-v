@@ -8,7 +8,7 @@ let spentUsd = 0;
 const dir = '.magi/temp_bridge_audit';
 const defs = [
   {path:'T009R_checker_C_v3_candidate.py', name:'T009R_checker_C_v3_candidate.txt', type:'text/plain'},
-  {path:'T009R_checker_C_v3_remediation_report.json', name:'T009R_checker_C_v3_remediation_report.json', type:'application/json'},
+  {path:'Claude_independent_audit_v2_LOCK_BLOCKERS.json', name:'Claude_independent_audit_v2_LOCK_BLOCKERS.json', type:'application/json'},
   {path:'T009R_CheckerC_Audit_Context_from_Prereg_v0.4.json', name:'T009R_CheckerC_Audit_Context_from_Prereg_v0.4.json', type:'application/json'}
 ];
 const sha = s => crypto.createHash('sha256').update(s,'utf8').digest('hex');
@@ -16,7 +16,8 @@ const evidence = defs.map(d => {
   const content = fs.readFileSync(`${dir}/${d.path}`,'utf8');
   return {name:d.name,type:d.type,size:Buffer.byteLength(content),content,client_sha256:sha(content)};
 });
-const topic = `前回のMAGI Bridge Claude監査でChecker C v2に指摘されたBug #1 seed三項演算子、Bug #2 invalid implementation ID後のvalidation継続、Bug #3 schema違反後の継続リスクを修正したChecker C v3 candidateを再監査する。さらにChatGPTが追加で見つけたmalformed expected_manifest時のfail-closed不足も修正済み。remediation reportの機械テスト結果を鵜呑みにせずコードを直接読んで反証する。LOCK可否はまだdry-run等の既存Gateを緩めず判断する。`;
+const topic = `T009R confirmatory Checker CをLOCK候補まで持っていくための修正方針を確定する。現candidateはClaude独立監査でLOCK不可。C-1〜C-3、M-4〜M-7、m-8〜m-12、およびnote-13を全て証拠として扱う。科学的閾値・判定条件・Gateは変更/緩和/厳格化禁止。検証の堅牢性、prereg/expected-manifest hash binding、例外時証跡、FULL=A+B整合、feasibility責務、schema整合、再計算値利用、相対+絶対許容、exit code、Ra>1 secondary診断のみを詰める。修正チェックリストの答え合わせではなく、新しい攻撃面も探す。今回の会議でコードLOCKを宣言してはならず、実装とadversarial self-test後に再監査が必要なら明示する。`;
+
 async function step(payload){
   const remaining=Math.max(0,CAP_YEN-spentUsd*FX);
   if(remaining<=0) throw new Error('BUDGET_CAP');
@@ -30,13 +31,22 @@ async function step(payload){
 const transcript=[];
 const push=d=>transcript.push({stage:d.stage,speaker:d.speaker,model:d.model,text:d.text,structured:d.structured||null,usage:d.usage||null,evidence:d.evidence||null});
 try{
-  const g=await step({stage:'gpt_initial',topic,evidence}); push(g);
-  const a=await step({stage:'claude_audit',topic,previous:g.text,evidence}); push(a);
-  const out={run_kind:'TEMP_BRANCH_BRIDGE_FOLLOWUP_TWO_TURNS',topic,evidence:evidence.map(e=>({name:e.name,sha256:e.client_sha256,chars:e.content.length})),spent_usd:spentUsd,spent_yen:spentUsd*FX,transcript,completed_at:new Date().toISOString()};
+  let g=await step({stage:'gpt_initial',topic,evidence}); push(g);
+  let a=await step({stage:'claude_audit',topic,previous:g.text,evidence}); push(a);
+  g=await step({stage:'gpt_revise',topic,previous:g.text,audit:a.text,evidence}); push(g);
+  let v=await step({stage:'claude_verdict',topic,previous:g.text,evidence}); push(v);
+  let auto=0;
+  const fixable=new Set(['REPORTING_OR_INFERENCE','EVIDENCE_RECONCILIATION']);
+  while(v?.structured?.reported_verdict==='REVISE' && !v?.structured?.human_action_required && fixable.has(v?.structured?.revision_class) && auto<2){
+    auto++;
+    g=await step({stage:'gpt_revise',topic,previous:g.text,audit:v.text,evidence}); push(g);
+    v=await step({stage:'claude_verdict',topic,previous:g.text,evidence}); push(v);
+  }
+  const out={run_kind:'TEMP_BRANCH_FULL_PRODUCTION_BRIDGE_RALLY',production_url:'https://magi-bridge-v4.vercel.app',topic,evidence:evidence.map(e=>({name:e.name,sha256:e.client_sha256,chars:e.content.length})),spent_usd:spentUsd,spent_yen:spentUsd*FX,auto_revisions:auto,final_structured:v?.structured||null,transcript,completed_at:new Date().toISOString()};
   fs.writeFileSync('bridge_followup_result.json',JSON.stringify(out,null,2));
   console.log(JSON.stringify(out,null,2));
 }catch(err){
-  const out={run_kind:'TEMP_BRANCH_BRIDGE_FOLLOWUP_TWO_TURNS',error:String(err?.stack||err),spent_usd:spentUsd,spent_yen:spentUsd*FX,transcript,completed_at:new Date().toISOString()};
+  const out={run_kind:'TEMP_BRANCH_FULL_PRODUCTION_BRIDGE_RALLY',error:String(err?.stack||err),spent_usd:spentUsd,spent_yen:spentUsd*FX,transcript,completed_at:new Date().toISOString()};
   fs.writeFileSync('bridge_followup_result.json',JSON.stringify(out,null,2));
   console.error(JSON.stringify(out,null,2)); process.exit(1);
 }
