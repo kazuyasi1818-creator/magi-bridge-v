@@ -11,12 +11,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Wait for Vercel preview
-        run: sleep 20
+      - name: Wait for production deployment
+        run: sleep 30
 
-      - name: Test REJECT case against live Vercel and Claude
+      - name: Test REJECT case against production Vercel and Claude
         env:
-          BASE_URL: https://magi-bridge-v4-git-feature-evidence-upload-v1-magi7.vercel.app
+          BASE_URL: https://magi-bridge-v4.vercel.app
         run: |
           set -euo pipefail
           cat > /tmp/reject.json <<'JSON'
@@ -42,9 +42,9 @@ jobs:
           print('model='+str(d.get('model')))
           PY
 
-      - name: Test PASS case against live Vercel and Claude
+      - name: Test PASS case against production Vercel and Claude
         env:
-          BASE_URL: https://magi-bridge-v4-git-feature-evidence-upload-v1-magi7.vercel.app
+          BASE_URL: https://magi-bridge-v4.vercel.app
         run: |
           set -euo pipefail
           cat > /tmp/pass.json <<'JSON'
