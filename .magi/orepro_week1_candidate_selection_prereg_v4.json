@@ -1,0 +1,18 @@
+{
+  "prereg_id":"OREPRO-WEEK1-CANDIDATE-SELECTION-V4",
+  "status":"PREREGISTERED_SELECTION_RULE_NOT_YET_RUN",
+  "supersedes":"OREPRO-WEEK1-CANDIDATE-SELECTION-V3",
+  "change_reason":"Gate v5 superseded Gate v4 before first race selection; selection formula unchanged.",
+  "outcome_data_used_for_this_change":false,
+  "race_dates_jst":["2026-08-29","2026-08-30"],
+  "venues":["新潟","中京","札幌"],
+  "selection_target":{"max_races":5,"force_exactly_five":false},
+  "eligibility_gate":{"newcomer_race_allowed":false,"safe_pre_race_odds_available":true,"strict_history_coverage_min":0.80,"safe_feature_coverage_min":0.95,"field_size_min":8,"field_size_max":18,"first_time_starter_share_max":0.30,"timestamp_sensitive_current_feature_allowed_before_real_gate_v5_pass":false},
+  "data_quality_score":"0.50*strict_history_coverage + 0.30*safe_feature_coverage + 0.20*(1-first_time_starter_share)",
+  "tie_break":["data_quality_score_desc","race_id_asc"],
+  "input_schema_policy":{"unknown_columns_allowed":false,"post_race_or_final_state_columns_allowed":false,"final_odds_columns_allowed":false,"fail_closed":true},
+  "required_gate":"KEIBA_PRE_RACE_SNAPSHOT_CONTRACT_V5",
+  "forbidden":["新馬戦を候補へ含める","結果・払戻・返還・最終/確定オッズを選定入力へ含める","結果後に対象レースを入替える","同週内で閾値を変更する","Gate v5未通過current-state featureを使用する"],
+  "validation_oos_opened":false,
+  "real_money_bet":false
+}
