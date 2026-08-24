@@ -1,0 +1,100 @@
+name: Keiba Snapshot Gate v2 self-test
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/keiba-snapshot-gate-selftest.yml'
+      - '.magi/keiba_pre_race_snapshot_contract_v2.json'
+      - 'scripts/keiba_snapshot_gate_check_v2.py'
+      - 'tests/keiba_snapshot_gate_v2/**'
+
+permissions:
+  contents: write
+
+jobs:
+  selftest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run frozen synthetic PASS and destructive FAIL tests
+        run: |
+          set -euo pipefail
+          mkdir -p .magi/selftest_tmp
+          python3 scripts/keiba_snapshot_gate_check_v2.py \
+            tests/keiba_snapshot_gate_v2/pass.csv \
+            --source-manifest tests/keiba_snapshot_gate_v2/source_manifest.json \
+            --out .magi/selftest_tmp/pass_result.json
+          pass_exit=$?
+
+          set +e
+          python3 scripts/keiba_snapshot_gate_check_v2.py \
+            tests/keiba_snapshot_gate_v2/fail.csv \
+            --source-manifest tests/keiba_snapshot_gate_v2/source_manifest.json \
+            --out .magi/selftest_tmp/fail_result.json
+          fail_exit=$?
+          set -e
+
+          PASS_EXIT="$pass_exit" FAIL_EXIT="$fail_exit" python3 - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+
+          def sha(path):
+              return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+          pass_result = json.loads(Path('.magi/selftest_tmp/pass_result.json').read_text(encoding='utf-8'))
+          fail_result = json.loads(Path('.magi/selftest_tmp/fail_result.json').read_text(encoding='utf-8'))
+          detected = sorted({v.get('type') for v in fail_result.get('violations', []) if v.get('type')})
+          out = {
+              'test_id': 'KEIBA_SNAPSHOT_GATE_V2_RETEST_FROZEN_GITHUB_V1',
+              'basis': 'GitHub Actions checkout bytes on main; hashes independently recomputed immediately before execution.',
+              'commit_sha_under_test': os.environ.get('GITHUB_SHA'),
+              'contract_file': '.magi/keiba_pre_race_snapshot_contract_v2.json',
+              'contract_sha256': sha('.magi/keiba_pre_race_snapshot_contract_v2.json'),
+              'checker_file': 'scripts/keiba_snapshot_gate_check_v2.py',
+              'checker_sha256': sha('scripts/keiba_snapshot_gate_check_v2.py'),
+              'source_manifest_sha256': sha('tests/keiba_snapshot_gate_v2/source_manifest.json'),
+              'pass_csv_sha256': sha('tests/keiba_snapshot_gate_v2/pass.csv'),
+              'fail_csv_sha256': sha('tests/keiba_snapshot_gate_v2/fail.csv'),
+              'raw_wh_sha256': sha('tests/keiba_snapshot_gate_v2/raw/wh.txt'),
+              'raw_odds_sha256': sha('tests/keiba_snapshot_gate_v2/raw/odds.txt'),
+              'pass': {
+                  'exit_code': int(os.environ['PASS_EXIT']),
+                  'status': pass_result.get('status'),
+                  'violation_count': pass_result.get('violation_count'),
+                  'verified_source_file_count': pass_result.get('verified_source_file_count'),
+                  'output': pass_result,
+              },
+              'destructive_fail': {
+                  'exit_code': int(os.environ['FAIL_EXIT']),
+                  'status': fail_result.get('status'),
+                  'violation_count': fail_result.get('violation_count'),
+                  'detected_types': detected,
+                  'output': fail_result,
+              },
+              'acceptance': {
+                  'pass_case_zero_violations': pass_result.get('status') == 'PASS' and pass_result.get('violation_count') == 0 and int(os.environ['PASS_EXIT']) == 0,
+                  'destructive_case_fails_closed': fail_result.get('status') == 'FAIL' and fail_result.get('violation_count', 0) > 0 and int(os.environ['FAIL_EXIT']) == 2,
+              },
+              'validation_oos_opened': False,
+          }
+          out['overall_status'] = 'PASS' if all(out['acceptance'].values()) else 'FAIL'
+          Path('.magi/keiba_snapshot_gate_v2_retest_frozen_github_v1.json').write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding='utf-8')
+          if out['overall_status'] != 'PASS':
+              raise SystemExit(2)
+          PY
+
+      - name: Commit frozen self-test evidence
+        run: |
+          rm -rf .magi/selftest_tmp
+          git config user.name 'magi-gate-bot'
+          git config user.email 'magi-gate-bot@users.noreply.github.com'
+          git add .magi/keiba_snapshot_gate_v2_retest_frozen_github_v1.json
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Freeze snapshot Gate v2 retest evidence'
+          git push
