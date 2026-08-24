@@ -1,0 +1,67 @@
+{
+  "draft_id": "KEIBA-RESIDUAL-MARKET-PRESERVING-CANDIDATE-DRAFT-V3",
+  "status": "DRAFT_ONLY_NOT_EXECUTABLE",
+  "supersedes": "KEIBA-RESIDUAL-MARKET-PRESERVING-CANDIDATE-DRAFT-V2",
+  "baseline": {
+    "name": "DIRECT_MARKET",
+    "definition": "race-normalized inverse purchasable pre-race win odds at the preregistered snapshot",
+    "market_fields_used_only_here": ["market_p", "log_market_p", "pre_win_odds", "odds"]
+  },
+  "residual_model": {
+    "feature_policy": "KEIBA-RESIDUAL-FEATURE-POLICY-V2",
+    "features": [
+      "horse_prior_starts",
+      "days_since_last_start_rebuilt",
+      "same_surface_as_last",
+      "same_venue_as_last",
+      "abs_distance_change_m",
+      "same_class_code_as_last"
+    ],
+    "current_market_feature_inside_residual_model": false,
+    "zero_prior_start_rule": "If horse_prior_starts=0, do not fit/infer historical residual from missing context; set raw residual score=0 for that horse, retain it in the full race probability population.",
+    "residual_score_rule": "For history-eligible horses, produce horse-level residual score from strict-history/context features only; then center residual scores within race before correction.",
+    "candidate_probability_rule": "p_i proportional to p_market_i * exp(alpha_race * clipped_centered_residual_i), followed by race normalization"
+  },
+  "uncertainty_control": {
+    "enabled_in_architecture": true,
+    "rule": "alpha_race is bounded, nonnegative, and weakens as preregistered pre-race market uncertainty increases",
+    "numeric_function_fixed_now": false,
+    "reason_numeric_not_fixed": "No executable trial is authorized yet; numeric choices must be frozen in a new externally anchored prereg before execution."
+  },
+  "required_invariants": [
+    "alpha=0 implies candidate probabilities exactly equal DIRECT_MARKET",
+    "constant residual across all horses implies candidate probabilities exactly equal DIRECT_MARKET",
+    "all candidate probabilities are positive and sum to one per race",
+    "current market probability/odds are not residual-model features",
+    "feature set/order pass KEIBA-RESIDUAL-FEATURE-POLICY-V2",
+    "horse_prior_starts=0 implies raw residual score=0 and no fabricated historical feature values",
+    "zero-prior horses remain in the race probability population",
+    "newcomer races remain excluded"
+  ],
+  "primary_future_gate": [
+    "mean paired race winner-logloss improvement versus DIRECT_MARKET > 0",
+    "paired race bootstrap 95% CI lower bound > 0",
+    "binary log loss non-worse",
+    "Brier non-worse",
+    "improvement positive in every preregistered eval month",
+    "no systematic market-rank flattening beyond a preregistered diagnostic tolerance"
+  ],
+  "blocked_until": [
+    "Race-time Snapshot Gate v5 real Windows/JV-Link forward provenance PASS",
+    "new trial prereg externally anchored before execution",
+    "all source data hashes fixed before execution",
+    "residual learner/model class plus alpha/clip/uncertainty numeric rules frozen before execution"
+  ],
+  "forbidden": [
+    "reuse final/closing odds as prediction-time current market",
+    "fabricate last-start context for horse_prior_starts=0",
+    "drop zero-prior horses from the evaluation population",
+    "add held-out features after seeing trial outcomes",
+    "tune uncertainty thresholds on validation/OOS",
+    "promote from posthoc subgroup performance",
+    "open validation/OOS without explicit authorization"
+  ],
+  "validation_opened": false,
+  "oos_opened": false,
+  "real_money_bet": false
+}
