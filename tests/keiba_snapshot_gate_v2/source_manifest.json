@@ -1,0 +1,12 @@
+{
+  "sources": [
+    {
+      "path": "raw/wh.txt",
+      "sha256": "c75f0fa4e390afc8c3fb63c1eb97b0303f3bb78599b41c9080890d8156f8d2b3"
+    },
+    {
+      "path": "raw/odds.txt",
+      "sha256": "99d443c75a1ff279ce2b9ae3a985ef4fce278049673d942e0b30cbe508530f78"
+    }
+  ]
+}
