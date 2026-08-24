@@ -1,0 +1,127 @@
+name: Keiba exotics required machine tests v1
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/keiba-exotics-required-machine-tests-v1.yml'
+      - 'scripts/keiba_generate_exotic_probabilities_v1.py'
+      - 'scripts/keiba_exotics_budget_allocator_v1.py'
+
+permissions:
+  contents: write
+
+jobs:
+  required-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run horse-count scale and cap-binding tests
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, itertools, json, math, os, sys
+          from pathlib import Path
+          sys.path.insert(0, str(Path('scripts').resolve()))
+          import keiba_generate_exotic_probabilities_v1 as prob
+          import keiba_exotics_budget_allocator_v1 as alloc
+
+          TOL=1e-10
+          counts=[3,5,8,12,16,18]
+          count_results={}
+          all_count_checks=True
+
+          for n in counts:
+              horses=[{'horse_no':i,'score':0.25 + (i*i % 17)/7.0 + i/13.0} for i in range(1,n+1)]
+              out=prob.generate(horses)
+              sums=out['probability_sums']
+              exacta=out['EXACTA_UMA_TAN']; quinella=out['QUINELLA_UMA_REN']
+              trifecta=out['TRIFECTA_3REN_TAN']; trio=out['TRIO_3REN_PUKU']
+              em={tuple(x['horses']):x['probability'] for x in exacta}
+              tm={tuple(x['horses']):x['probability'] for x in trifecta}
+              qdiff=max(abs(x['probability']-(em[(x['horses'][0],x['horses'][1])]+em[(x['horses'][1],x['horses'][0])])) for x in quinella)
+              tdiff=max(abs(x['probability']-sum(tm[p] for p in itertools.permutations(tuple(x['horses']),3))) for x in trio)
+              expected={'exacta':n*(n-1),'quinella':math.comb(n,2),'trifecta':n*(n-1)*(n-2),'trio':math.comb(n,3)}
+              checks={
+                'all_probability_sums_within_tol':all(abs(float(v)-1.0)<=TOL for v in sums.values()),
+                'quinella_identity_within_tol':qdiff<=TOL,
+                'trio_identity_within_tol':tdiff<=TOL,
+                'ticket_counts_exact':len(exacta)==expected['exacta'] and len(quinella)==expected['quinella'] and len(trifecta)==expected['trifecta'] and len(trio)==expected['trio'],
+                'all_probabilities_positive':all(x['probability']>0 for key in ['win','EXACTA_UMA_TAN','QUINELLA_UMA_REN','TRIFECTA_3REN_TAN','TRIO_3REN_PUKU'] for x in out[key]),
+              }
+              all_count_checks &= all(checks.values())
+              count_results[str(n)]={'checks':checks,'probability_sums':sums,'max_quinella_identity_abs_diff':qdiff,'max_trio_identity_abs_diff':tdiff,'ticket_counts':{'exacta':len(exacta),'quinella':len(quinella),'trifecta':len(trifecta),'trio':len(trio)}}
+
+          def ticket(tid, bt, cg, p=.20, odds=8.0):
+              ev=p*odds-1.0
+              return {'ticket_id':tid,'bet_type':bt,'correlation_group':cg,'model_probability':p,'decimal_odds':odds,'expected_value':ev,'qualified':True}
+
+          # Single-ticket cap binds: one ticket would absorb target spend without the cap.
+          r_ticket=alloc.allocate([ticket('T1','EXACTA_UMA_TAN','C1')],10000,'equal_among_qualified_tickets',max_ticket_share=.10,max_bet_type_share=1.0,max_correlation_group_share=1.0)
+          single_cap_ok=(r_ticket['spent_yen']==1000 and r_ticket['allocations'][0]['stake_yen']==1000)
+
+          # Bet-type cap binds while ticket/correlation caps do not.
+          same_type=[ticket(f'B{i}','TRIFECTA_3REN_TAN',f'CB{i}') for i in range(1,8)]
+          r_type=alloc.allocate(same_type,10000,'equal_among_qualified_tickets',max_ticket_share=1.0,max_bet_type_share=.20,max_correlation_group_share=1.0)
+          type_cap_ok=(r_type['spent_yen']==2000 and r_type['bet_type_totals_yen'].get('TRIFECTA_3REN_TAN')==2000)
+
+          # Correlation-group cap binds across multiple bet types.
+          same_corr=[]
+          bts=['EXACTA_UMA_TAN','QUINELLA_UMA_REN','TRIFECTA_3REN_TAN','TRIO_3REN_PUKU']
+          for i in range(8): same_corr.append(ticket(f'C{i}',bts[i%4],'SAME_CORR'))
+          r_corr=alloc.allocate(same_corr,10000,'equal_among_qualified_tickets',max_ticket_share=1.0,max_bet_type_share=1.0,max_correlation_group_share=.15)
+          corr_cap_ok=(r_corr['spent_yen']==1500 and r_corr['correlation_group_totals_yen'].get('SAME_CORR')==1500)
+
+          # Mixed scenario: every produced stake must remain within every cap and 100-yen alignment.
+          mixed=[]
+          for i in range(20):
+              mixed.append(ticket(f'M{i:02d}',bts[i%4],f'G{i%3}',p=.08+(i%5)*.01,odds=16.0))
+          r_mix=alloc.allocate(mixed,10000,'edge_proportional_with_caps',max_ticket_share=.12,max_bet_type_share=.35,max_correlation_group_share=.30)
+          mixed_ok=(
+              r_mix['spent_yen']<=10000 and
+              all(x['stake_yen']%100==0 and x['stake_yen']<=1200 for x in r_mix['allocations']) and
+              all(v<=3500 for v in r_mix['bet_type_totals_yen'].values()) and
+              all(v<=3000 for v in r_mix['correlation_group_totals_yen'].values())
+          )
+
+          cap_checks={
+            'single_ticket_cap_binds_exactly':single_cap_ok,
+            'bet_type_cap_binds_exactly':type_cap_ok,
+            'correlation_group_cap_binds_exactly':corr_cap_ok,
+            'mixed_caps_never_exceeded':mixed_ok,
+            'budget_and_unit_invariants':r_mix['safety']['budget_not_exceeded'] and r_mix['safety']['all_stakes_unit_aligned'],
+          }
+
+          def sha(p): return hashlib.sha256(Path(p).read_bytes()).hexdigest()
+          result={
+            'test_id':'KEIBA_EXOTICS_REQUIRED_MACHINE_TESTS_V1',
+            'commit_sha_under_test':os.environ.get('GITHUB_SHA'),
+            'probability_engine_sha256':sha('scripts/keiba_generate_exotic_probabilities_v1.py'),
+            'allocator_sha256':sha('scripts/keiba_exotics_budget_allocator_v1.py'),
+            'probability_tolerance':TOL,
+            'horse_counts_tested':counts,
+            'horse_count_results':count_results,
+            'cap_checks':cap_checks,
+            'status':'PASS' if all_count_checks and all(cap_checks.values()) else 'FAIL',
+            'synthetic_only':True,
+            'real_odds_used':False,
+            'real_bets_placed':False,
+            'validation_oos_opened':False,
+            'dev_v6_allowed':False,
+          }
+          Path('.magi/keiba_exotics_required_machine_tests_v1.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')
+          if result['status']!='PASS': raise SystemExit(2)
+          PY
+
+      - name: Commit required-test evidence
+        run: |
+          git config user.name 'magi-exotics-bot'
+          git config user.email 'magi-exotics-bot@users.noreply.github.com'
+          git add .magi/keiba_exotics_required_machine_tests_v1.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Freeze exotic required machine-test evidence'
+          for attempt in 1 2 3; do git pull --rebase origin main && git push origin HEAD:main && exit 0; sleep $((attempt*2)); done
+          exit 1
