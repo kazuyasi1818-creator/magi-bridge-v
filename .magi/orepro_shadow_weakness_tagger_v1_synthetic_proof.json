@@ -1,0 +1,17 @@
+{
+  "test_id": "OREPRO-SHADOW-WEAKNESS-TAGGER-V1-SYNTHETIC",
+  "status": "PASS",
+  "checks": {
+    "all_diagnostic_tags_fire_on_boundary_case": true,
+    "clean_case_has_no_tags": true,
+    "newcomer_is_scope_excluded": true,
+    "diagnostic_tags_cannot_change_selection_prediction_ticket_or_stake": true
+  },
+  "validation_opened": false,
+  "oos_opened": false,
+  "commit_sha_under_test": "2f5260756c59a203509c44c0c6dfa34e82fdc1a2",
+  "sha256": {
+    "scripts/orepro_shadow_weakness_tagger_v1.py": "0f8d2e7df57faf4de7f1728e1d672454dcb207dd135d45027297a0c4ba1fdab8",
+    "tests/orepro_shadow_weakness_tagger_v1_selftest.py": "c4368e971cb4baaaec9ebfafc01316ed34d63bc68a08c04b47f4066dc927fae4"
+  }
+}
