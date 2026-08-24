@@ -1,0 +1,34 @@
+name: orepro-week1-gate-v5-e2e-selftest
+
+on:
+  push:
+    paths:
+      - 'scripts/keiba_generate_exotic_probabilities_v1.py'
+      - 'scripts/keiba_exotics_budget_allocator_v1.py'
+      - 'scripts/orepro_competition_overlay_v1.py'
+      - 'scripts/orepro_freeze_prediction_v2.py'
+      - 'scripts/orepro_freeze_prediction_v3.py'
+      - 'scripts/orepro_freeze_prediction_v4.py'
+      - 'scripts/orepro_entry_sheet_v3.py'
+      - 'scripts/orepro_week1_bundle_validate_v1.py'
+      - 'tests/orepro_week1_gate_v5_e2e_selftest.py'
+      - '.github/workflows/orepro-week1-gate-v5-e2e-selftest.yml'
+  workflow_dispatch:
+
+jobs:
+  selftest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run five-race Gate v5 E2E selftest
+        run: python tests/orepro_week1_gate_v5_e2e_selftest.py | tee /tmp/orepro_week1_gate_v5_e2e_selftest.json
+      - name: Assert PASS
+        run: grep -q '"status": "PASS"' /tmp/orepro_week1_gate_v5_e2e_selftest.json
+      - name: Upload evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: orepro-week1-gate-v5-e2e-selftest
+          path: /tmp/orepro_week1_gate_v5_e2e_selftest.json
