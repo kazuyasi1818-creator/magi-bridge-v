@@ -1,0 +1,25 @@
+{
+  "spec_id": "OREPRO-FORWARD-SHADOW-DIAGNOSTIC-TAGS-V2",
+  "status": "PREREGISTERED_DIAGNOSTIC_ONLY",
+  "supersedes": "OREPRO-FORWARD-SHADOW-DIAGNOSTIC-TAGS-V1",
+  "created_before_first_orepro_forward_race": true,
+  "change_reason": "Newcomer races are now excluded from prediction and entry by policy; HISTORY_SPARSE remains diagnostic only for non-newcomer races.",
+  "newcomer_races": {"predicted": false, "entered": false, "tag_evaluated": false},
+  "tags": [
+    {"tag":"HISTORY_SPARSE_NON_NEWCOMER","rule":"is_newcomer_race == false AND (race_mean_prior_starts <= 1 OR zero_history_share > 0.30)","source_timing":"strictly pre-race history only"},
+    {"tag":"SMALL_FIELD","rule":"field_size <= 9","source_timing":"pre-race field state"},
+    {"tag":"DIFFUSE_MARKET","rule":"max_normalized_market_win_probability < 0.20","source_timing":"same leakage-safe odds snapshot used for prediction"},
+    {"tag":"DISTANCE_1800_2199","rule":"1800 <= distance_m <= 2199","source_timing":"pre-race race metadata"},
+    {"tag":"G3_RACE","rule":"race_grade == G3","source_timing":"pre-race race metadata"}
+  ],
+  "hard_guards": {
+    "tag_changes_selection": false,
+    "tag_changes_ticket": false,
+    "tag_changes_stake": false,
+    "tag_changes_battle_race": false,
+    "post_result_tag_edit": false,
+    "validation_opened": false,
+    "oos_opened": false
+  },
+  "minimum_interpretation": "No diagnostic tag can be promoted to a strategy/filter from a single week or a small number of outcomes."
+}
