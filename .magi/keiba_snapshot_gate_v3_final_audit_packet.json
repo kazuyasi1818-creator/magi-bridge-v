@@ -1,0 +1,23 @@
+{
+  "packet_id":"KEIBA_SNAPSHOT_GATE_V3_FINAL_AUDIT_PACKET",
+  "scope":"Gate v3 semantics and real-capture readiness only. Do not re-audit v2.",
+  "predecessor_status":"Gate v2 was already PASS after SHA reconciliation; v3 changes were made before any real capture/model/VALIDATION/OOS execution.",
+  "why_v3":[
+    "Official JV-Data AV position 3 is scratch/exclusion classification (1 scratch, 2 exclusion), so it is separated from historical final-state abnormal_code.",
+    "Official WH body-weight change code 000 means zero kg change, not missing.",
+    "WE turf/dirt track-condition states stay separate.",
+    "CC format 106 distance/track-code fields are parsed.",
+    "Official spec notes realtime meeting-change information may be withdrawn; bulk 0B14 snapshot state therefore uses only the latest complete 0B14 capture acquired by the prediction snapshot, without carrying forward missing older events."
+  ],
+  "current_machine_evidence":{
+    "contract_v3_sha256":"656e96ef58d4915fce539578c04a681407f50261f3881d4e99234e0807c33182",
+    "collector_v2_sha256":"850fa546c6f1902883ddcddf5d03261a7395e67fbd8eba45884ec2c663926862",
+    "builder_v2_sha256":"cc5f32cedbb39c39c79ae70497121149c541459c338a517c58e8e8ac79d49828",
+    "checker_v3_sha256":"57029062dfcfe928d47ba3f192d03013ec7ce25cbec7cc96ce485461ca9c1987",
+    "semantic_e2e":{"status":"PASS","gate_status":"PASS","gate_violation_count":0,"withdrawn_old_av_not_carried_forward":true,"wh_000_semantics_zero_change_proven":true},
+    "fixed_width_parser":{"status":"PASS","checks":{"wh_000_is_zero":true,"av_code_2_is_exclusion":true,"we_separate_current_states":true,"cc_full_fields":true}}
+  },
+  "bug_fixed_before_real_capture":"Collector v2 initially called the monkeypatched base.parse_record recursively. This was found by fixed-width CI before any real capture, fixed by preserving _BASE_PARSE_RECORD, and both parser semantic CI and Gate v3 semantic E2E re-ran PASS with the new collector SHA shown above.",
+  "governance":{"result_driven_change":false,"model_executed":false,"validation_opened":false,"oos_opened":false,"dev_v6_allowed":false},
+  "requested_verdict":"Judge whether Gate v3 semantics and synthetic machine evidence are PASS for proceeding to a first real Windows/JV-Link forward-capture plumbing test. Do not authorize DEV v6, VALIDATION, or OOS; those remain blocked until real capture provenance passes Gate v3."
+}
