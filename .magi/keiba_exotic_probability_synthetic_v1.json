@@ -1,0 +1,31 @@
+{
+  "test_id": "KEIBA_UNIFIED_EXOTIC_PROBABILITY_SYNTHETIC_V1",
+  "commit_sha_under_test": "2d4695a7cb2a7a8af8f61d0cca8aead7b9428de9",
+  "engine_sha256": "b1af85df7361a5b84f38742badea12f741f31bf800f12d88e81f23cebd0d3937",
+  "horse_count": 5,
+  "probability_sums": {
+    "win": 1.0,
+    "exacta": 1.0,
+    "quinella": 1.0,
+    "trifecta": 1.0,
+    "trio": 1.0
+  },
+  "checks": {
+    "win_sum_is_1": true,
+    "exacta_sum_is_1": true,
+    "quinella_sum_is_1": true,
+    "trifecta_sum_is_1": true,
+    "trio_sum_is_1": true,
+    "quinella_equals_two_exacta_orders": true,
+    "trio_equals_six_trifecta_orders": true,
+    "all_probabilities_positive": true,
+    "expected_ticket_counts": true,
+    "no_real_bet_flag": true,
+    "validation_oos_closed": true
+  },
+  "status": "PASS",
+  "synthetic_only": true,
+  "real_odds_used": false,
+  "real_bets_placed": false,
+  "validation_oos_opened": false
+}
