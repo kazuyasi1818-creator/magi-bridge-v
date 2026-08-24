@@ -1,7 +1,7 @@
 param(
   [string]$Date = (Get-Date -Format 'yyyyMMdd'),
   [string]$Root = 'C:\MAGI\KEIBA\REALTIME',
-  [string]$Sid = 'MAGI_KEIBA_RT_V2'
+  [string]$Sid = 'MAGI_KEIBA_RT_V4'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -10,10 +10,10 @@ function Fail($msg) { Write-Host "[FAIL] $msg" -ForegroundColor Red; exit 2 }
 
 $ScriptDir = $PSScriptRoot
 if (-not $ScriptDir) { $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path }
-$Collector = Join-Path $ScriptDir 'keiba_jvlink_realtime_capture_v2.py'
+$Collector = Join-Path $ScriptDir 'keiba_jvlink_realtime_capture_v3.py'
 $Verifier = Join-Path $ScriptDir 'keiba_verify_first_capture_v1.py'
 
-Write-Host "=== KEIBA JV-Link first forward capture v2 ==="
+Write-Host "=== KEIBA JV-Link first forward capture / Gate v4 semantics ==="
 Write-Host "Date: $Date"
 Write-Host "Root: $Root"
 if ($env:OS -ne 'Windows_NT') { Fail 'Windows is required for JV-Link.' }
@@ -29,7 +29,7 @@ New-Item -ItemType Directory -Force -Path $Root | Out-Null
 $clockDir = Join-Path $Root 'LOG'; New-Item -ItemType Directory -Force -Path $clockDir | Out-Null
 $clockFile = Join-Path $clockDir ("clock_audit_" + (Get-Date -Format 'yyyyMMdd_HHmmss') + '.json')
 $tz = [System.TimeZoneInfo]::Local
-@{recorded_at_local=(Get-Date).ToString('o');recorded_at_utc=(Get-Date).ToUniversalTime().ToString('o');timezone_id=$tz.Id;utc_offset=(Get-Date).ToString('zzz');computer_name=$env:COMPUTERNAME;date_key=$Date} | ConvertTo-Json | Set-Content -Encoding UTF8 $clockFile
+@{recorded_at_local=(Get-Date).ToString('o');recorded_at_utc=(Get-Date).ToUniversalTime().ToString('o');timezone_id=$tz.Id;utc_offset=(Get-Date).ToString('zzz');computer_name=$env:COMPUTERNAME;date_key=$Date;gate_contract='KEIBA_PRE_RACE_SNAPSHOT_CONTRACT_V4'} | ConvertTo-Json | Set-Content -Encoding UTF8 $clockFile
 
 Write-Host '[1/3] Capturing official 0B11 / 0B14 once...'
 & py -3.14 $Collector --date $Date --root $Root --sid $Sid --once
@@ -41,6 +41,6 @@ $reportPath = Join-Path $clockDir ("first_capture_verify_" + (Get-Date -Format '
 $verifyExit = $LASTEXITCODE
 
 Write-Host '[3/3] Result'; Get-Content $reportPath
-if ($verifyExit -eq 0) { Write-Host '[PASS] First real capture plumbing verified. Next: build snapshot provenance v2 and run Gate v3.' -ForegroundColor Green; exit 0 }
-if ($verifyExit -eq 3) { Write-Host '[WAIT] Plumbing works but no usable realtime records were available. Retry for a JRA race date within the realtime retention window.' -ForegroundColor Yellow; exit 3 }
+if ($verifyExit -eq 0) { Write-Host '[PASS] First real capture plumbing verified. Next: build snapshot provenance v3 and run Gate v4.' -ForegroundColor Green; exit 0 }
+if ($verifyExit -eq 3) { Write-Host '[WAIT] Plumbing works but no usable realtime records were available. Retry for a JRA race date within the one-week realtime retention window.' -ForegroundColor Yellow; exit 3 }
 Fail "verification exited $verifyExit"
