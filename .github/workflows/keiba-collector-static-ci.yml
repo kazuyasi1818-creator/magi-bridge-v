@@ -1,0 +1,58 @@
+name: Keiba JV-Link collector static CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/keiba-collector-static-ci.yml'
+      - 'scripts/keiba_jvlink_realtime_capture_v1.py'
+      - 'scripts/keiba_verify_first_capture_v1.py'
+
+permissions:
+  contents: write
+
+jobs:
+  static-ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compile and run non-COM self-test
+        run: |
+          set -euo pipefail
+          python3 -m py_compile scripts/keiba_jvlink_realtime_capture_v1.py scripts/keiba_verify_first_capture_v1.py
+          python3 scripts/keiba_jvlink_realtime_capture_v1.py --self-test-parser > /tmp/collector_selftest.json
+          python3 - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          def sha(path): return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+          selftest = json.loads(Path('/tmp/collector_selftest.json').read_text(encoding='utf-8'))
+          out = {
+            'test_id':'KEIBA_JVLINK_COLLECTOR_STATIC_CI_V1',
+            'commit_sha_under_test':os.environ.get('GITHUB_SHA'),
+            'collector_sha256':sha('scripts/keiba_jvlink_realtime_capture_v1.py'),
+            'verifier_sha256':sha('scripts/keiba_verify_first_capture_v1.py'),
+            'python_compile':'PASS',
+            'collector_non_com_selftest':selftest,
+            'windows_com_jvlink_exercised':False,
+            'meaning':'Static/syntax evidence only. Real Windows JV-Link capture remains required.',
+            'validation_oos_opened':False,
+            'status':'PASS'
+          }
+          Path('.magi/keiba_jvlink_collector_static_ci_v1.json').write_text(json.dumps(out,ensure_ascii=False,indent=2),encoding='utf-8')
+          PY
+
+      - name: Commit static CI evidence
+        run: |
+          git config user.name 'magi-collector-bot'
+          git config user.email 'magi-collector-bot@users.noreply.github.com'
+          git add .magi/keiba_jvlink_collector_static_ci_v1.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Freeze JV-Link collector static CI evidence'
+          for attempt in 1 2 3; do
+            git pull --rebase origin main && git push origin HEAD:main && exit 0
+            sleep $((attempt * 2))
+          done
+          exit 1
