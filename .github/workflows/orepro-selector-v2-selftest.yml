@@ -1,0 +1,56 @@
+name: OrePro Selector v2 Selftest
+
+on:
+  push:
+    paths:
+      - 'scripts/orepro_candidate_selector_v2.py'
+      - 'tests/orepro_candidate_selector_v2_selftest.py'
+      - '.magi/orepro_week1_candidate_selection_prereg_v2.json'
+      - '.github/workflows/orepro-selector-v2-selftest.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  selftest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run destructive selector tests
+        run: |
+          python3 tests/orepro_candidate_selector_v2_selftest.py | tee /tmp/orepro_selector_v2_proof.json
+          python3 - <<'PY'
+          import json
+          p=json.load(open('/tmp/orepro_selector_v2_proof.json',encoding='utf-8'))
+          assert p['status']=='PASS'
+          assert all(p['checks'].values())
+          print('OREPRO_SELECTOR_V2_SELFTEST_PASS')
+          PY
+      - name: Bind implementation and prereg hashes
+        run: |
+          python3 - <<'PY'
+          import hashlib,json,subprocess
+          paths=[
+            'scripts/orepro_candidate_selector_v2.py',
+            'tests/orepro_candidate_selector_v2_selftest.py',
+            '.magi/orepro_week1_candidate_selection_prereg_v2.json',
+          ]
+          p=json.load(open('/tmp/orepro_selector_v2_proof.json',encoding='utf-8'))
+          p['commit_sha_under_test']=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          p['sha256']={x:hashlib.sha256(open(x,'rb').read()).hexdigest() for x in paths}
+          open('/tmp/orepro_selector_v2_proof.json','w',encoding='utf-8').write(json.dumps(p,ensure_ascii=False,indent=2))
+          PY
+      - name: Persist proof
+        run: |
+          cp /tmp/orepro_selector_v2_proof.json .magi/orepro_candidate_selector_v2_synthetic.json
+          git config user.name 'magi-orepro-bot'
+          git config user.email 'magi-orepro-bot@users.noreply.github.com'
+          git add .magi/orepro_candidate_selector_v2_synthetic.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Freeze OrePro selector v2 evidence'
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main
