@@ -1,0 +1,23 @@
+{
+  "test_id": "KEIBA_SNAPSHOT_GATE_V4_OFFICIAL_SEMANTIC_E2E_V1",
+  "commit_sha_under_test": "7cfa5081675a438f05408e54031aa19134f7c5c1",
+  "contract_v4_sha256": "06adb471b192c9c1806216ab3955caa164122cf6ab7193b787f37a8c448a4cb7",
+  "collector_v3_sha256": "b133c47b0c5fc29cfa43dc45a06e47855ddd2e510fed83af7363a8846775b81a",
+  "builder_v3_sha256": "28631c5e8385ad79a1539d08d26a60a60c4fe5925546d09b6b64d1e83d99ad93",
+  "checker_v4_sha256": "6ef47c6a4189b18e07972650dfead805270b59ed1a45ee89df0d982784e20060",
+  "row_count": 9,
+  "checks": {
+    "wh_000_not_numeric_change": true,
+    "wh_valid_010_emits_plus10": true,
+    "we_initial_state_included": true,
+    "we_initial_uses_local_acquisition": true,
+    "withdrawn_old_av_not_carried": true,
+    "gate_pass": true
+  },
+  "gate_status": "PASS",
+  "gate_violation_count": 0,
+  "status": "PASS",
+  "real_capture_executed": false,
+  "validation_oos_opened": false,
+  "dev_v6_allowed": false
+}
