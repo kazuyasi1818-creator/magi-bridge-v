@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   selftest:
@@ -26,9 +26,26 @@ jobs:
           assert all(p['checks'].values())
           print('OREPRO_FORWARD_SELFTEST_PASS')
           PY
-      - name: Hash implementation under test
+      - name: Freeze implementation hashes into proof
         run: |
-          sha256sum scripts/orepro_freeze_prediction_v1.py scripts/orepro_entry_sheet_v1.py scripts/orepro_weekly_report_v1.py tests/orepro_forward_selftest_v1.py
+          python3 - <<'PY'
+          import hashlib,json,subprocess
+          paths=['scripts/orepro_freeze_prediction_v1.py','scripts/orepro_entry_sheet_v1.py','scripts/orepro_weekly_report_v1.py','tests/orepro_forward_selftest_v1.py']
+          p=json.load(open('/tmp/orepro_forward_proof.json',encoding='utf-8'))
+          p['commit_sha_under_test']=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          p['sha256']={x:hashlib.sha256(open(x,'rb').read()).hexdigest() for x in paths}
+          open('/tmp/orepro_forward_proof.json','w',encoding='utf-8').write(json.dumps(p,ensure_ascii=False,indent=2))
+          PY
+      - name: Persist machine proof
+        run: |
+          cp /tmp/orepro_forward_proof.json .magi/orepro_forward_pipeline_synthetic_v1.json
+          git config user.name 'magi-orepro-bot'
+          git config user.email 'magi-orepro-bot@users.noreply.github.com'
+          git add .magi/orepro_forward_pipeline_synthetic_v1.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Freeze OrePro forward self-test evidence'
+          git pull --rebase origin main
+          git push origin HEAD:main
       - uses: actions/upload-artifact@v4
         with:
           name: orepro-forward-proof
