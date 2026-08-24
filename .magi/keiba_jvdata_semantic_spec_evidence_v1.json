@@ -1,0 +1,17 @@
+{
+  "evidence_id":"KEIBA_JVDATA_SEMANTIC_SPEC_EVIDENCE_V1",
+  "source":"JRA-VAN JV-Data specification Ver.4.9.01 PDF currently distributed with SDK 5.0.0",
+  "source_url":"https://jra-van.jp/dlb/sdv/sdk/JV-Data4901.pdf",
+  "verified_on":"2026-08-24",
+  "facts":[
+    {"record":"WH","format":101,"record_length":847,"announcement_position":28,"announcement_bytes":8,"body_weight_entry_start":36,"entry_count":18,"entry_bytes":45,"weight_offset_within_entry":39,"weight_bytes":3,"change_sign_offset":42,"change_value_offset":43,"semantic_note":"weight 000 means scratch; change 000 means no change; change 999 means unmeasurable"},
+    {"record":"WE","format":102,"record_length":42,"announcement_position":26,"announcement_bytes":8,"change_id_position":34,"current_weather_position":35,"current_turf_position":36,"current_dirt_position":37},
+    {"record":"AV","format":103,"record_length":78,"data_division_position":3,"data_division_semantics":{"1":"scratch","2":"exclusion"},"announcement_position":28,"horse_no_position":36,"reason_position":74,"reason_bytes":3},
+    {"record":"JC","format":104,"record_length":161,"announcement_position":28,"horse_no_position":36,"new_weight_position":74,"new_jockey_code_position":77,"new_jockey_name_position":82},
+    {"record":"TC","format":105,"record_length":45,"announcement_position":28,"new_post_time_position":36,"old_post_time_position":40},
+    {"record":"CC","format":106,"record_length":50,"announcement_position":28,"new_distance_position":36,"new_track_code_position":40,"old_distance_position":42,"old_track_code_position":46,"reason_position":48}
+  ],
+  "bulk_state_note":"The JV-Data specification notes that realtime meeting-change information can rarely be withdrawn after provision. Therefore snapshot reconstruction from 0B14 bulk polling must use the latest complete capture available at the prediction snapshot rather than blindly carrying forward older events.",
+  "model_or_outcome_data_used":false,
+  "validation_oos_opened":false
+}
