@@ -1,0 +1,41 @@
+{
+  "template_id": "OREPRO-PREDICTION-CARD-V1",
+  "race_id": "",
+  "race_date_jst": "",
+  "venue": "",
+  "race_no": null,
+  "post_time_jst": "",
+  "prediction_frozen_at_jst": "",
+  "submission_deadline_jst": "",
+  "model_version": "",
+  "feature_gate_version": "KEIBA_PRE_RACE_SNAPSHOT_CONTRACT_V4",
+  "data_snapshot": {
+    "odds_snapshot_time_jst": "",
+    "history_cutoff": "strictly_before_race_date",
+    "current_feature_gate_pass": false,
+    "source_hashes": []
+  },
+  "race_budget_B_yen": 10000,
+  "ranking_included_flag": true,
+  "battle_race_flag": false,
+  "tickets": [
+    {
+      "bet_type": "",
+      "combination": "",
+      "stake_yen": 0,
+      "model_probability": null,
+      "purchase_available_decimal_odds": null,
+      "expected_value": null,
+      "correlation_group": ""
+    }
+  ],
+  "totals": {
+    "ticket_count": 0,
+    "total_stake_yen": 0,
+    "unspent_budget_yen": 10000
+  },
+  "prediction_note": "",
+  "freeze_hash_sha256": "",
+  "submitted_to_orepro": false,
+  "result_fields_locked_until_after_post": true
+}
