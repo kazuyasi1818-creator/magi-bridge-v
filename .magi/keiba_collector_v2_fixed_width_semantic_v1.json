@@ -1,0 +1,14 @@
+{
+  "test_id": "KEIBA_COLLECTOR_V2_FIXED_WIDTH_SEMANTIC_V1",
+  "commit_sha_under_test": "91a3bdcda45acfc470787414c624977b3557565c",
+  "collector_v1_sha256": "f00bdbf31507554aa30cdb754279fe1ae6f1cd37495c650eb910ff1f94542f5c",
+  "collector_v2_sha256": "850fa546c6f1902883ddcddf5d03261a7395e67fbd8eba45884ec2c663926862",
+  "checks": {
+    "wh_000_is_zero": true,
+    "av_code_2_is_exclusion": true,
+    "we_separate_current_states": true,
+    "cc_full_fields": true
+  },
+  "status": "PASS",
+  "validation_oos_opened": false
+}
