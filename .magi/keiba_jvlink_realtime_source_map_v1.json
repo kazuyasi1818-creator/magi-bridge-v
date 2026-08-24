@@ -1,19 +1,31 @@
 {
   "map_id": "KEIBA_JVLINK_REALTIME_SOURCE_MAP_V1",
   "status": "OFFICIAL_UNLOCK_PATH_IDENTIFIED__NO_REAL_CAPTURE_YET",
-  "source": "JRA-VAN Data Lab JV-Data specification / developer community",
-  "official_spec_version_file": "JV-Data4901.pdf",
+  "source": "Current JRA-VAN Data Lab SDK/developer documentation plus JV-Data 4.9.0.1 field specification",
+  "current_sdk": {
+    "version": "5.0.0",
+    "released": "2026-08-04",
+    "official_64bit_jvlink": true,
+    "official_python_structures": true,
+    "official_python_sample": "Python 3.14",
+    "python_com_object": "win32com.client.Dispatch(\"JVDTLab.JVLink\")",
+    "preferred_runtime": "Current official 64-bit SDK + Python 3.14 + pywin32 when installed on the local Windows PC",
+    "legacy_32bit_note": "32-bit SDK remains available, but x86 is no longer a universal requirement after SDK 5.0.0. Match Python/process bitness to the JV-Link installation actually used."
+  },
   "dataspecs": {
     "0B11": {
       "name": "速報馬体重",
       "record": "WH / format 101",
-      "timing": "around 1 hour before post; added/updated when bodyweight is announced",
-      "timestamp_field": "発表月日時分",
+      "timing": "around 1 hour before post; realtime availability is short-lived",
+      "timestamp_field": "発表日時分",
+      "timestamp_position": 28,
+      "timestamp_bytes": 8,
       "features": ["body_weight_kg", "body_weight_change_kg"]
     },
-    "0B14_or_0B16": {
-      "name": "速報開催情報 一括/指定",
-      "update_behavior": "added/updated/deleted whenever event information occurs or changes",
+    "0B14": {
+      "name": "速報開催情報 一括",
+      "request_key": "YYYYMMDD",
+      "update_behavior": "retrieve current change information for the meeting day; changes/withdrawals must not be silently carried forward as current truth",
       "records": {
         "WE": {"format":102,"timestamp_field":"発表月日時分","features":["weather","track_condition_turf","track_condition_dirt"]},
         "AV": {"format":103,"timestamp_field":"発表月日時分","features":["scratch_or_exclusion_state","reason_code"]},
@@ -24,18 +36,21 @@
     }
   },
   "retrieval": {
-    "bulk_change_info": "JVRTOpen dataspec 0B14 with key YYYYMMDD, then repeat JVRead",
-    "event_mode": "JVWatchEvent can push jockey/weather/course/avoid/time/weight events; use event parameter as key for JVRTOpen when per-event retrieval is desired",
-    "platform_constraint": "JV-Link is Windows ActiveX COM; local Windows execution is required"
+    "bulk_change_info": "JVRTOpen('0B14', YYYYMMDD), then repeatedly read records until EOF.",
+    "event_mode": "Official Python 3.14 guide demonstrates DispatchWithEvents + JVWatchEvent; events include jockey/weather/course/avoid/time/weight. Event handler can call JVRTOpen for the event's dataspec/key.",
+    "official_python_read_path": "The 2026 Python guide uses JVGets with bytearray buffer, converts returned memoryview bytes from cp932, and JVClose after each realtime read session.",
+    "platform_constraint": "Local Windows execution with an installed JV-Link is required. Current SDK 5.0.0 provides both 64-bit and 32-bit JV-Link."
   },
   "gate_implication": {
-    "important": "The previous final-state JVD file remains forbidden for current-race features. These official realtime feeds are a separate source class and may unlock current features only after a real capture is hashed and their announcement/source time is proven <= the prediction snapshot.",
-    "historical_limitation": "0B11/0B14 availability is short-lived (about one week in the spec). This does not retroactively repair historical DEV provenance; forward capture is required.",
+    "important": "The previous final-state JVD file remains forbidden for current-race features. Official realtime feeds are a separate source class and may unlock current features only after a real capture is hashed and both announcement/source time and acquisition time are proven <= the prediction snapshot.",
+    "historical_limitation": "Official FAQ states realtime data is available for about one week. This does not retroactively repair historical DEV provenance; forward capture is required.",
     "validation_oos_opened": false
   },
   "official_urls": [
+    "https://developer.jra-van.jp/t/topic/45",
+    "https://developer.jra-van.jp/t/topic/949",
     "https://jra-van.jp/dlb/sdv/sdk/JV-Data4901.pdf",
-    "https://jra-van.jp/dlb/ddata.html",
+    "https://jra-van.jp/dlb/sdv/faq.html",
     "https://developer.jra-van.jp/t/topic/254"
   ]
 }
