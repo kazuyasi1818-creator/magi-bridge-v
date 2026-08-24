@@ -1,0 +1,15 @@
+{
+  "gate_id":"KEIBA_RACE_TIME_SNAPSHOT_GATE_V2",
+  "supersedes":"KEIBA_RACE_TIME_SNAPSHOT_GATE_V1",
+  "status":"PASS_FOR_ODDS_AND_STRICT_HISTORY__BLOCK_CURRENT_JVD_STATE",
+  "principle":"A current-race feature is confirmatory-eligible only if its value and availability are frozen at or before the prediction snapshot. Historical features must use source rows strictly earlier than the target race date.",
+  "new_machine_evidence":{"raw_jvd_diagnostic":"keiba_raw_jvd_header_timing_diagnostic_v1.json","finding":"The exact JVD parsed source co-resides with final_finish/final_odds/final_popularity/payout fields and raw header date-like behavior is post-race. Current jockey/weight/bodyweight/abnormal/starters from this source are therefore not snapshot-safe."},
+  "GREEN_TIMESTAMPED":["snapshot_time_jst","effective_minutes_before_post","pre_win_odds","race_id","race_date","venue_code","race_no","post_time_hhmm","horse_no","horse_id","horse_name"],
+  "GREEN_HISTORICAL_ONLY_IF_STRICT_DATE":["past finish/win/top3","past odds/popularity","past surface/distance/venue/class","historical aggregates reconstructed with history_date < target_race_date"],
+  "YELLOW_NEEDS_PRE_RACE_SOURCE_TIMESTAMP":["current surface","current distance","current class_code","current course_code","current jockey","current carried weight","registered_horses","starters","track_condition","weather"],
+  "RED_FROM_CURRENT_PARSED_JVD_SOURCE":["body_weight_kg","abnormal_code","jockey_code","carried_weight_x10","registered_horses","starters"],
+  "RED_POST_RACE_OR_OUTCOME":["final_finish","final_win_odds","final_popularity","win_payout_yen_per_100","place_payout_yen_per_100"],
+  "unlock_requirements":["Acquire a genuinely pre-race source/event record for current-race features.","Preserve acquisition/update/source timestamp for each feature record.","Machine prove feature_source_time_jst <= prediction_snapshot_time_jst.","Hash and archive raw snapshot before feature extraction/model execution.","Do not backfill later cancellation/exclusion/bodyweight/track/weather state into an earlier snapshot."],
+  "trial_policy":{"new_adjacent_model_trial_now":"DENIED","reason":"DEV v2-v5 produced small unstable gains and current JVD state lacks snapshot provenance.","next_trial_requires":"Race-time Snapshot Gate V2 unlock first, then a new preregistered DEV family with external hash/timestamp anchor."},
+  "validation_oos_opened":false
+}
