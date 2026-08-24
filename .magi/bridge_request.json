@@ -1,11 +1,7 @@
 {
-  "request_id": "KEIBA-DEV-V2-1-FINAL-RECONCILE-20260824",
-  "topic": "競馬MAGI DEV v2.1 最終reconciliation監査。前回Bridge最終判定は REVISE + EVIDENCE_RECONCILIATION, human_action_required=false。今回は同じ証拠範囲で文言のみ修正した reconciled_report を監査する。C-1は『T009R候補を新規汚染していないが19:26 eligibility閾値と19:48 ledger lockの22分差がありexact prospective manifest未固定なのでriskゼロとは断言しない』、M-1は『EARLY/LATE頭数差0という旧主張は誤りで1レース差。勝ち馬除外0だが指標影響は未定量』、M-2は『horse_name衝突0は確認済みだが8桁/10桁IDスキーマ差でcrosswalk未定義のため依存限界は残る』、M-3は『今回入力2本に2026-04-01以降0行でDEV input scopeは確認できるが、外部アクセス履歴全体までは証明しない』と限定した。モデル/Gate/期間は変更しない。DEV v2はHOLD、VALIDATION候補0、VALIDATION/OOSは開かない。新計算や新データを要求せず、報告として重大な誤記・過大主張が残るかだけ最終判定すること。",
-  "evidence_files": [
-    ".magi/keiba_DEV_v2_machine_audit_addendum_v1.json",
-    ".magi/keiba_magi_split_prereg_v1.json",
-    ".magi/keiba_DEV_v2_1_reconciled_report.json"
-  ],
+  "request_id": "KEIBA-DEV3-5-BATCH-AUDIT-20260824",
+  "topic": "競馬MAGI DEV v3-v5の独立監査。v3=EARLY→LATE市場軌跡、v4=過去の市場期待に対する馬固有mispricing、v5=直近走+条件遷移を、いずれもLATE市場基準と固定条件で比較した。全candidateは点推定ではWinner Log Lossがわずかに改善したが、全trialでpaired race bootstrap 95% CIが0を跨ぎ、全評価月プラス条件もFAIL。VALIDATION/OOSは未開封、探索・閾値最適化・サブグループ採用なし。監査目的は①数値/判定整合性、②3本を連続して回したことがmass-sweep化していないか、③これ以上隣接モデルを回すよりfeature timing/data qualityへ移るべきか、④VALIDATION候補0件維持が妥当か、を判定すること。Gate変更や月/会場の良い所だけの採用は禁止。",
+  "evidence_files": [".magi/keiba_DEV_v3_v5_bridge_evidence_v1.json"],
   "budget_yen": 50,
   "fx_yen_per_usd": 150
 }
