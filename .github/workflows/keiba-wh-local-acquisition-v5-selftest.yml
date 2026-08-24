@@ -1,0 +1,21 @@
+name: keiba-wh-local-acquisition-v5-selftest
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'scripts/keiba_build_snapshot_provenance_v4.py'
+      - 'tests/keiba_wh_local_acquisition_v5_selftest.py'
+      - '.magi/keiba_pre_race_snapshot_contract_v5.json'
+      - '.github/workflows/keiba-wh-local-acquisition-v5-selftest.yml'
+
+jobs:
+  selftest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run WH timing boundary test
+        run: python tests/keiba_wh_local_acquisition_v5_selftest.py
