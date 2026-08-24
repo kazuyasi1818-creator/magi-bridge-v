@@ -1,0 +1,17 @@
+{
+  "manifest_id":"OREPRO-WEEK1-20260829-30-V3",
+  "supersedes":"OREPRO-WEEK1-20260829-30-V2",
+  "status":"PREPARED_WAITING_FOR_RACE_SELECTION",
+  "race_dates_jst":["2026-08-29","2026-08-30"],
+  "platform":"netkeiba 俺プロ",
+  "real_money_bet":false,
+  "official_budget":{"week_total_target_yen":50000,"selected_races_target":5,"target_per_race_yen":10000,"max_per_race_yen":10000,"unit_yen":100},
+  "race_selection":{"selector":"OREPRO-WEEK1-CANDIDATE-SELECTION-V4","primary_slots":5,"reserve_order_frozen_before_outcomes":true,"newcomer_races_excluded":true},
+  "public_forward_prereg":"OREPRO-PUBLIC-FORWARD-V3",
+  "model_policy":{"main":"A_MARKET_ONLY","shadow":["C_LATE_PLUS_PATH_v3","C_MARKET_PLUS_HORSE_MISPRICING_v4","C_MARKET_PLUS_RECENCY_TRANSITION_v5"],"shadow_may_replace_main_during_week1":false},
+  "gate_policy":{"required_contract":"KEIBA_PRE_RACE_SNAPSHOT_CONTRACT_V5","real_gate_v5":"NOT_YET_PASSED","timestamp_sensitive_current_features":"BLOCKED_UNTIL_PASS","safe_scope":"leakage-safe pre-race odds + strict-history only"},
+  "ledger_layers":["OREPRO_OFFICIAL","OREPRO_NORMALIZED","MAGI_PURE"],
+  "battle_race":{"max_per_week":1,"fixed_pre_result":true,"OREPRO_OFFICIAL_multiplier":2,"OREPRO_NORMALIZED_multiplier":1,"MAGI_PURE_multiplier":1},
+  "freeze":{"sha256_required":true,"prediction_and_stakes_pre_race":true,"post_result_editing":false},
+  "forbidden":["Gate v5未通過current-state featureの使用","過去レース結果でreserve順変更","shadowモデルの事後昇格","VALIDATION/OOS無断開封"]
+}
