@@ -1,0 +1,27 @@
+{
+  "test_id": "KEIBA_EXOTIC_MARKET_ODDS_JOINER_SYNTHETIC_V1",
+  "commit_sha_under_test": "1e2cba6e3414ed9c6303297e82a9c4f42c6a20a6",
+  "joiner_sha256": "03438ffc56948a002e8c10db0caecb2f72b25419b5e188dc117bff4f7981157f",
+  "snapshot_time_jst": "2026-08-29T09:00:00+09:00",
+  "max_age_seconds_tested": 300,
+  "joined_count": 2,
+  "skipped_count": 3,
+  "checks": {
+    "valid_pre_snapshot_quote_joined": true,
+    "future_quote_not_selected": true,
+    "future_only_ticket_skipped": true,
+    "stale_ticket_skipped": true,
+    "exact_snapshot_quote_joined": true,
+    "bad_sha_skipped": true,
+    "all_joined_times_not_future": true,
+    "future_backfill_disabled": true,
+    "final_odds_not_purchase_price": true,
+    "validation_oos_closed": true,
+    "no_real_bet_flag": true
+  },
+  "status": "PASS",
+  "synthetic_only": true,
+  "real_odds_used": false,
+  "real_bets_placed": false,
+  "validation_oos_opened": false
+}
