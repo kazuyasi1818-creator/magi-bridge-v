@@ -74,20 +74,22 @@ def make_card(race_no:int, pure_budget:int, battle:bool, tickets:list[dict], com
             'expected_value':float(r['expected_value']),
             'correlation_group':r['correlation_group'],
         })
+    post_hour=11+race_no
+    pre_hour=post_hour-1
     return {
         'template_id':'OREPRO-PREDICTION-CARD-V3',
         'race_id':f'20260829_SYNTH_{race_no:02d}',
         'race_date_jst':'2026-08-29',
         'venue':['新潟','中京','札幌','新潟','中京'][race_no-1],
         'race_no':race_no,
-        'post_time_jst':f'2026-08-29T{11+race_no:02d}:00:00+09:00',
-        'prediction_frozen_at_jst':f'2026-08-29T{11+race_no:02d}:50:00+09:00' if False else f'2026-08-29T{10+race_no:02d}:50:00+09:00',
-        'submission_deadline_jst':f'2026-08-29T{11+race_no:02d}:58:00+09:00',
+        'post_time_jst':f'2026-08-29T{post_hour:02d}:00:00+09:00',
+        'prediction_frozen_at_jst':f'2026-08-29T{pre_hour:02d}:50:00+09:00',
+        'submission_deadline_jst':f'2026-08-29T{pre_hour:02d}:58:00+09:00',
         'model_version':'A_MARKET_ONLY',
         'shadow_model_versions':['C_LATE_PLUS_PATH_v3','C_MARKET_PLUS_HORSE_MISPRICING_v4','C_MARKET_PLUS_RECENCY_TRANSITION_v5'],
         'feature_gate_version':'KEIBA_PRE_RACE_SNAPSHOT_CONTRACT_V5',
         'data_snapshot':{
-            'odds_snapshot_time_jst':f'2026-08-29T{10+race_no:02d}:49:00+09:00',
+            'odds_snapshot_time_jst':f'2026-08-29T{pre_hour:02d}:49:00+09:00',
             'history_cutoff':'strictly_before_race_date',
             'current_feature_gate_pass':False,
             'gate_v5_handoff_sha256':'',
