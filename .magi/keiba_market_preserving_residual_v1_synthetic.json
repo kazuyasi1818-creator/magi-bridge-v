@@ -1,0 +1,40 @@
+{
+  "test_id": "KEIBA-MARKET-PRESERVING-RESIDUAL-V1-SYNTHETIC",
+  "status": "PASS",
+  "checks": {
+    "alpha_zero_exact_market": true,
+    "constant_residual_exact_market": true,
+    "positive_probabilities": true,
+    "sum_to_one": true,
+    "higher_uncertainty_reduces_alpha": true,
+    "alpha_nonnegative": true
+  },
+  "example": {
+    "market": [
+      0.4,
+      0.25,
+      0.15,
+      0.12,
+      0.08
+    ],
+    "candidate": [
+      0.5507585585966692,
+      0.23074031397065103,
+      0.10782044232389089,
+      0.06640841106527333,
+      0.04427227404351555
+    ],
+    "alpha_low_uncertainty": 0.68,
+    "alpha_high_uncertainty": 0.25999999999999995
+  },
+  "real_race_data_used": false,
+  "validation_opened": false,
+  "oos_opened": false,
+  "real_money_bet": false,
+  "commit_sha_under_test": "8ca7a0876e2d3b602d7936c4754203f4a7a93f2f",
+  "sha256": {
+    "scripts/keiba_market_preserving_residual_v1.py": "3c15ba9aee8755b6648e3e27fc98bfc4edb740fdc18f55a5850a623473897937",
+    "tests/keiba_market_preserving_residual_v1_selftest.py": "321bd61928351709bdc1e6f39ec4bec83921adf9e347db527e4625d5571c89c8",
+    ".magi/keiba_residual_market_preserving_architecture_draft_v1.json": "d3d8747f6fa6ceb96addcba60dc3d4f0dd026e5f806d9da0e5633fb6a6856e78"
+  }
+}
