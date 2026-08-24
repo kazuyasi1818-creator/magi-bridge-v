@@ -1,0 +1,72 @@
+{
+  "prereg_id": "KEIBA-TRIFECTA-DEV-DRAFT-001",
+  "status": "DRAFT_NOT_EXECUTABLE",
+  "created_before_execution": true,
+  "purpose": "将来の3連単研究を、単なる当てずっぽうや買い目大量生成ではなく、順序付き1-2-3着確率の校正問題として検証するための事前設計。",
+  "hard_dependencies": [
+    "Race-time Snapshot Gate v4 の実Windows/JV-Link forward capture provenance PASS",
+    "使用する全特徴量が prediction_snapshot_time 以前に取得可能と機械証明されること",
+    "ROI評価を行う場合は3連単オッズ/払戻の時刻・取得元・settlement ruleが別preregで固定されること"
+  ],
+  "current_restrictions": {
+    "execute_now": false,
+    "open_validation": false,
+    "open_oos": false,
+    "place_bets": false,
+    "use_post_race_final_state_as_feature": false,
+    "mass_parameter_sweep": false
+  },
+  "research_question": "発走前情報だけから、順序付き上位3頭の確率分布を市場ベースラインより安定して改善できるか。",
+  "phase_1_probability_models": {
+    "A_market_baseline": {
+      "name": "MARKET_HARVILLE_BASELINE",
+      "description": "発走前単勝市場確率からHarville型の逐次条件付き確率で3連単組合せ確率を構成する比較基準。",
+      "role": "CONTROL"
+    },
+    "B_magi_candidate": {
+      "name": "MAGI_SEQUENTIAL_PLACKETT_LUCE",
+      "description": "MAGIの発走前・leakage-safeな馬ごとの潜在スコアから、1着→残存馬の2着→残存馬の3着を逐次正規化して順序付き確率を生成する。",
+      "role": "CANDIDATE"
+    }
+  },
+  "model_count_cap": 2,
+  "primary_metric": {
+    "name": "ordered_top3_negative_log_likelihood",
+    "unit": "race",
+    "lower_is_better": true,
+    "reason": "的中率だけでは高配当の偶然当たりに引っ張られるため、全レースの順序付き確率品質を主評価にする。"
+  },
+  "secondary_metrics": [
+    "exact_trifecta_top1_hit_rate",
+    "true_order_probability_calibration",
+    "topN_ticket_coverage_at_fixed_N",
+    "rank1_win_probability_logloss",
+    "month_stability",
+    "venue_stability"
+  ],
+  "candidate_gate": {
+    "mean_primary_improvement_gt_0": true,
+    "race_level_paired_bootstrap_ci_lower_gt_0": true,
+    "all_eval_months_primary_improvement_positive": true,
+    "rank1_win_logloss_non_worse": true,
+    "no_posthoc_subgroup_promotion": true,
+    "roi_not_part_of_phase_1_gate": true
+  },
+  "bootstrap": {
+    "resampling_unit": "race",
+    "paired_control_candidate": true,
+    "replicates": 10000,
+    "seed": 20260824
+  },
+  "ticketing_phase_2": {
+    "allowed_only_after_phase_1_pass": true,
+    "requires_timestamped_trifecta_market_odds": true,
+    "objective": "推定確率×購入可能オッズから期待値を評価",
+    "forbidden": [
+      "結果を見て買い目点数を増減",
+      "人気帯やオッズ帯を後付け採用",
+      "単発高配当的中を収益性の証拠にする"
+    ]
+  },
+  "lineage_note": "これは3連単研究の設計予約であり、現行DEV v2結果やGate v4の未完了実captureを迂回して実行してはならない。実行時は新しいtrial_idとhash付きPREREG_LOCKEDを別途発行する。"
+}
