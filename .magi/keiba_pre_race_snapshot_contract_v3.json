@@ -1,0 +1,7 @@
+{
+  "contract_id":"KEIBA_PRE_RACE_SNAPSHOT_CONTRACT_V3",
+  "supersedes":"KEIBA_PRE_RACE_SNAPSHOT_CONTRACT_V2",
+  "status":"DRAFT_LOCK_CANDIDATE",
+  "reason":"Official JV-Data semantic correction before any real capture or model execution.",
+  "validation_oos_opened":false
+}
