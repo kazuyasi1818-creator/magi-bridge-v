@@ -1,0 +1,145 @@
+{
+  "test_id": "KEIBA_DYNAMIC_RACE_BUDGET_ALLOCATOR_SYNTHETIC_V1",
+  "commit_sha_under_test": "e078526bd01641efffcb330550b204074a94561a",
+  "allocator_sha256": "f5b928bc88429285fa5eadd2f1fe5f01df9017d5e10b2300e36d34b6c0ffc92f",
+  "budgets_tested_yen": [
+    1000,
+    10000
+  ],
+  "methods_tested": [
+    "equal_among_qualified_tickets",
+    "edge_proportional_with_caps",
+    "fractional_kelly_with_race_cap"
+  ],
+  "minimum_unit_yen": 100,
+  "checks": {
+    "equal_among_qualified_tickets__B1000": {
+      "budget_not_exceeded": true,
+      "all_stakes_100yen_units": true,
+      "unspent_nonnegative": true,
+      "weak_ev_rejected": true,
+      "illiquid_rejected": true,
+      "four_supported_qualified_tickets": true,
+      "no_real_bet_flag": true,
+      "validation_oos_closed": true,
+      "does_not_force_full_budget": true
+    },
+    "equal_among_qualified_tickets__B10000": {
+      "budget_not_exceeded": true,
+      "all_stakes_100yen_units": true,
+      "unspent_nonnegative": true,
+      "weak_ev_rejected": true,
+      "illiquid_rejected": true,
+      "four_supported_qualified_tickets": true,
+      "no_real_bet_flag": true,
+      "validation_oos_closed": true,
+      "does_not_force_full_budget": true
+    },
+    "edge_proportional_with_caps__B1000": {
+      "budget_not_exceeded": true,
+      "all_stakes_100yen_units": true,
+      "unspent_nonnegative": true,
+      "weak_ev_rejected": true,
+      "illiquid_rejected": true,
+      "four_supported_qualified_tickets": true,
+      "no_real_bet_flag": true,
+      "validation_oos_closed": true,
+      "does_not_force_full_budget": true
+    },
+    "edge_proportional_with_caps__B10000": {
+      "budget_not_exceeded": true,
+      "all_stakes_100yen_units": true,
+      "unspent_nonnegative": true,
+      "weak_ev_rejected": true,
+      "illiquid_rejected": true,
+      "four_supported_qualified_tickets": true,
+      "no_real_bet_flag": true,
+      "validation_oos_closed": true,
+      "does_not_force_full_budget": true
+    },
+    "fractional_kelly_with_race_cap__B1000": {
+      "budget_not_exceeded": true,
+      "all_stakes_100yen_units": true,
+      "unspent_nonnegative": true,
+      "weak_ev_rejected": true,
+      "illiquid_rejected": true,
+      "four_supported_qualified_tickets": true,
+      "no_real_bet_flag": true,
+      "validation_oos_closed": true,
+      "kelly_can_leave_cash_unspent": true
+    },
+    "fractional_kelly_with_race_cap__B10000": {
+      "budget_not_exceeded": true,
+      "all_stakes_100yen_units": true,
+      "unspent_nonnegative": true,
+      "weak_ev_rejected": true,
+      "illiquid_rejected": true,
+      "four_supported_qualified_tickets": true,
+      "no_real_bet_flag": true,
+      "validation_oos_closed": true,
+      "kelly_can_leave_cash_unspent": true
+    },
+    "equal_among_qualified_tickets__scale": {
+      "B10000_stake_gte_B1000": true,
+      "same_allocator_id": true
+    },
+    "edge_proportional_with_caps__scale": {
+      "B10000_stake_gte_B1000": true,
+      "same_allocator_id": true
+    },
+    "fractional_kelly_with_race_cap__scale": {
+      "B10000_stake_gte_B1000": true,
+      "same_allocator_id": true
+    }
+  },
+  "case_summary": {
+    "equal_among_qualified_tickets__B1000": {
+      "budget_yen": 1000,
+      "target_deploy_yen": 700,
+      "total_stake_yen": 700,
+      "unspent_yen": 300,
+      "budget_utilization": 0.7
+    },
+    "equal_among_qualified_tickets__B10000": {
+      "budget_yen": 10000,
+      "target_deploy_yen": 7000,
+      "total_stake_yen": 7000,
+      "unspent_yen": 3000,
+      "budget_utilization": 0.7
+    },
+    "edge_proportional_with_caps__B1000": {
+      "budget_yen": 1000,
+      "target_deploy_yen": 700,
+      "total_stake_yen": 700,
+      "unspent_yen": 300,
+      "budget_utilization": 0.7
+    },
+    "edge_proportional_with_caps__B10000": {
+      "budget_yen": 10000,
+      "target_deploy_yen": 7000,
+      "total_stake_yen": 7000,
+      "unspent_yen": 3000,
+      "budget_utilization": 0.7
+    },
+    "fractional_kelly_with_race_cap__B1000": {
+      "budget_yen": 1000,
+      "target_deploy_yen": 100,
+      "total_stake_yen": 100,
+      "unspent_yen": 900,
+      "budget_utilization": 0.1
+    },
+    "fractional_kelly_with_race_cap__B10000": {
+      "budget_yen": 10000,
+      "target_deploy_yen": 2500,
+      "total_stake_yen": 2500,
+      "unspent_yen": 7500,
+      "budget_utilization": 0.25
+    }
+  },
+  "status": "PASS",
+  "synthetic_only": true,
+  "real_odds_used": false,
+  "real_bets_placed": false,
+  "validation_oos_opened": false,
+  "method_selected_for_live_use": false
+}
