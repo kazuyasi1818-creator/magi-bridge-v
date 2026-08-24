@@ -1,0 +1,22 @@
+{
+  "test_id":"KEIBA_SNAPSHOT_GATE_CHECKER_TEST_V2",
+  "contract_sha256":"de48eb349b1e020d767ac91298c4faed0d64d2ad1378e6f137665f9c54899cdc",
+  "checker_sha256":"3e4bcc4b8bd045ac8f79f53ae90a5570c18eecd6594c606522840c1621f8bdeb",
+  "synthetic_source_manifest_sha256":"ce28da5c5dd02bc09e9cdb820b8fc0a6dfc15dfa8c1aa355a70cb9edf59c1999",
+  "synthetic_pass_csv_sha256":"24a3933b8c48f3d32b11bfa28d9aec1b026dc6fbed003ab509c7df441032ef4b",
+  "synthetic_fail_csv_sha256":"03d2f769a347adcdf1157de17ac6b3339a00f12397911daee28a4716d7c0b14b",
+  "tests":[
+    {"name":"verified_source_files_and_pre_snapshot_times","expected":"PASS","observed":"PASS","exit_code":0,"violation_count":0},
+    {"name":"destructive_fail_bundle","expected":"FAIL","observed":"FAIL","exit_code":2,"violation_count":12,"detected_types":["ANNOUNCEMENT_AFTER_CAPTURE","CAPTURE_AFTER_PREDICTION_SNAPSHOT","DUPLICATE_FROZEN_FEATURE","FEATURE_SOURCE_NOT_APPROVED","FORBIDDEN_FINAL_SOURCE","FORBIDDEN_POST_RACE_FEATURE","LOCAL_ACQUISITION_TIME_MISMATCH","SOURCE_AFTER_PREDICTION_SNAPSHOT","SOURCE_SHA_NOT_VERIFIED_BY_MANIFEST","UNKNOWN_FEATURE_FAIL_CLOSED"]}
+  ],
+  "improvements_over_v1":[
+    "Adds source_capture_time_jst so a value announced before the snapshot but downloaded after the snapshot cannot pass.",
+    "Fail-closed feature allowlist and feature-to-source allowlist prevent typo/new features from bypassing source restrictions.",
+    "Source manifest recomputes hashes from actual referenced source files instead of only checking that a SHA-looking string exists.",
+    "Distinguishes OFFICIAL_ANNOUNCEMENT from LOCAL_ACQUISITION time basis.",
+    "Checks blank critical identifiers/values."
+  ],
+  "result":"PASS",
+  "validation_oos_opened":false,
+  "note":"Synthetic destructive tests only; no DEV/VALIDATION/OOS outcome evaluation was performed."
+}
