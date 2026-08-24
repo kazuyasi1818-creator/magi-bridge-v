@@ -1,0 +1,21 @@
+{
+  "test_id":"KEIBA-CONDITIONAL-RESIDUAL-AGGREGATE-V2-LOCAL-RECHECK",
+  "status":"PASS",
+  "checks":{
+    "equals_unit_normal_prior_manual_objective":true,
+    "equals_unit_normal_prior_manual_gradient":true,
+    "gradient_matches_finite_difference":true,
+    "duplicate_race_id_fail_closed":true,
+    "race_weighting_equal_per_race":true,
+    "fixed_unit_normal_prior":true,
+    "no_tunable_l2_lambda":true
+  },
+  "max_gradient_absolute_error":1.4383883667479225e-10,
+  "synthetic_example_objective":1.107926084243623,
+  "objective_equivalence":"(sum race NLL + 0.5*||beta||^2)/R; beta in train-standardized feature units",
+  "scope":"synthetic logic/gradient recheck only; no DEV model fit; no VALIDATION/OOS access",
+  "github_actions_status":"NOT_CLAIMED",
+  "real_money_bet":false,
+  "validation_opened":false,
+  "oos_opened":false
+}
