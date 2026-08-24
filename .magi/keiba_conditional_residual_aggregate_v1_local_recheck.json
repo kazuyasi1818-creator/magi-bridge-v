@@ -1,0 +1,24 @@
+{
+  "test_id":"KEIBA-CONDITIONAL-RESIDUAL-AGGREGATE-V1-LOCAL-RECHECK",
+  "status":"PASS",
+  "checks":{
+    "standardized_train_mean_zero":true,
+    "standardized_train_std_one":true,
+    "zero_scale_fail_closed":true,
+    "standardizer_scope_declared_train_only":true,
+    "aggregate_loss_equals_equal_race_manual":true,
+    "aggregate_grad_equals_equal_race_manual":true,
+    "aggregate_gradient_matches_finite_difference":true,
+    "duplicating_all_races_does_not_change_objective":true,
+    "race_weighting_equal_per_race":true
+  },
+  "max_gradient_absolute_error":9.922941635043259e-11,
+  "synthetic_example_total_objective":1.1004517915320222,
+  "preprocessing":"training history-eligible rows only; population std ddof=0; zero/nonfinite scale fail closed",
+  "objective":"mean race winner NLL + aggregate ridge penalty",
+  "scope":"synthetic logic/gradient recheck only; no DEV model fit; no VALIDATION/OOS access",
+  "github_actions_status":"NOT_CLAIMED",
+  "real_money_bet":false,
+  "validation_opened":false,
+  "oos_opened":false
+}
