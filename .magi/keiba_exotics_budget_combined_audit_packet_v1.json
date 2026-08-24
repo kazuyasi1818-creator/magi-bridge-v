@@ -1,0 +1,70 @@
+{
+  "audit_packet_id": "KEIBA-EXOTICS-BUDGET-COMBINED-V1",
+  "scope": "synthetic infrastructure audit only",
+  "current_gate_state": {
+    "race_time_snapshot_gate_v4_final_claude": "PASS",
+    "gate_v4_negative_boundaries": "PASS",
+    "real_windows_jvlink_forward_capture_executed": false,
+    "DEV_v6_allowed": false,
+    "validation_opened": false,
+    "oos_opened": false,
+    "real_bets_placed": false
+  },
+  "probability_engine": {
+    "engine_id": "KEIBA_EXOTIC_PROBABILITY_ENGINE_V1",
+    "synthetic_test_status": "PASS",
+    "supports": ["EXACTA_UMA_TAN","QUINELLA_UMA_REN","TRIFECTA_3REN_TAN","TRIO_3REN_PUKU"],
+    "confirmed_synthetic_invariants": [
+      "win/exacta/quinella/trifecta/trio probability sums each equal 1.0",
+      "quinella equals both exacta orders summed",
+      "trio equals all six trifecta orders summed",
+      "positive probabilities and expected combinatorial ticket counts"
+    ],
+    "not_claimed": [
+      "predictive superiority over market",
+      "real-odds profitability",
+      "real-race calibration",
+      "live readiness"
+    ]
+  },
+  "budget_allocator": {
+    "allocator_id": "KEIBA_RACE_BUDGET_ALLOCATOR_V1",
+    "synthetic_test_status": "PASS",
+    "budgets_tested_yen": [1000,10000],
+    "methods_tested": [
+      "equal_among_qualified_tickets",
+      "edge_proportional_with_caps",
+      "fractional_kelly_with_race_cap"
+    ],
+    "confirmed_synthetic_invariants": [
+      "race budget never exceeded",
+      "100-yen units only",
+      "weak-EV and liquidity-fail tickets rejected",
+      "cash may remain unspent",
+      "B=10000 does not reduce total stake relative to B=1000 under same method/config",
+      "no live method selected"
+    ],
+    "risk_controls": [
+      "race total cap B",
+      "single-ticket cap",
+      "bet-type cap",
+      "correlation-group cap"
+    ],
+    "known_limitation": "fractional Kelly weights are preliminary research scaffolding; correlated parimutuel tickets are not independent bets and must not be treated as independent Kelly live sizing."
+  },
+  "pipeline_contract": {
+    "contract_id": "KEIBA-EXOTIC-TICKET-PIPELINE-DRAFT-V1",
+    "required_order": "leakage-safe horse scores -> unified ordering probabilities -> four bet types -> timestamped purchase-available odds -> EV/risk gate -> budget allocator B -> human review",
+    "hard_time_gate": "odds_source_time_jst <= prediction_snapshot_time_jst",
+    "missing_snapshot_odds": "FAIL_CLOSED_SKIP_TICKET",
+    "later_backfill": false,
+    "B_is_upper_bound_not_spend_target": true
+  },
+  "questions_for_auditor": [
+    "Are the probability identities and single-shared-ranking-distribution design internally coherent for the four bet types?",
+    "Does the allocator synthetic evidence support only plumbing/risk-control PASS, without implying profitability or live sizing validity?",
+    "Is fractional Kelly correctly limited to research because correlated tickets violate independent-bet assumptions?",
+    "Does this design preserve Gate v4 and avoid opening DEV v6/VALIDATION/OOS before real forward-capture provenance passes?",
+    "What minimum additional machine tests are required before a first DEV exotic-ticket trial can be preregistered?"
+  ]
+}
