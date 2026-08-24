@@ -1,0 +1,28 @@
+{
+  "policy_id":"KEIBA-CONDITIONAL-RESIDUAL-SNAPSHOT-POLICY-V1",
+  "status":"FIXED_BEFORE_NEW_RESIDUAL_DEV_FIT",
+  "reason":"Legacy DEV3-DEV5 used LATE as primary, but the current race-time operating policy defines approximately 10-minute pre-race information as primary and approximately 5-minute information as sensitivity only. The next architecture must align with intended forward use rather than inherit a legacy diagnostic snapshot choice.",
+  "historical_dev_mapping":{
+    "primary":"EARLY",
+    "primary_observed_effective_minutes_before_post":"historical dataset is mostly 11 minutes before post; do not relabel it as exact 10 minutes",
+    "sensitivity":"LATE",
+    "sensitivity_observed_effective_minutes_before_post":"historical dataset is mostly 6 minutes before post; do not relabel it as exact 5 minutes"
+  },
+  "future_forward_mapping":{
+    "primary_cutoff":"post_time_minus_10_minutes using strict backward/as-of available data only",
+    "sensitivity_cutoff":"post_time_minus_5_minutes using strict backward/as-of available data only",
+    "post_cutoff_backfill":false
+  },
+  "model_fit_rule":{
+    "fit_beta_on_primary_EARLY_market_offset_only":true,
+    "refit_separate_LATE_beta":false,
+    "LATE_sensitivity_uses_same_frozen_beta_and_training_standardizer":true,
+    "promotion_gate_uses_primary_EARLY_only":true,
+    "LATE_sensitivity_may_not_rescue_failed_primary_gate":true
+  },
+  "baseline":"DIRECT_MARKET at the corresponding snapshot",
+  "outcome_or_roi_used_to_choose_primary_snapshot":false,
+  "validation_opened":false,
+  "oos_opened":false,
+  "real_money_bet":false
+}
