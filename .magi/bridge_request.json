@@ -1,9 +1,10 @@
 {
-  "request_id": "KEIBA-DEV-V2-1-REAUDIT-20260824",
-  "topic": "競馬MAGI DEV v2.1再監査。前回Claude監査のC-1/M-1/M-2/M-3を再判定する。既存モデル/Gate/期間は変更しない。機械監査addendumでは strict date違反0、horse_name多重horse_id衝突0、history horse_idは8桁・targetは10桁で単純ID置換不可、無効pre-odds 83セル/40レース/勝ち馬除外0、EARLY-LATE有効頭数差1レース、今回入力に2026-04-01以降0行。競馬MAGI splitはDEV<=2026-03-31、VALIDATION=2026-04-01..06-30、OOS_LOCKED=2026-07-01..08-16。T009R confirmatoryは既存方針として2026-08-23T19:26+09:00以前の全レースを不適格とし prospective-only。結論としてDEV v2 HOLD/VALIDATION候補0件は維持し、VALIDATIONを開かない。監査役はC-1/M-1/M-2/M-3の残存度、機械監査の矛盾、次に監査だけで直せる点と新trialが必要な点を判定すること。",
+  "request_id": "KEIBA-DEV-V2-1-FINAL-RECONCILE-20260824",
+  "topic": "競馬MAGI DEV v2.1 最終reconciliation監査。前回Bridge最終判定は REVISE + EVIDENCE_RECONCILIATION, human_action_required=false。今回は同じ証拠範囲で文言のみ修正した reconciled_report を監査する。C-1は『T009R候補を新規汚染していないが19:26 eligibility閾値と19:48 ledger lockの22分差がありexact prospective manifest未固定なのでriskゼロとは断言しない』、M-1は『EARLY/LATE頭数差0という旧主張は誤りで1レース差。勝ち馬除外0だが指標影響は未定量』、M-2は『horse_name衝突0は確認済みだが8桁/10桁IDスキーマ差でcrosswalk未定義のため依存限界は残る』、M-3は『今回入力2本に2026-04-01以降0行でDEV input scopeは確認できるが、外部アクセス履歴全体までは証明しない』と限定した。モデル/Gate/期間は変更しない。DEV v2はHOLD、VALIDATION候補0、VALIDATION/OOSは開かない。新計算や新データを要求せず、報告として重大な誤記・過大主張が残るかだけ最終判定すること。",
   "evidence_files": [
     ".magi/keiba_DEV_v2_machine_audit_addendum_v1.json",
-    ".magi/keiba_magi_split_prereg_v1.json"
+    ".magi/keiba_magi_split_prereg_v1.json",
+    ".magi/keiba_DEV_v2_1_reconciled_report.json"
   ],
   "budget_yen": 50,
   "fx_yen_per_usd": 150
