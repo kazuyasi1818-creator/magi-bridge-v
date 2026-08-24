@@ -1,13 +1,28 @@
 {
   "manifest_id": "KEIBA_SNAPSHOT_CAPTURE_MANIFEST_V1",
+  "contract": "KEIBA_PRE_RACE_SNAPSHOT_CONTRACT_V2",
+  "checker": "scripts/keiba_snapshot_gate_check_v2.py",
   "capture_id": "FILL_ON_CAPTURE",
   "captured_at_jst": "FILL_OFFSET_AWARE_ISO8601",
-  "source_kind": "TARGET_PRE_RACE_EXPORT_OR_EQUIVALENT",
-  "source_file": "FILL_FILENAME",
-  "source_file_sha256": "FILL_64_HEX",
+  "captured_at_utc": "FILL_OFFSET_AWARE_ISO8601",
+  "source_kind": "FILL_APPROVED_SOURCE_KIND",
+  "source_files": [{"path":"FILL_RELATIVE_PATH","sha256":"FILL_64_HEX"}],
+  "source_manifest_file": "source_manifest.json",
   "capture_scope": {"race_date":"YYYY-MM-DD","venue":"FILL","race_ids":[],"snapshot_roles":["EARLY","LATE"]},
-  "required_provenance_columns": ["race_id","horse_no","snapshot_role","prediction_snapshot_time_jst","feature_name","feature_value","feature_source_time_jst","source_kind","source_file_sha256","source_row_id"],
-  "pre_execution_checks": ["Hash raw source before feature extraction.","Archive raw source without overwrite.","Run scripts/keiba_snapshot_gate_check_v1.py.","Require checker status PASS and violation_count=0.","Only then may a new externally anchored DEV prereg become EXECUTABLE."],
-  "forbidden": ["Do not use final/post-race JVD current-state fields as current prediction features.","Do not backfill later scratch/exclusion/bodyweight/track/weather into earlier snapshot.","Do not open VALIDATION/OOS during this capture/audit stage."],
+  "required_provenance_columns": ["race_id","horse_no","snapshot_role","prediction_snapshot_time_jst","feature_name","feature_value","feature_source_time_jst","source_capture_time_jst","source_time_basis","source_kind","source_file_sha256","source_row_id"],
+  "pre_execution_checks": [
+    "Hash each raw source immediately and archive it append-only before feature extraction.",
+    "Write source_manifest.json with source path+SHA and have the checker recompute actual bytes.",
+    "Run scripts/keiba_snapshot_gate_check_v2.py provenance.csv --source-manifest source_manifest.json --expected-input-sha256 <frozen provenance SHA>.",
+    "Require checker status PASS and violation_count=0.",
+    "Only then may a new DEV-family prereg be written, hashed, externally anchored in GitHub before execution, and marked EXECUTABLE."
+  ],
+  "forbidden": [
+    "Do not use final/post-race JVD current-state fields as current prediction features.",
+    "Do not treat announcement time alone as proof if the raw record was captured after the prediction snapshot.",
+    "Do not backfill later scratch/exclusion/bodyweight/track/weather into an earlier snapshot.",
+    "Do not add unknown/unapproved feature names or source kinds without a new contract version and preregistered trial family.",
+    "Do not open VALIDATION/OOS during capture/audit stage."
+  ],
   "validation_oos_opened": false
 }
