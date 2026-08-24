@@ -1,0 +1,160 @@
+{
+  "test_id": "KEIBA_SNAPSHOT_GATE_V2_RETEST_FROZEN_GITHUB_V1",
+  "basis": "GitHub Actions checkout bytes on main; hashes independently recomputed immediately before execution.",
+  "commit_sha_under_test": "5d998cd55d5daf3363e7a750a2b35d9b4b36f7ae",
+  "contract_file": ".magi/keiba_pre_race_snapshot_contract_v2.json",
+  "contract_sha256": "5fefae5a413c46eaa98cfe7edf2cd51384fbf666b481d86ad928a8daa3facc98",
+  "checker_file": "scripts/keiba_snapshot_gate_check_v2.py",
+  "checker_sha256": "3e4bcc4b8bd045ac8f79f53ae90a5570c18eecd6594c606522840c1621f8bdeb",
+  "source_manifest_sha256": "ce28da5c5dd02bc09e9cdb820b8fc0a6dfc15dfa8c1aa355a70cb9edf59c1999",
+  "pass_csv_sha256": "d46de3d82ec820775476d6f46ef89d9d5cdab94628bf19708a65c20e44d6b332",
+  "fail_csv_sha256": "f8e8c018623cf345eaf180b528fb313b79a3dfcad28163f70401d6f3dd6504f4",
+  "raw_wh_sha256": "c75f0fa4e390afc8c3fb63c1eb97b0303f3bb78599b41c9080890d8156f8d2b3",
+  "raw_odds_sha256": "99d443c75a1ff279ce2b9ae3a985ef4fce278049673d942e0b30cbe508530f78",
+  "pass": {
+    "exit_code": 0,
+    "status": "PASS",
+    "violation_count": 0,
+    "verified_source_file_count": 2,
+    "output": {
+      "checker_id": "KEIBA_SNAPSHOT_GATE_CHECK_V2",
+      "input_file": "pass.csv",
+      "input_sha256": "d46de3d82ec820775476d6f46ef89d9d5cdab94628bf19708a65c20e44d6b332",
+      "source_manifest_file": "source_manifest.json",
+      "source_manifest_sha256": "ce28da5c5dd02bc09e9cdb820b8fc0a6dfc15dfa8c1aa355a70cb9edf59c1999",
+      "verified_source_file_count": 2,
+      "rows": 2,
+      "snapshot_counts": {
+        "EARLY": 2
+      },
+      "feature_counts": {
+        "body_weight_kg": 1,
+        "pre_win_odds": 1
+      },
+      "violation_count": 0,
+      "status": "PASS",
+      "violations": [],
+      "violations_truncated": false
+    }
+  },
+  "destructive_fail": {
+    "exit_code": 2,
+    "status": "FAIL",
+    "violation_count": 12,
+    "detected_types": [
+      "ANNOUNCEMENT_AFTER_CAPTURE",
+      "CAPTURE_AFTER_PREDICTION_SNAPSHOT",
+      "DUPLICATE_FROZEN_FEATURE",
+      "FEATURE_SOURCE_NOT_APPROVED",
+      "FORBIDDEN_FINAL_SOURCE",
+      "FORBIDDEN_POST_RACE_FEATURE",
+      "LOCAL_ACQUISITION_TIME_MISMATCH",
+      "SOURCE_AFTER_PREDICTION_SNAPSHOT",
+      "SOURCE_SHA_NOT_VERIFIED_BY_MANIFEST",
+      "UNKNOWN_FEATURE_FAIL_CLOSED"
+    ],
+    "output": {
+      "checker_id": "KEIBA_SNAPSHOT_GATE_CHECK_V2",
+      "input_file": "fail.csv",
+      "input_sha256": "f8e8c018623cf345eaf180b528fb313b79a3dfcad28163f70401d6f3dd6504f4",
+      "source_manifest_file": "source_manifest.json",
+      "source_manifest_sha256": "ce28da5c5dd02bc09e9cdb820b8fc0a6dfc15dfa8c1aa355a70cb9edf59c1999",
+      "verified_source_file_count": 2,
+      "rows": 6,
+      "snapshot_counts": {
+        "EARLY": 6
+      },
+      "feature_counts": {
+        "body_weight_kg": 2,
+        "final_finish": 1,
+        "pre_win_odds": 2,
+        "mystery_feature": 1
+      },
+      "violation_count": 12,
+      "status": "FAIL",
+      "violations": [
+        {
+          "type": "SOURCE_AFTER_PREDICTION_SNAPSHOT",
+          "line": 2,
+          "feature": "body_weight_kg"
+        },
+        {
+          "type": "ANNOUNCEMENT_AFTER_CAPTURE",
+          "line": 2,
+          "feature": "body_weight_kg"
+        },
+        {
+          "type": "DUPLICATE_FROZEN_FEATURE",
+          "line": 3,
+          "key": [
+            "2026082401010101",
+            "1",
+            "EARLY",
+            "body_weight_kg"
+          ]
+        },
+        {
+          "type": "FORBIDDEN_FINAL_SOURCE",
+          "line": 3,
+          "source_kind": "JVD_FINAL_PARSED"
+        },
+        {
+          "type": "FEATURE_SOURCE_NOT_APPROVED",
+          "line": 3,
+          "feature": "body_weight_kg",
+          "source_kind": "JVD_FINAL_PARSED",
+          "approved": [
+            "JRA_VAN_0B11_WH"
+          ]
+        },
+        {
+          "type": "FORBIDDEN_POST_RACE_FEATURE",
+          "line": 4,
+          "feature": "final_finish"
+        },
+        {
+          "type": "UNKNOWN_FEATURE_FAIL_CLOSED",
+          "line": 4,
+          "feature": "final_finish"
+        },
+        {
+          "type": "CAPTURE_AFTER_PREDICTION_SNAPSHOT",
+          "line": 5,
+          "feature": "pre_win_odds"
+        },
+        {
+          "type": "LOCAL_ACQUISITION_TIME_MISMATCH",
+          "line": 5,
+          "feature": "pre_win_odds"
+        },
+        {
+          "type": "DUPLICATE_FROZEN_FEATURE",
+          "line": 6,
+          "key": [
+            "2026082401010101",
+            "1",
+            "EARLY",
+            "pre_win_odds"
+          ]
+        },
+        {
+          "type": "SOURCE_SHA_NOT_VERIFIED_BY_MANIFEST",
+          "line": 6,
+          "sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+        },
+        {
+          "type": "UNKNOWN_FEATURE_FAIL_CLOSED",
+          "line": 7,
+          "feature": "mystery_feature"
+        }
+      ],
+      "violations_truncated": false
+    }
+  },
+  "acceptance": {
+    "pass_case_zero_violations": true,
+    "destructive_case_fails_closed": true
+  },
+  "validation_oos_opened": false,
+  "overall_status": "PASS"
+}
