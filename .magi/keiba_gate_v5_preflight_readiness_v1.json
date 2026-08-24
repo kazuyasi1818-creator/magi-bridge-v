@@ -1,0 +1,47 @@
+{
+  "readiness_id": "KEIBA-GATE-V5-PREFLIGHT-READINESS-V1",
+  "status": "SOFTWARE_PREFLIGHT_READY_REAL_CAPTURE_PENDING",
+  "gate_contract": "KEIBA_PRE_RACE_SNAPSHOT_CONTRACT_V5",
+  "components": {
+    "contract_v5": "PRESENT",
+    "collector": "keiba_jvlink_realtime_capture_v3.py",
+    "provenance_builder": "keiba_build_snapshot_provenance_v4.py",
+    "gate_checker": "keiba_snapshot_gate_check_v5.py",
+    "first_capture_runner": "keiba_jvlink_first_capture_v2.ps1",
+    "current_run_verifier": "keiba_verify_first_capture_v2.py",
+    "redacted_handoff": "keiba_make_capture_handoff_v2.py",
+    "one_click_launcher": "KEIBA_MAGI_FIRST_CAPTURE.cmd",
+    "legacy_entrypoint_behavior": "REDIRECTS_TO_GATE_V5"
+  },
+  "closed_preflight_risks": [
+    "WH announcement 00000000 is handled as LOCAL_ACQUISITION using actual capture time",
+    "WH future/post-snapshot capture is forbidden",
+    "WH 000/999 and change 000/999/blank are not laundered into numeric values",
+    "legacy first-capture entrypoint redirects to Gate v5 flow",
+    "first-capture verification ignores stale pre-run captures",
+    "first-capture PASS requires current-run records from both 0B11 and 0B14",
+    "redacted handoff retains Gate v5 contract/builder/checker/verifier/handoff lineage",
+    "redacted handoff excludes raw JV-Data bytes and parsed feature values"
+  ],
+  "machine_tests_committed": [
+    "tests/keiba_verify_first_capture_v2_selftest.py",
+    "tests/keiba_capture_handoff_v2_selftest.py",
+    ".github/workflows/keiba-capture-handoff-v2-selftest.yml"
+  ],
+  "ci_status": "NOT_INDEPENDENTLY_CONFIRMED_FROM_CONNECTOR",
+  "ci_note": "The available combined status currently exposes only an unrelated Vercel build-rate-limit failure. Do not claim GitHub Actions PASS without direct evidence.",
+  "hard_blockers": [
+    "REAL_WINDOWS_JVLINK_FORWARD_CAPTURE_NOT_EXECUTED",
+    "REAL_SNAPSHOT_PROVENANCE_V4_NOT_BUILT",
+    "REAL_GATE_V5_NOT_PASSED"
+  ],
+  "forbidden_until_blockers_close": [
+    "unlock timestamp-sensitive current features",
+    "new executable DEV trial",
+    "VALIDATION access",
+    "OOS access",
+    "real-money betting claim or execution based on Gate v5"
+  ],
+  "validation_oos_opened": false,
+  "real_money_bet": false
+}
