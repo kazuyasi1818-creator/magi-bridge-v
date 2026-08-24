@@ -1,0 +1,31 @@
+{
+  "diagnostic_id": "KEIBA-MARKET-UNCERTAINTY-METRIC-DIAG-V1",
+  "status": "DEV_MARKET_STRUCTURE_ONLY_NOT_EXECUTABLE",
+  "scope": "813 non-newcomer DEV races, LATE purchasable pre-race market only; no outcome/ROI used for metric selection",
+  "metrics_compared": ["normalized_entropy", "top1_market_probability", "top1_top2_probability_gap"],
+  "summary": {
+    "normalized_entropy": {"mean":0.762658,"std":0.092277,"min":0.302713,"median":0.772563,"max":0.940250},
+    "top1_market_probability": {"mean":0.329016,"std":0.120139,"min":0.128415,"median":0.304392,"max":0.846868},
+    "top1_top2_probability_gap": {"mean":0.145466,"std":0.139113,"min":0.0,"median":0.094917,"max":0.810901}
+  },
+  "spearman": {
+    "entropy_vs_top1_p": -0.841462,
+    "entropy_vs_top1_top2_gap": -0.661608,
+    "top1_p_vs_top1_top2_gap": 0.897763,
+    "entropy_vs_field_size": -0.017420,
+    "top1_p_vs_field_size": -0.275054,
+    "top1_top2_gap_vs_field_size": -0.161393
+  },
+  "decision": {
+    "single_uncertainty_input": "normalized_entropy",
+    "reason": "The three candidates are strongly redundant, while field-size-normalized entropy is nearly independent of field size and directly represents dispersion across the whole market distribution.",
+    "top1_p": "held out from the first residual trial as an uncertainty-control input",
+    "top1_top2_gap": "held out from the first residual trial as an uncertainty-control input",
+    "outcome_driven_selection": false
+  },
+  "numeric_shrink_function": "NOT_FIXED_BY_THIS_DIAGNOSTIC",
+  "gate_dependency": "Race-time Snapshot Gate v5 real forward provenance remains required before any executable DEV trial",
+  "validation_opened": false,
+  "oos_opened": false,
+  "real_money_bet": false
+}
