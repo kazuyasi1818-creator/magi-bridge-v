@@ -1,0 +1,19 @@
+{
+  "audit_id":"KEIBA_RAW_JVD_HEADER_TIMING_DIAGNOSTIC_V1",
+  "status":"POST_RACE_FINAL_STATE_SOURCE_CONFIRMED_FOR_PARSED_JVD_USE",
+  "caveat":"Header field semantics are not named here without an external format specification. Findings use only byte-position/date-pattern behavior plus parsed-row contents.",
+  "raw_file":"keiba_DEV_20250823_20260331_JVD.txt",
+  "rows":29052,
+  "record_prefix_counts":{"RA":29052},
+  "position_2_value_counts":{"7":29052},
+  "header_date_like_fields":{
+    "field_A_positions_zero_based_3_10":{"unique":33,"min":"20250825","max":"20260330"},
+    "field_B_positions_zero_based_11_18":{"unique":69,"min":"20250823","max":"20260329","unique_set_equals_parsed_race_date_set":true},
+    "A_minus_B_day_delta_counts":{"1":13715,"2":13413,"3":1470,"4":438,"13":16},
+    "all_A_after_B":true
+  },
+  "parsed_row_final_state_fields":["final_finish","final_win_odds","final_popularity","win_payout_yen_per_100","place_payout_yen_per_100","dead_heat_flag","finishers"],
+  "interpretation":"The exact parsed JVD source used here is a final/post-race state dataset. Current jockey/weight/bodyweight/abnormal/starters from this file cannot be treated as EARLY/LATE snapshot-safe without a separate pre-race timestamped source.",
+  "allowed_use":"Outcome labels, payouts, and strictly historical reconstruction for future target dates; not current-race snapshot features for confirmatory prediction.",
+  "validation_oos_opened":false
+}
