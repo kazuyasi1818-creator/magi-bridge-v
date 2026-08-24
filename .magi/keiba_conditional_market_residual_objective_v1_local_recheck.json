@@ -1,0 +1,22 @@
+{
+  "test_id":"KEIBA-CONDITIONAL-MARKET-RESIDUAL-OBJECTIVE-V1-LOCAL-RECHECK",
+  "status":"PASS",
+  "checks":{
+    "beta_zero_exact_market":true,
+    "zero_prior_residual_exact_zero":true,
+    "probabilities_positive":true,
+    "probabilities_sum_one":true,
+    "analytic_gradient_matches_finite_difference":true,
+    "entropy_in_0_1":true,
+    "uniform_market_alpha_zero":true,
+    "uniform_market_preserved":true,
+    "no_intercept_parameter":true
+  },
+  "max_gradient_absolute_error":6.929275903067023e-11,
+  "example_nonuniform_alpha":0.11000729648086782,
+  "scope":"synthetic logic/gradient recheck only; no DEV model fit; no VALIDATION/OOS access",
+  "github_actions_status":"NOT_CLAIMED",
+  "real_money_bet":false,
+  "validation_opened":false,
+  "oos_opened":false
+}
