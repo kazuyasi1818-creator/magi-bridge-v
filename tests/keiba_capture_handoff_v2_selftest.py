@@ -16,8 +16,6 @@ def main() -> int:
         raw_dir.mkdir(parents=True)
         log_dir.mkdir(parents=True)
 
-        # Sensitive parsed values are intentionally present in source metadata.
-        # The redacted handoff must not carry them through.
         cap = {
             'capture_id': 'SYNTH_CAP',
             'dataspec': '0B11',
@@ -49,18 +47,24 @@ def main() -> int:
             'gate_contract': 'KEIBA_PRE_RACE_SNAPSHOT_CONTRACT_V5',
             'provenance_builder': 'keiba_build_snapshot_provenance_v4.py',
             'gate_checker': 'keiba_snapshot_gate_check_v5.py',
+            'verifier': 'keiba_verify_first_capture_v2.py',
+            'handoff_maker': 'keiba_make_capture_handoff_v2.py',
         }
         (log_dir / 'clock_audit_20260829_140001.json').write_text(json.dumps(clock), encoding='utf-8')
         verify = {
-            'verifier_id': 'KEIBA_FIRST_CAPTURE_VERIFY_V1',
+            'verifier_id': 'KEIBA_VERIFY_FIRST_CAPTURE_V2',
             'date': date,
             'status': 'PASS',
-            'capture_count': 1,
-            'record_count_by_dataspec': {'0B11': 1},
-            'total_records': 1,
+            'run_started_utc': '2026-08-29T04:59:59+00:00',
+            'capture_count_current_run': 2,
+            'capture_count_by_dataspec': {'0B11': 1, '0B14': 1},
+            'record_count_by_dataspec': {'0B11': 1, '0B14': 1},
+            'total_records_current_run': 2,
             'violation_count': 0,
             'violations': [],
+            'gate_v5_passed': False,
             'validation_oos_opened': False,
+            'dev_new_trial_allowed': False,
         }
         (log_dir / 'first_capture_verify_20260829_140002.json').write_text(json.dumps(verify), encoding='utf-8')
 
@@ -75,6 +79,9 @@ def main() -> int:
             'contract_v5_retained': obj.get('clock_audit', {}).get('gate_contract') == 'KEIBA_PRE_RACE_SNAPSHOT_CONTRACT_V5',
             'builder_v4_retained': obj.get('clock_audit', {}).get('provenance_builder') == 'keiba_build_snapshot_provenance_v4.py',
             'checker_v5_retained': obj.get('clock_audit', {}).get('gate_checker') == 'keiba_snapshot_gate_check_v5.py',
+            'verifier_v2_retained': obj.get('clock_audit', {}).get('verifier') == 'keiba_verify_first_capture_v2.py',
+            'handoff_v2_retained': obj.get('clock_audit', {}).get('handoff_maker') == 'keiba_make_capture_handoff_v2.py',
+            'verifier_current_run_metrics_retained': obj.get('verifier', {}).get('total_records_current_run') == 2,
             'raw_bytes_not_included': obj.get('raw_jvdata_included') is False,
             'parsed_values_not_included': obj.get('parsed_feature_values_included') is False,
             'horse_name_not_leaked': 'DO_NOT_LEAK_HORSE_NAME' not in text,
