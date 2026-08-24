@@ -1,0 +1,93 @@
+name: Keiba unified exotic probability synthetic test
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/keiba-exotic-probability-synthetic.yml'
+      - 'scripts/keiba_generate_exotic_probabilities_v1.py'
+
+permissions:
+  contents: write
+
+jobs:
+  probability-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Test probability consistency across four bet types
+        run: |
+          set -euo pipefail
+          python3 -m py_compile scripts/keiba_generate_exotic_probabilities_v1.py
+          python3 - <<'PY'
+          import hashlib, importlib.util, itertools, json, os
+          from pathlib import Path
+
+          p=Path('scripts/keiba_generate_exotic_probabilities_v1.py')
+          spec=importlib.util.spec_from_file_location('exotic', p)
+          m=importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+
+          horses=[
+            {'horse_no':'1','score':5.0},
+            {'horse_no':'2','score':3.0},
+            {'horse_no':'3','score':2.0},
+            {'horse_no':'4','score':1.5},
+            {'horse_no':'5','score':1.0},
+          ]
+          out=m.generate(horses)
+          tol=1e-12
+          sums=out['probability_sums']
+          exacta={tuple(x['horses']):x['probability'] for x in out['EXACTA_UMA_TAN']}
+          quinella={tuple(x['horses']):x['probability'] for x in out['QUINELLA_UMA_REN']}
+          trifecta={tuple(x['horses']):x['probability'] for x in out['TRIFECTA_3REN_TAN']}
+          trio={tuple(x['horses']):x['probability'] for x in out['TRIO_3REN_PUKU']}
+
+          pair=('01','02')
+          triple=('01','02','03')
+          checks={
+            'win_sum_is_1':abs(sums['win']-1.0)<tol,
+            'exacta_sum_is_1':abs(sums['exacta']-1.0)<tol,
+            'quinella_sum_is_1':abs(sums['quinella']-1.0)<tol,
+            'trifecta_sum_is_1':abs(sums['trifecta']-1.0)<tol,
+            'trio_sum_is_1':abs(sums['trio']-1.0)<tol,
+            'quinella_equals_two_exacta_orders':abs(quinella[pair]-(exacta[pair]+exacta[(pair[1],pair[0])]))<tol,
+            'trio_equals_six_trifecta_orders':abs(trio[triple]-sum(trifecta[perm] for perm in itertools.permutations(triple,3)))<tol,
+            'all_probabilities_positive':all(x['probability']>0 for k in ['EXACTA_UMA_TAN','QUINELLA_UMA_REN','TRIFECTA_3REN_TAN','TRIO_3REN_PUKU'] for x in out[k]),
+            'expected_ticket_counts':len(out['EXACTA_UMA_TAN'])==20 and len(out['QUINELLA_UMA_REN'])==10 and len(out['TRIFECTA_3REN_TAN'])==60 and len(out['TRIO_3REN_PUKU'])==10,
+            'no_real_bet_flag':out['place_bets'] is False,
+            'validation_oos_closed':out['validation_oos_opened'] is False,
+          }
+          status='PASS' if all(checks.values()) else 'FAIL'
+          evidence={
+            'test_id':'KEIBA_UNIFIED_EXOTIC_PROBABILITY_SYNTHETIC_V1',
+            'commit_sha_under_test':os.environ.get('GITHUB_SHA'),
+            'engine_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+            'horse_count':out['horse_count'],
+            'probability_sums':sums,
+            'checks':checks,
+            'status':status,
+            'synthetic_only':True,
+            'real_odds_used':False,
+            'real_bets_placed':False,
+            'validation_oos_opened':False,
+          }
+          Path('.magi/keiba_exotic_probability_synthetic_v1.json').write_text(json.dumps(evidence,ensure_ascii=False,indent=2),encoding='utf-8')
+          print(json.dumps(evidence,ensure_ascii=False,indent=2))
+          if status!='PASS': raise SystemExit(2)
+          PY
+
+      - name: Commit probability evidence
+        run: |
+          git config user.name 'magi-exotics-bot'
+          git config user.email 'magi-exotics-bot@users.noreply.github.com'
+          git add .magi/keiba_exotic_probability_synthetic_v1.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Freeze unified exotic probability synthetic evidence'
+          for attempt in 1 2 3; do
+            git pull --rebase origin main && git push origin HEAD:main && exit 0
+            sleep $((attempt*2))
+          done
+          exit 1
