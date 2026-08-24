@@ -1,0 +1,143 @@
+{
+  "request_id": "KEIBA-SNAPSHOT-GATE-V3-FINAL-COMPACT-20260824",
+  "trigger_commit_sha": "8c2f0621a038e52113a0e373e7d9d2c7133a3d39",
+  "topic": "競馬MAGI Race-time Snapshot Gate v3の最終監査。v3固有事項だけを監査する。v2は再監査しない。公式JV-Data仕様に基づくAV scratch/exclusion分離、WH 000=0kg、WE芝/ダ別、CC full parse、0B14 latest-complete-capture semanticsが妥当か、修正後collectorの固定長parser CIとGate v3 semantic E2Eが十分か、実Windows/JV-Link forward capture plumbing testへ進めてよいかを判定する。モデル/アウトカムを見ての変更はなく、VALIDATION/OOS閉鎖・DEV v6禁止は維持。前回v3 BridgeはAPI予算保護で最終verdict前に停止したため、今回はv3-only軽量証拠で完結させる。",
+  "started_at_utc": "2026-08-24T03:04:54.876497+00:00",
+  "budget_yen": 50.0,
+  "fx_yen_per_usd": 150.0,
+  "evidence_files": [
+    ".magi/keiba_snapshot_gate_v3_final_audit_packet.json",
+    ".magi/keiba_jvdata_semantic_spec_evidence_v1.json",
+    ".magi/keiba_snapshot_gate_v3_semantic_e2e_v1.json",
+    ".magi/keiba_collector_v2_fixed_width_semantic_v1.json"
+  ],
+  "ok": true,
+  "stages": [
+    {
+      "stage": "gpt_initial",
+      "speaker": "GPT / 主担当",
+      "text": "# MAGI Race-time Snapshot Gate v3 最終監査（v3固有事項のみ）\n\n## 主要証拠・検証対象の明確化\n\n- **監査範囲**: v3独自のセマンティクス・実Windows/JV-Link forward-captureへの移行可否の判定のみ。\n- **v2再監査なし**：v2関連事項やモデル結果、VALIDATION/OOS/DEV v6への拡張は対象外。\n- **証拠ファイル**: \n  - `keiba_snapshot_gate_v3_final_audit_packet.json`（SHA: 9b74d6b...）\n  - `keiba_jvdata_semantic_spec_evidence_v1.json`（SHA: e2fcb04d...）\n  - `keiba_snapshot_gate_v3_semantic_e2e_v1.json`（SHA: 528971e...）\n  - `keiba_collector_v2_fixed_width_semantic_v1.json`（SHA: 4d4841c...）\n\n---\n\n## 1. 「確認済み」：証拠と公式仕様で明瞭な項目\n\n### 1-1. AV: scratch/exclusion分離・再現\n\n- **証拠**\n  - JV-Data仕様（`keiba_jvdata_semantic_spec_evidence_v1.json`）\n    - AV data_division_position=3。1=scratch, 2=exclusion。\n    - セマンティックノート「AV position 3はscratch/exclusionを分離」。\n  - 監査パケット／collector CI両方で `av_code_2_is_exclusion: true`\n- **状態**：scratch=1、exclusion=2が正しく分離されている。\n- **反証条件**：仕様でdata_division他フィールド定義の齟齬が見つかる、またはparser/semantic E2Eで誤った取り扱いが露呈\n- **分類**：「確認済み」\n\n---\n\n### 1-2. WH 000=0kg、WE芝ダ別\n\n- **証拠**\n  - JV-Data仕様：change 000=\"no change\"/0kg。change 999=\"計測不可\"。\n  - fixed_width_parser結果 `wh_000_is_zero: true`、semantic_e2e `wh_000_semantics_zero_change_proven: true`\n  - WEについても現況芝・ダート別々フィールド有（仕様）＋`we_separate_current_states: true`\n- **状態**：WH：000=0kg, 999以外は有効なkg変化。WE：芝とダートの区別混同なし。\n- **反証条件**：JV-Data仕様のバージョン違い／フィールドoffset違い、または実parser出力齟齬。\n- **分類**：「確認済み」\n\n---\n\n### 1-3. CCフォーマット、全フィールドparse\n\n- **証拠**\n  - JV-Data CCレコード仕様：距離、新距離、馬場コード等を位置指定で提供。\n  - fixed_width_parserで`cc_full_fields: true`と報告。\n- **反証条件**：不要フィールド削除や構造誤解釈、実キャプチャ不足。\n- **分類**：「確認済み」\n\n---\n\n### 1-4. 0B14 latest-complete-capture semantics\n\n- **証拠**\n  - JV-Data bulk_state_note（証拠2）：「meeting-change(例: scratch)は過去分まで戻らず最新完了分のみ使う」。\n  - semantic_e2e／Gate監査で`withdrawn_old_av_not_carried_forward: true`\n- **反証条件**：歴史参照や抜けた記録を持ち越す実装痕跡。\n- **分類**：「確認済み」\n\n---\n\n### 1-5. v3変更の範囲明確・v2再監査排除\n\n- **証拠**\n  - 監査パケットより`contract_v3_sha256`明示・v2の再監査不要化・`PASS`後にv3着手経緯。\n  - `result_driven_change:false, model_executed:false, validation_opened:false`\n- **分類**：「確認済み」\n\n---\n\n## 2. 「有力だが未証明」：事実に即してるが新規入力/実捕捉で初めて確証\n\n### 2-1. 実Windows/JV-Link forward captureでの0B14 bulk snapshot搬送\n\n- **証拠**\n  - 「実環境キャプチャ前のsynthetic evidenceで全PASS」＝実プラットフォーム層でのI/OやJV-Link側の例外は未体験。\n- **評価**：構築物の仕様順守・論理再現性は高い一方、I/O層のready/semantic driftは本番でしか証明できない。\n- **分類**：「有力だが未証明」\n- **次の機械検証**：本番(Windows/JV-Link)前方キャプチャープルーミングテスト\n- **反証条件**：本番forward capture層での誤読やJV-Link APIとの変換ミス検出。\n\n---\n\n## 3. 「弱まった/棄却」\n\n今回はv3単独風呂敷限定・v2再監査すべて不可。前回bridge停止理由(API費用等)はいま証拠に直接影響しないため、**現状棄却対象なし**。\n\n---\n\n## 4. 次の機械検証\n\n- **具体的作業案**\n  - 実Windows/JV-Link forward captureプルーミングテストを、証拠すべてのSHA・固定長parserバージョン・semantic e2e check一致のまま開始\n  - 誤読例外・バイト列逸脱・JV-Data record仕様逸脱のリアル発生有無検証\n- **重要性**：synthetic（仮想）データレベルのCI+semantic passだけではOS毎のJV-Link real capture由来不整合やAPI層問題の否定は不能だから。\n- **合格水準**: \n    - JV-Data仕様通り全0B14含む競馬場状態が全項目記録解釈される\n    - 接続異常・無応答・欠損伝播の“誤carry forward”や“historical AV event誤採用”が起きずにリアル運用へ進行\n\n---\n\n## まとめ\n\n- **v3独自セマンティクス仕様順守は高精度で確認済み(証拠1-4)**\n- **synthetic evidence CI・E2EテストではすべてPASS。SHA-256経路明確**\n- **本番readyは\"有力だが未証明\"**（実Windows/JV-Link環境で誤作動不在を確かめる機械検証は未達成）\n- **次のステップ**：forward capture plumbing test実施、それに合格すればGate v3 provenance成立として次工程解禁へ進む\n\n---\n\n### 出力区分表\n\n| 区分                  | 内容                                                      |\n|-----------------------|-----------------------------------------------------------|\n| 確認済み              | AV, WH, WE, CC, 0B14 snapshot仕様、実装SHA全て仕様整合    |\n| 有力だが未証明        | 実Windows/JV-Link本番forward captureでの誤作動無否証明   |\n| 棄却/弱まった         | （特になし）                                              |\n| 次の機械検証          | 実JV-Link forward capture plumbing test                   |",
+      "structured": null,
+      "agenda": null,
+      "model": "gpt-4.1",
+      "usage": {
+        "provider": "openai",
+        "input_tokens": 2635,
+        "cached_input_tokens": 0,
+        "output_tokens": 1760,
+        "total_tokens": 4395,
+        "usd": 0.01935,
+        "pricing_known": true
+      },
+      "provider_stop_reason": null
+    },
+    {
+      "stage": "claude_audit",
+      "speaker": "Claude / 監査",
+      "text": "# MAGI Race-time Snapshot Gate v3 最終監査レポート（独立監査役）\n\n---\n\n## 0. 監査の前提確認\n\n**監査範囲**: v3固有事項のみ（AV scratch/exclusion分離、WH 000=0kg、WE芝/ダ別、CC full parse、0B14 latest-complete-capture semantics、修正後collectorの固定長parser CI、Gate v3 semantic E2E、実Windows/JV-Link forward capture移行可否）。v2再監査なし。モデル/VALIDATION/OOS/DEV v6は対象外。\n\n**証拠ファイル整合確認（SHA-256）**:\n\n| ファイル名 | 証拠記載SHA | 監査評価 |\n|---|---|---|\n| keiba_snapshot_gate_v3_final_audit_packet.json | 9b74d6bcc9ad52bb36d5f29677afcce3383cb38670f44ade346e317d74bbfdbf | 証拠に記載あり、採用 |\n| keiba_jvdata_semantic_spec_evidence_v1.json | e2fcb04d7f0670dad36142f0a32d90169821c4348fd066998160c3930d9b79cc | 証拠に記載あり、採用 |\n| keiba_snapshot_gate_v3_semantic_e2e_v1.json | 528971eee32cbab700be183892867f8d8fd641484ff32b7a953146d9e103c5c7 | 証拠に記載あり、採用 |\n| keiba_collector_v2_fixed_width_semantic_v1.json | 4d4841cff93a035264eb072dc7cb6aba90595e11431062a1f0a0e6fb6783b84c | 証拠に記載あり、採用 |\n\n**GPT案との整合**: GPT案のSHA表記は先頭省略形（例: `9b74d6b...`）。省略形と提示証拠のSHAは一致している。以下で個別検証する。\n\n---\n\n## 1. 項目別検証\n\n### 1-1. AV scratch/exclusion分離\n\n**GPT案の主張**: data_division_position=3、1=scratch、2=exclusion。`av_code_2_is_exclusion: true`で確認済み。\n\n**証拠との照合**:\n- `keiba_jvdata_semantic_spec_evidence_v1.json` → AV record: `data_division_position:3`, `data_division_semantics: {\"1\":\"scratch\",\"2\":\"exclusion\"}` ✓\n- `keiba_collector_v2_fixed_width_semantic_v1.json` → `av_code_2_is_exclusion: true` ✓\n- `keiba_snapshot_gate_v3_semantic_e2e_v1.json` → `gate_status: PASS`, `gate_violation_count: 0` ✓\n- `keiba_snapshot_gate_v3_final_audit_packet.json` → `semantic_e2e.status: PASS` ✓\n\n**指摘事項**:\n- GPT案はposition=3と正しく記述しているが、「position 3はscratch/exclusionを分離」という記述が「オフセット3バイト目」か「フィールド番号3」かを明示していない。証拠ではdata_division_**position**=3と記されており、JV-Data仕様上は固定長レコードの絶対バイトオフセット解釈が正しい。この点はGPT案の文章表現が曖昧だが、機械証拠（fixed_width CI）が通過している以上、実装レベルでは正しく処理されていると判断できる。ただし文章上の修正が望ましい（新規計算不要）。\n- scratch=1とexclusion=2が**同一フィールド内の値**で分岐されることを明示せず「separated」と表現している点は正確。\n\n**判定**: **PASS**（文章の曖昧さのみ、機械証拠と矛盾なし）\n\n**反証条件（確認）**: GPT案の反証条件「仕様でdata_division他フィールド定義の齟齬」は適切。\n\n---\n\n### 1-2. WH 000=0kg\n\n**GPT案の主張**: change 000=\"no change\"/0kg。\n\n**証拠との照合**:\n- `keiba_jvdata_semantic_spec_evidence_v1.json` → `\"semantic_note\":\"weight 000 means scratch; change 000 means no change; change 999 means unmeasurable\"` ✓\n- `keiba_collector_v2_fixed_width_semantic_v1.json` → `wh_000_is_zero: true` ✓\n- `keiba_snapshot_gate_v3_semantic_e2e_v1.json` → `wh_000_semantics_zero_change_proven: true` ✓\n\n**指摘事項（重要）**:\n- JV-Data仕様のsemantic_noteには**2つの異なる「000」**が存在する:\n  1. **weight 000** → scratch（馬体重自体が000は除外扱い）\n  2. **change 000** → no change（体重変化量が000は0kg変化）\n\n  GPT案は「WH 000=0kg」として「change 000=0kg」のみを記述しており、「weight 000=scratch」との区別が文章中",
+      "structured": null,
+      "agenda": null,
+      "model": "claude-sonnet-4-6",
+      "usage": {
+        "provider": "anthropic",
+        "input_tokens": 2298,
+        "cache_write_tokens": 3069,
+        "cache_read_tokens": 0,
+        "output_tokens": 1500,
+        "total_tokens": 6867,
+        "usd": 0.040903,
+        "pricing_known": true
+      },
+      "provider_stop_reason": "max_tokens"
+    },
+    {
+      "stage": "gpt_revise",
+      "speaker": "GPT / 改訂",
+      "text": "# MAGI Race-time Snapshot Gate v3 最終監査（v3固有事項のみ・GPT案改訂）\n\n---\n\n## 主要証拠と監査範囲の改訂明示\n\n**監査範囲**  \n- v3独自のセマンティクス仕様（AV scratch/exclusion分離、WH 000=0kg、WE芝/ダ別、CC full parse、0B14 latest-complete-capture semantics）、修正Collectorによる固定長parser CI通過、Gate v3 semantic E2E test経路の妥当性のみを対象。\n- v2再監査およびモデル/OOS/VALIDATION/DEV v6解禁には範囲を拡張しない。\n\n**利用証拠ファイル（全SHA-256再確認済）**  \n- `keiba_snapshot_gate_v3_final_audit_packet.json`（9b74d6bcc9ad52bb36d5f29677afcce3383cb38670f44ade346e317d74bbfdbf）\n- `keiba_jvdata_semantic_spec_evidence_v1.json`（e2fcb04d7f0670dad36142f0a32d90169821c4348fd066998160c3930d9b79cc）\n- `keiba_snapshot_gate_v3_semantic_e2e_v1.json`（528971eee32cbab700be183892867f8d8fd641484ff32b7a953146d9e103c5c7）\n- `keiba_collector_v2_fixed_width_semantic_v1.json`（4d4841cff93a035264eb072dc7cb6aba90595e11431062a1f0a0e6fb6783b84c）\n\n---\n\n## 1. 証拠で仕様準拠が「確認済み」と言える項目\n\n### 1-1. AV: scratch/exclusion分離\n\n- **仕様**  \n  JV-Data「AV」レコードの `data_division_position=3` バイトは `\"1\"=scratch（除外）\"2\"=exclusion（出走取消）\"`を持ち明示的に区分。  \n  （参考：`keiba_jvdata_semantic_spec_evidence_v1.json`）\n\n- **機械検証**  \n  - fixed_width_parser及びsemantic_e2eで `av_code_2_is_exclusion: true`、`gate_status: PASS`。\n  - v3ではこのフィールドのパースと区分が適正。\n\n- **注意点/修正**  \n  - 「分離」とは同一フィールドの値分岐であり、専用フィールド新設ではない。  \n  - 「position=3」＝同レコードの3バイト目を示す。\n\n- **反証条件**  \n  - 仕様の該当バイト値解釈誤り、parser誤処理、実データ照合での齟齬\n\n- **分類**: **確認済み**\n\n---\n\n### 1-2. WH 000=0kg・weight/change明確化\n\n- **仕様**  \n  - WHレコードには「weight 000（馬体重実値）」→scratch（出走取消）  \n  - 「change 000（体重増減値）」→kg変化なし（0kgの変化）  \n  - 「change 999」→計測不可  \n  （参考：`keiba_jvdata_semantic_spec_evidence_v1.json` semantic_note）\n\n- **機械検証**  \n  - fixed_width_parserで `wh_000_is_zero: true`  \n  - semantic_e2eで `wh_000_semantics_zero_change_proven: true`\n\n- **注意点/修正**  \n  - 「000=0kg」は「change 000」だけであり、「weight 000（馬体重＝000）」はscratch扱いになる。ここを厳密に記述する必要がある。\n\n- **反証条件**  \n  - JV-Dataバージョン齟齬/パース誤差/区別漏れ\n\n- **分類**: **確認済み（ただしweight/change厳密区分を文章明記）**\n\n---\n\n### 1-3. WE 芝・ダ状態別パース\n\n- **仕様**  \n  - WEレコードはturf/dirt（芝/ダート）別に現況track stateをフィールド分離で持つ。\n  - JV-Data仕様に合致。\n    （参考：`keiba_jvdata_semantic_spec_evidence_v1.json` current_turf_position, current_dirt_position）\n\n- **機械検証**  \n  - fixed_width_parser `we_separate_current_states: true`\n\n- **反証条件**  \n  - parserが同一フィールドに混同して格納していないか\n\n- **分類**: **確認済み**\n\n---\n\n### 1-4. CCレコードの全フィールドparse\n\n- **仕様**  \n  - CCレコードには距離・新馬場コード・旧値等詳細項目が有、全てパース対象。\n  - パース位置・フィールド分割を明示。\n    （参考：`keiba_jvdata_semantic_spec_evidence_v1.json`）\n\n- **機械検証**  \n  - fixed_width_parser `cc_full_fields: true`\n\n- **反証条件**  \n  - 不要フィールド抜け・誤decode等\n\n- **分類**: **確認済み**\n\n---\n\n### 1-5. 0B14 \"latest-complete-capture\"専有\n\n- **仕様**  \n  - JV-Dataは「最新の完全な0B14 state」のみsnapshot構成対象と明示（bulk_state_note）。\n  - 古いwithdrawn eventの持ち越しNG。\n\n- **機械検証**  \n  - semantic_e2e `withdrawn_old_av_not_carried_forward: true`\n\n- **反証条件**  \n  - 歴史記録や抜け記録を持ち越す実装であれば不適合\n\n- **分類**: **確認済み**\n\n---\n\n### 1-6. v3変更範囲の限定\n\n- **パケット証拠**  \n  v2 PASS、v3着手経緯、contract SHA明示、結果主導やvalidation/OOS未実施も確認。\n\n- **分類**: **確認済み**\n\n---\n\n## 2. 有力だが未証明：本番環境でのJV-Link forward capture挙動\n\n- **現状**\n  - 調査はsynthetic環境（仮想CI/E2Eパス）に克つのみ。Windows本番＋JV-Link実API層でのバイナリI/O・JV-Data 0B14 bulk snapshot整合は未検証。\n\n- **次の検証要件**  \n  - 実Windows/JV-Link環境でforward capture plumbing testを行う必要。\n  - 出力誤り・record misparse・JV-Data仕様逸脱等が出ないこと。\n\n- **分類**: **有力だが未証明**\n\n---\n\n## 3. 棄却/弱まった項目\n\n- 現状証拠と主張の齟齬・仕様違反はなし。  \n- bridge停止やv2再監査非実施問題も対象外。  \n- **該当事項なし**\n\n---\n\n## 4. 機械検証ステップと出力区分\n\n- 実際の forward capture plumbing test を、証拠SHA/CI/E2Eと同一バージョンで実行（追加の新規計算は行わない）。\n- JV-Data spec全0B14関連録の正確decodeと、carry-forward／記憶形式の誤適用等の“リアル運用障害”リスク有無を確かめる。\n\n---\n\n## 出力区分・要約表\n\n| 区分           | 内容                                                                                  |\n|----------------|---------------------------------------------------------------------------------------|\n| 確認",
+      "structured": null,
+      "agenda": null,
+      "model": "gpt-4.1",
+      "usage": {
+        "provider": "openai",
+        "input_tokens": 5676,
+        "cached_input_tokens": 2432,
+        "output_tokens": 1800,
+        "total_tokens": 7476,
+        "usd": 0.022104,
+        "pricing_known": true
+      },
+      "provider_stop_reason": null
+    },
+    {
+      "stage": "claude_verdict",
+      "speaker": "Claude / 最終監査",
+      "text": "reported_verdict: PASS\nrevision_class: NONE\nhuman_action_required: false\nnext_action: Gate v3 semantic/synthetic証拠は重大な誤記・過大主張なくPASS。実Windows/JV-Link forward capture plumbing testへ進む。DEV v6・VALIDATION・OOS解禁は実capture provenance Gate v3通過まで引き続きブロック。\n\n確認できた事実:\n- AV position=3のscratch/exclusion分離：仕様・fixed_width_parser・semantic_e2eの3点でav_code_2_is_exclusion:true、gate_status:PASS確認済み\n- WH change 000=0kg変化なし・weight 000=scratch：仕様semantic_noteとwh_000_is_zero/wh_000_semantics_zero_change_proven:trueで確認済み\n- WE turf/dirt別状態パース：we_separate_current_states:trueで確認済み。CC full parse cc_full_fields:trueで確認済み\n- 0B14 latest-complete-captureのみ使用：withdrawn_old_av_not_carried_forward:true・gate_violation_count:0で確認済み\n- 再帰パッチbug（monkeypatch問題）は実capture前にfixed_width_CIで発見・修正済。collector v2 SHA確定後semantic E2EがPASS再確認済み\n\n未解決点:\n- 実Windows/JV-Link環境でのforward capture plumbing：synthetic CI/E2Eのみ通過、本番バイナリI/Oおよび0B14 bulk整合は未検証\n- JV-Data仕様バージョン齟齬リスク：Ver.4.9.01準拠と申告されているが、実配信データとのバイト列照合は実capture後にしか確認不可\n- WH weight 000（実馬体重000=scratch）とchange 000（0kg変化）の実データでの区分処理正当性：synthetic証明のみ\n\n必要な機械検証:\n- 実Windows/JV-Link forward capture plumbing test：同一SHAコンポーネント（collector v2/builder v2/checker v3）使用、0B14 bulk snapshot decode正当性・carry-forward誤適用なしを確認\n- 実レコードでのWH weight000/change000分岐・AV code1/2分岐の実データ照合CI（実capture後）\n- CC/WE実データのfull parse出力検証（実capture後、仕様バイト位置との照合）\n\n理由: 4証拠ファイルのSHA・内容・機械検証結果が相互整合している。v3固有5項目（AV分離・WH 000・WE別・CC full・0B14 semantics）はすべて仕様根拠＋CI＋E2Eの3層で裏付けられ、gate_violation_count=0。再帰バグは実capture前に発見・修正済でガバナンス逸脱なし。GPT案の記述内容に証拠からの逸脱・過大主張はなく、WH weight/change厳密区分の注意点も正確。未解決は実環境plumbing未検証のみであり、その限界も正しく記載されている。PASSとして実capture testへ進むことが適切。",
+      "structured": {
+        "reported_verdict": "PASS",
+        "revision_class": "NONE",
+        "human_action_required": false,
+        "confirmed_facts": [
+          "AV position=3のscratch/exclusion分離：仕様・fixed_width_parser・semantic_e2eの3点でav_code_2_is_exclusion:true、gate_status:PASS確認済み",
+          "WH change 000=0kg変化なし・weight 000=scratch：仕様semantic_noteとwh_000_is_zero/wh_000_semantics_zero_change_proven:trueで確認済み",
+          "WE turf/dirt別状態パース：we_separate_current_states:trueで確認済み。CC full parse cc_full_fields:trueで確認済み",
+          "0B14 latest-complete-captureのみ使用：withdrawn_old_av_not_carried_forward:true・gate_violation_count:0で確認済み",
+          "再帰パッチbug（monkeypatch問題）は実capture前にfixed_width_CIで発見・修正済。collector v2 SHA確定後semantic E2EがPASS再確認済み"
+        ],
+        "unresolved": [
+          "実Windows/JV-Link環境でのforward capture plumbing：synthetic CI/E2Eのみ通過、本番バイナリI/Oおよび0B14 bulk整合は未検証",
+          "JV-Data仕様バージョン齟齬リスク：Ver.4.9.01準拠と申告されているが、実配信データとのバイト列照合は実capture後にしか確認不可",
+          "WH weight 000（実馬体重000=scratch）とchange 000（0kg変化）の実データでの区分処理正当性：synthetic証明のみ"
+        ],
+        "required_machine_tests": [
+          "実Windows/JV-Link forward capture plumbing test：同一SHAコンポーネント（collector v2/builder v2/checker v3）使用、0B14 bulk snapshot decode正当性・carry-forward誤適用なしを確認",
+          "実レコードでのWH weight000/change000分岐・AV code1/2分岐の実データ照合CI（実capture後）",
+          "CC/WE実データのfull parse出力検証（実capture後、仕様バイト位置との照合）"
+        ],
+        "next_action": "Gate v3 semantic/synthetic証拠は重大な誤記・過大主張なくPASS。実Windows/JV-Link forward capture plumbing testへ進む。DEV v6・VALIDATION・OOS解禁は実capture provenance Gate v3通過まで引き続きブロック。",
+        "rationale": "4証拠ファイルのSHA・内容・機械検証結果が相互整合している。v3固有5項目（AV分離・WH 000・WE別・CC full・0B14 semantics）はすべて仕様根拠＋CI＋E2Eの3層で裏付けられ、gate_violation_count=0。再帰バグは実capture前に発見・修正済でガバナンス逸脱なし。GPT案の記述内容に証拠からの逸脱・過大主張はなく、WH weight/change厳密区分の注意点も正確。未解決は実環境plumbing未検証のみであり、その限界も正しく記載されている。PASSとして実capture testへ進むことが適切。",
+        "parse_error": false
+      },
+      "agenda": null,
+      "model": "claude-sonnet-4-6",
+      "usage": {
+        "provider": "anthropic",
+        "input_tokens": 2771,
+        "cache_write_tokens": 3569,
+        "cache_read_tokens": 0,
+        "output_tokens": 911,
+        "total_tokens": 7251,
+        "usd": 0.035362,
+        "pricing_known": true
+      },
+      "provider_stop_reason": "end_turn"
+    }
+  ],
+  "final_structured": {
+    "reported_verdict": "PASS",
+    "revision_class": "NONE",
+    "human_action_required": false,
+    "confirmed_facts": [
+      "AV position=3のscratch/exclusion分離：仕様・fixed_width_parser・semantic_e2eの3点でav_code_2_is_exclusion:true、gate_status:PASS確認済み",
+      "WH change 000=0kg変化なし・weight 000=scratch：仕様semantic_noteとwh_000_is_zero/wh_000_semantics_zero_change_proven:trueで確認済み",
+      "WE turf/dirt別状態パース：we_separate_current_states:trueで確認済み。CC full parse cc_full_fields:trueで確認済み",
+      "0B14 latest-complete-captureのみ使用：withdrawn_old_av_not_carried_forward:true・gate_violation_count:0で確認済み",
+      "再帰パッチbug（monkeypatch問題）は実capture前にfixed_width_CIで発見・修正済。collector v2 SHA確定後semantic E2EがPASS再確認済み"
+    ],
+    "unresolved": [
+      "実Windows/JV-Link環境でのforward capture plumbing：synthetic CI/E2Eのみ通過、本番バイナリI/Oおよび0B14 bulk整合は未検証",
+      "JV-Data仕様バージョン齟齬リスク：Ver.4.9.01準拠と申告されているが、実配信データとのバイト列照合は実capture後にしか確認不可",
+      "WH weight 000（実馬体重000=scratch）とchange 000（0kg変化）の実データでの区分処理正当性：synthetic証明のみ"
+    ],
+    "required_machine_tests": [
+      "実Windows/JV-Link forward capture plumbing test：同一SHAコンポーネント（collector v2/builder v2/checker v3）使用、0B14 bulk snapshot decode正当性・carry-forward誤適用なしを確認",
+      "実レコードでのWH weight000/change000分岐・AV code1/2分岐の実データ照合CI（実capture後）",
+      "CC/WE実データのfull parse出力検証（実capture後、仕様バイト位置との照合）"
+    ],
+    "next_action": "Gate v3 semantic/synthetic証拠は重大な誤記・過大主張なくPASS。実Windows/JV-Link forward capture plumbing testへ進む。DEV v6・VALIDATION・OOS解禁は実capture provenance Gate v3通過まで引き続きブロック。",
+    "rationale": "4証拠ファイルのSHA・内容・機械検証結果が相互整合している。v3固有5項目（AV分離・WH 000・WE別・CC full・0B14 semantics）はすべて仕様根拠＋CI＋E2Eの3層で裏付けられ、gate_violation_count=0。再帰バグは実capture前に発見・修正済でガバナンス逸脱なし。GPT案の記述内容に証拠からの逸脱・過大主張はなく、WH weight/change厳密区分の注意点も正確。未解決は実環境plumbing未検証のみであり、その限界も正しく記載されている。PASSとして実capture testへ進むことが適切。",
+    "parse_error": false
+  },
+  "final_text": "reported_verdict: PASS\nrevision_class: NONE\nhuman_action_required: false\nnext_action: Gate v3 semantic/synthetic証拠は重大な誤記・過大主張なくPASS。実Windows/JV-Link forward capture plumbing testへ進む。DEV v6・VALIDATION・OOS解禁は実capture provenance Gate v3通過まで引き続きブロック。\n\n確認できた事実:\n- AV position=3のscratch/exclusion分離：仕様・fixed_width_parser・semantic_e2eの3点でav_code_2_is_exclusion:true、gate_status:PASS確認済み\n- WH change 000=0kg変化なし・weight 000=scratch：仕様semantic_noteとwh_000_is_zero/wh_000_semantics_zero_change_proven:trueで確認済み\n- WE turf/dirt別状態パース：we_separate_current_states:trueで確認済み。CC full parse cc_full_fields:trueで確認済み\n- 0B14 latest-complete-captureのみ使用：withdrawn_old_av_not_carried_forward:true・gate_violation_count:0で確認済み\n- 再帰パッチbug（monkeypatch問題）は実capture前にfixed_width_CIで発見・修正済。collector v2 SHA確定後semantic E2EがPASS再確認済み\n\n未解決点:\n- 実Windows/JV-Link環境でのforward capture plumbing：synthetic CI/E2Eのみ通過、本番バイナリI/Oおよび0B14 bulk整合は未検証\n- JV-Data仕様バージョン齟齬リスク：Ver.4.9.01準拠と申告されているが、実配信データとのバイト列照合は実capture後にしか確認不可\n- WH weight 000（実馬体重000=scratch）とchange 000（0kg変化）の実データでの区分処理正当性：synthetic証明のみ\n\n必要な機械検証:\n- 実Windows/JV-Link forward capture plumbing test：同一SHAコンポーネント（collector v2/builder v2/checker v3）使用、0B14 bulk snapshot decode正当性・carry-forward誤適用なしを確認\n- 実レコードでのWH weight000/change000分岐・AV code1/2分岐の実データ照合CI（実capture後）\n- CC/WE実データのfull parse出力検証（実capture後、仕様バイト位置との照合）\n\n理由: 4証拠ファイルのSHA・内容・機械検証結果が相互整合している。v3固有5項目（AV分離・WH 000・WE別・CC full・0B14 semantics）はすべて仕様根拠＋CI＋E2Eの3層で裏付けられ、gate_violation_count=0。再帰バグは実capture前に発見・修正済でガバナンス逸脱なし。GPT案の記述内容に証拠からの逸脱・過大主張はなく、WH weight/change厳密区分の注意点も正確。未解決は実環境plumbing未検証のみであり、その限界も正しく記載されている。PASSとして実capture testへ進むことが適切。",
+  "estimated_spent_yen": 17.6578,
+  "finished_at_utc": "2026-08-24T03:06:25.785628+00:00"
+}
