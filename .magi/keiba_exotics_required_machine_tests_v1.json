@@ -1,0 +1,174 @@
+{
+  "test_id": "KEIBA_EXOTICS_REQUIRED_MACHINE_TESTS_V1",
+  "commit_sha_under_test": "b9e5e442e50e3adc09713c14acd3648d3f5f202c",
+  "probability_engine_sha256": "b1af85df7361a5b84f38742badea12f741f31bf800f12d88e81f23cebd0d3937",
+  "allocator_sha256": "ecdd28d7d1bf93966634c17a88debd4c20f910ee6b3160b5abcead16fb3491fb",
+  "probability_tolerance": 1e-10,
+  "horse_counts_tested": [
+    3,
+    5,
+    8,
+    12,
+    16,
+    18
+  ],
+  "horse_count_results": {
+    "3": {
+      "checks": {
+        "all_probability_sums_within_tol": true,
+        "quinella_identity_within_tol": true,
+        "trio_identity_within_tol": true,
+        "ticket_counts_exact": true,
+        "all_probabilities_positive": true
+      },
+      "probability_sums": {
+        "win": 1.0,
+        "exacta": 1.0,
+        "quinella": 1.0,
+        "trifecta": 1.0000000000000002,
+        "trio": 1.0000000000000002
+      },
+      "max_quinella_identity_abs_diff": 0.0,
+      "max_trio_identity_abs_diff": 0.0,
+      "ticket_counts": {
+        "exacta": 6,
+        "quinella": 3,
+        "trifecta": 6,
+        "trio": 1
+      }
+    },
+    "5": {
+      "checks": {
+        "all_probability_sums_within_tol": true,
+        "quinella_identity_within_tol": true,
+        "trio_identity_within_tol": true,
+        "ticket_counts_exact": true,
+        "all_probabilities_positive": true
+      },
+      "probability_sums": {
+        "win": 1.0,
+        "exacta": 1.0,
+        "quinella": 0.9999999999999999,
+        "trifecta": 1.0,
+        "trio": 0.9999999999999999
+      },
+      "max_quinella_identity_abs_diff": 0.0,
+      "max_trio_identity_abs_diff": 0.0,
+      "ticket_counts": {
+        "exacta": 20,
+        "quinella": 10,
+        "trifecta": 60,
+        "trio": 10
+      }
+    },
+    "8": {
+      "checks": {
+        "all_probability_sums_within_tol": true,
+        "quinella_identity_within_tol": true,
+        "trio_identity_within_tol": true,
+        "ticket_counts_exact": true,
+        "all_probabilities_positive": true
+      },
+      "probability_sums": {
+        "win": 1.0,
+        "exacta": 0.9999999999999999,
+        "quinella": 0.9999999999999999,
+        "trifecta": 0.9999999999999999,
+        "trio": 0.9999999999999999
+      },
+      "max_quinella_identity_abs_diff": 0.0,
+      "max_trio_identity_abs_diff": 0.0,
+      "ticket_counts": {
+        "exacta": 56,
+        "quinella": 28,
+        "trifecta": 336,
+        "trio": 56
+      }
+    },
+    "12": {
+      "checks": {
+        "all_probability_sums_within_tol": true,
+        "quinella_identity_within_tol": true,
+        "trio_identity_within_tol": true,
+        "ticket_counts_exact": true,
+        "all_probabilities_positive": true
+      },
+      "probability_sums": {
+        "win": 1.0,
+        "exacta": 1.0,
+        "quinella": 1.0,
+        "trifecta": 1.0,
+        "trio": 1.0
+      },
+      "max_quinella_identity_abs_diff": 0.0,
+      "max_trio_identity_abs_diff": 0.0,
+      "ticket_counts": {
+        "exacta": 132,
+        "quinella": 66,
+        "trifecta": 1320,
+        "trio": 220
+      }
+    },
+    "16": {
+      "checks": {
+        "all_probability_sums_within_tol": true,
+        "quinella_identity_within_tol": true,
+        "trio_identity_within_tol": true,
+        "ticket_counts_exact": true,
+        "all_probabilities_positive": true
+      },
+      "probability_sums": {
+        "win": 1.0,
+        "exacta": 0.9999999999999999,
+        "quinella": 0.9999999999999999,
+        "trifecta": 0.9999999999999999,
+        "trio": 0.9999999999999999
+      },
+      "max_quinella_identity_abs_diff": 0.0,
+      "max_trio_identity_abs_diff": 0.0,
+      "ticket_counts": {
+        "exacta": 240,
+        "quinella": 120,
+        "trifecta": 3360,
+        "trio": 560
+      }
+    },
+    "18": {
+      "checks": {
+        "all_probability_sums_within_tol": true,
+        "quinella_identity_within_tol": true,
+        "trio_identity_within_tol": true,
+        "ticket_counts_exact": true,
+        "all_probabilities_positive": true
+      },
+      "probability_sums": {
+        "win": 1.0,
+        "exacta": 1.0,
+        "quinella": 1.0,
+        "trifecta": 1.0,
+        "trio": 1.0
+      },
+      "max_quinella_identity_abs_diff": 0.0,
+      "max_trio_identity_abs_diff": 0.0,
+      "ticket_counts": {
+        "exacta": 306,
+        "quinella": 153,
+        "trifecta": 4896,
+        "trio": 816
+      }
+    }
+  },
+  "cap_checks": {
+    "single_ticket_cap_binds_exactly": true,
+    "bet_type_cap_binds_exactly": true,
+    "correlation_group_cap_binds_exactly": true,
+    "mixed_caps_never_exceeded": true,
+    "budget_and_unit_invariants": true
+  },
+  "status": "PASS",
+  "synthetic_only": true,
+  "real_odds_used": false,
+  "real_bets_placed": false,
+  "validation_oos_opened": false,
+  "dev_v6_allowed": false
+}
