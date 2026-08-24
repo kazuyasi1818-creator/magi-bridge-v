@@ -1,0 +1,75 @@
+name: Keiba collector v2 fixed-width semantic test
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/keiba-collector-v2-parser-semantic.yml'
+      - 'scripts/keiba_jvlink_realtime_capture_v1.py'
+      - 'scripts/keiba_jvlink_realtime_capture_v2.py'
+
+permissions:
+  contents: write
+
+jobs:
+  parser-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Generate official-position records and parse
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, importlib.util, json, os, sys
+          from pathlib import Path
+          sys.path.insert(0, str(Path('scripts').resolve()))
+          import keiba_jvlink_realtime_capture_v2 as v2
+
+          def put(buf,pos1,n,value,enc='ascii'):
+              b=str(value).encode(enc)
+              if len(b)>n: b=b[:n]
+              b=b.ljust(n,b' ')
+              buf[pos1-1:pos1-1+n]=b
+          def common(buf,rid,race_no='01',announce='08290900'):
+              put(buf,1,2,rid); put(buf,3,1,'1'); put(buf,4,8,'20260829'); put(buf,12,4,'2026'); put(buf,16,4,'0829'); put(buf,20,2,'01'); put(buf,22,2,'01'); put(buf,24,2,'01')
+              if rid=='WE': put(buf,26,8,announce)
+              else: put(buf,26,2,race_no); put(buf,28,8,announce)
+
+          # WH: body weight 480, change code 000 must parse as zero.
+          wh=bytearray(b' '*847); common(wh,'WH'); put(wh,36,2,'01'); put(wh,36+38,3,'480'); put(wh,36+41,1,'+'); put(wh,36+42,3,'000')
+          wh_o=v2.parse_record_v2(bytes(wh)); h=wh_o['horses'][0]
+
+          # AV: pos3=2 means exclusion, not generic historical abnormal code.
+          av=bytearray(b' '*78); common(av,'AV'); put(av,3,1,'2'); put(av,36,2,'01'); put(av,74,3,'001')
+          av_o=v2.parse_record_v2(bytes(av))
+
+          # WE current state fields are separate turf/dirt values.
+          we=bytearray(b' '*42); common(we,'WE'); put(we,34,1,'1'); put(we,35,1,'4'); put(we,36,1,'2'); put(we,37,1,'3'); put(we,38,1,'1'); put(we,39,1,'1'); put(we,40,1,'1')
+          we_o=v2.parse_record_v2(bytes(we))
+
+          # CC full format 106.
+          cc=bytearray(b' '*50); common(cc,'CC'); put(cc,36,4,'1800'); put(cc,40,2,'17'); put(cc,42,4,'1600'); put(cc,46,2,'11'); put(cc,48,1,'4')
+          cc_o=v2.parse_record_v2(bytes(cc))
+
+          checks={
+            'wh_000_is_zero': h.get('body_weight_change_kg')==0,
+            'av_code_2_is_exclusion': av_o.get('scratch_exclusion_code')=='2' and av_o.get('scratch_exclusion_state')=='EXCLUSION' and 'abnormal_code' not in av_o,
+            'we_separate_current_states': we_o.get('current_weather_code')=='4' and we_o.get('current_track_condition_turf')=='2' and we_o.get('current_track_condition_dirt')=='3',
+            'cc_full_fields': cc_o.get('current_distance')=='1800' and cc_o.get('current_track_code')=='17' and cc_o.get('previous_distance')=='1600' and cc_o.get('previous_track_code')=='11' and cc_o.get('reason_code')=='4',
+          }
+          def sha(p): return hashlib.sha256(Path(p).read_bytes()).hexdigest()
+          out={'test_id':'KEIBA_COLLECTOR_V2_FIXED_WIDTH_SEMANTIC_V1','commit_sha_under_test':os.environ.get('GITHUB_SHA'),'collector_v1_sha256':sha('scripts/keiba_jvlink_realtime_capture_v1.py'),'collector_v2_sha256':sha('scripts/keiba_jvlink_realtime_capture_v2.py'),'checks':checks,'status':'PASS' if all(checks.values()) else 'FAIL','validation_oos_opened':False}
+          Path('.magi/keiba_collector_v2_fixed_width_semantic_v1.json').write_text(json.dumps(out,ensure_ascii=False,indent=2),encoding='utf-8')
+          if not all(checks.values()): raise SystemExit(2)
+          PY
+      - name: Commit parser evidence
+        run: |
+          git config user.name 'magi-parser-v2-bot'
+          git config user.email 'magi-parser-v2-bot@users.noreply.github.com'
+          git add .magi/keiba_collector_v2_fixed_width_semantic_v1.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Freeze collector v2 fixed-width semantic evidence'
+          for attempt in 1 2 3; do git pull --rebase origin main && git push origin HEAD:main && exit 0; sleep $((attempt*2)); done
+          exit 1
