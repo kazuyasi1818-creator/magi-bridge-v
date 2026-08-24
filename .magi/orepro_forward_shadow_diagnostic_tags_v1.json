@@ -1,0 +1,47 @@
+{
+  "spec_id": "OREPRO-FORWARD-SHADOW-DIAGNOSTIC-TAGS-V1",
+  "status": "PREREGISTERED_DIAGNOSTIC_ONLY",
+  "created_before_first_orepro_forward_race": true,
+  "purpose": "DEV v3-v5で観測された弱点候補を公開forwardで前向きに確認する。タグは診断専用で、レース選定・予想確率・買い目・券種・予算・勝負レース指定には一切影響させない。",
+  "tags": [
+    {
+      "tag": "HISTORY_SPARSE",
+      "rule": "race_mean_prior_starts <= 1 OR zero_history_share > 0.30",
+      "source_timing": "strictly pre-race history only"
+    },
+    {
+      "tag": "SMALL_FIELD",
+      "rule": "field_size <= 9",
+      "source_timing": "pre-race field state"
+    },
+    {
+      "tag": "DIFFUSE_MARKET",
+      "rule": "max_normalized_market_win_probability < 0.20",
+      "source_timing": "same leakage-safe odds snapshot used for prediction"
+    },
+    {
+      "tag": "DISTANCE_1800_2199",
+      "rule": "1800 <= distance_m <= 2199",
+      "source_timing": "pre-race race metadata"
+    },
+    {
+      "tag": "G3_RACE",
+      "rule": "race_grade == G3",
+      "source_timing": "pre-race race metadata"
+    }
+  ],
+  "hard_guards": {
+    "tag_changes_selection": false,
+    "tag_changes_ticket": false,
+    "tag_changes_stake": false,
+    "tag_changes_battle_race": false,
+    "post_result_tag_edit": false,
+    "validation_opened": false,
+    "oos_opened": false
+  },
+  "evaluation": {
+    "primary": "After accumulating forward races, compare pre-frozen prediction quality and MAGI_PURE outcomes by tag versus untagged races.",
+    "minimum_interpretation": "No tag can be promoted to a strategy/filter from a single week or a small number of hits/misses.",
+    "new_strategy_requires": "new DEV hypothesis + preregistration + independent evaluation; forward tag performance alone cannot retroactively alter week-1 rules"
+  }
+}
