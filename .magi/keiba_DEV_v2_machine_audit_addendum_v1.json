@@ -1,0 +1,87 @@
+{
+  "audit_id": "KEIBA_DEV_V2_MACHINE_AUDIT_ADDENDUM_V1",
+  "status": "PASS_WITH_CONCERNS_RESOLVED_OR_BOUNDED",
+  "purpose": "Replace self-declared DEV v2 audit claims with machine-derived checks; no model/Gate/period changes.",
+  "inputs": {
+    "odds_file": "keiba_DEV_odds_outcome_join_v1.csv",
+    "odds_sha256": "1d4db6f07c704f161a81627402d7094764334e67c5bdac58379e9878f4bd5206",
+    "history_file": "keiba_DEV_history_store_2024_20260331_v1.csv",
+    "history_sha256": "60a1e2529b47aae2ea29721ac586cc23cbe185f8928f96b304c495766dc7a898",
+    "run_script": "run_dev_v2.py",
+    "run_script_sha256": "eed3235271a1ffbbd641ca0ca739171af3ec93943e3a316fad87b21e16d0aaec",
+    "split_prereg": "keiba_magi_split_prereg_v1.json",
+    "split_prereg_sha256": "5f84a3e8e123d179def79136f8e40e10bb4b93d429abaaf2c543bf2e931c0eb3"
+  },
+  "machine_checks": {
+    "target_horse_rows": 29052,
+    "history_rows": 106905,
+    "strict_past_rule": {
+      "matching_key": "horse_name (v2 implementation)",
+      "targets_with_at_least_one_prior_row": 25536,
+      "violations_max_selected_prior_date_ge_target_date": 0,
+      "minimum_gap_days_to_latest_selected_prior": 5,
+      "result": "PASS"
+    },
+    "horse_identity": {
+      "history_horse_name_to_multiple_horse_ids": 0,
+      "target_horse_name_to_multiple_horse_ids": 0,
+      "history_horse_id_length_distribution": {"8": 106905},
+      "target_horse_id_length_distribution": {"10": 29052},
+      "cross_file_horse_id_direct_join_safe": false,
+      "reason": "ID schemas differ: history IDs are 8 characters while target/JVD IDs are 10 characters. Replacing horse_name with horse_id is not valid until an explicit crosswalk is defined.",
+      "target_unique_names_not_found_anywhere_in_history": 4,
+      "result": "PASS_WITH_SCHEMA_CONCERN"
+    },
+    "current_row_presence": {
+      "missing_current_history_rows_by_horse_name_plus_date": 106,
+      "expected_from_v2_report": 106,
+      "matches_report": true
+    },
+    "race_metadata": {
+      "target_races": 2082,
+      "race_meta_rows": 2082,
+      "conflict_rows": 0,
+      "missing_target_race_metadata_rows": 0,
+      "result": "PASS"
+    },
+    "invalid_pre_odds": {
+      "invalid_cells": 83,
+      "affected_races": 40,
+      "affected_snapshot_races": 79,
+      "affected_unique_race_horses": 42,
+      "invalid_winner_rows": 0,
+      "valid_population_EARLY_vs_LATE_mismatch_races": 1,
+      "mismatch_detail": [{"race_id": 2025083007040304,"snapshot_role": "LATE","horse_no": 8,"horse_name": "モルテンコア","abnormal_code": 3,"final_finish": null}],
+      "note": "Claude's statement that EARLY/LATE valid headcounts differed in 0 races is not reproduced. One race differs because a later excluded horse has no LATE odds; no winner is excluded."
+    },
+    "dev_validation_oos_disjointness": {
+      "split_status": "PERIOD_BOUNDARIES_FIXED_BEFORE_OUTCOME_JOIN",
+      "dev_actual_last": "2026-03-29",
+      "validation_planned_start": "2026-04-01",
+      "oos_planned_start": "2026-07-01",
+      "odds_max_race_date": "20260329",
+      "history_max_date": "20260329",
+      "odds_rows_on_or_after_validation_start": 0,
+      "history_rows_on_or_after_validation_start": 0,
+      "result": "PASS"
+    }
+  },
+  "t009r_cross_trial_resolution": {
+    "exposure_ledger_locked_at_jst": "2026-08-23T19:48:00+09:00",
+    "prospective_rule": "All races with scheduled post <= 2026-08-23T19:26:00+09:00 are ineligible for T009R-CONFIRM-001.",
+    "preexisting_2026_exposure_classification": "CONTAMINATED_CONSERVATIVE",
+    "preexisting_2026_exposure_scope": "2026-01-01 through 2026-07-19",
+    "eligible_pool_rule": "strictly after 2026-08-23T19:26:00+09:00",
+    "confirmatory_holdout_candidate": "PROSPECTIVE_ONLY: scheduled_post_time_jst > 2026-08-23T19:26:00+09:00; exact collected race set to be fixed by race manifest before release",
+    "resolution": "Claude C-1 does NOT newly contaminate the T009R confirmatory pool. The exposure ledger was locked before DEV v2 and already declared 2026-01-01..2026-07-19 contaminated, and all pre-lock races ineligible. T009R confirmatory remains prospective-only after 2026-08-23T19:26+09:00.",
+    "result": "RESOLVED_BY_PREEXISTING_LOCKED_LEDGER"
+  },
+  "governance": {
+    "model_retrained": false,
+    "gate_changed": false,
+    "period_boundary_changed": false,
+    "validation_opened": false,
+    "oos_opened": false,
+    "allowed_scope": "audit-only correction/addendum"
+  }
+}
