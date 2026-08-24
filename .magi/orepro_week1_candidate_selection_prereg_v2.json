@@ -1,0 +1,63 @@
+{
+  "prereg_id": "OREPRO-WEEK1-CANDIDATE-SELECTION-V2",
+  "status": "PREREGISTERED_SELECTION_RULE_NOT_YET_RUN",
+  "supersedes": "OREPRO-WEEK1-CANDIDATE-SELECTION-V1",
+  "supersede_reason": "Pre-execution safety hardening only: v1 selection formula and thresholds are unchanged, but v2 fail-closes on forbidden post-race/final-market columns and on unpreregistered input columns so no such fields can be carried into later pipeline stages.",
+  "created_before_week1_race_selection": true,
+  "outcome_data_inspected_for_this_change": false,
+  "selection_formula_changed": false,
+  "thresholds_changed": false,
+  "race_dates_jst": ["2026-08-29", "2026-08-30"],
+  "official_jra_venues": ["新潟", "中京", "札幌"],
+  "selection_target": {
+    "max_races": 5,
+    "force_exactly_five": false
+  },
+  "required_input_columns": [
+    "race_id",
+    "race_date_jst",
+    "venue",
+    "race_no",
+    "field_size",
+    "safe_pre_race_odds_available",
+    "strict_history_coverage",
+    "safe_feature_coverage",
+    "first_time_starter_share",
+    "timestamp_sensitive_current_features_used"
+  ],
+  "input_schema_policy": {
+    "unknown_columns_allowed": false,
+    "post_race_or_final_state_columns_allowed": false,
+    "final_odds_columns_allowed": false,
+    "fail_closed_on_forbidden_or_unknown_column": true
+  },
+  "eligibility_gate": {
+    "safe_pre_race_odds_available": true,
+    "strict_history_coverage_min": 0.80,
+    "safe_feature_coverage_min": 0.95,
+    "field_size_min": 8,
+    "field_size_max": 18,
+    "first_time_starter_share_max": 0.30,
+    "timestamp_sensitive_current_feature_allowed_before_real_gate_v4_pass": false
+  },
+  "data_quality_score": {
+    "formula": "0.50*strict_history_coverage + 0.30*safe_feature_coverage + 0.20*(1-first_time_starter_share)",
+    "tie_break": ["data_quality_score_desc", "race_id_asc"],
+    "graded_stakes_bonus": 0,
+    "venue_bonus": 0,
+    "popularity_bonus": 0
+  },
+  "output_schema_policy": {
+    "whitelist_only": true,
+    "carry_through_arbitrary_input_columns": false
+  },
+  "forbidden": [
+    "結果・着順・的中・払戻・返還・最終/確定オッズ列を入力へ含める",
+    "結果後に対象レースを入替える",
+    "重賞・人気・競馬場だけを理由に順位を上げる",
+    "同週内で成績を見て式・係数・閾値を変更する",
+    "Gate v4未通過current-state featureを使用する"
+  ],
+  "real_money_bet": false,
+  "validation_oos_opened": false
+}
