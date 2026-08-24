@@ -1,0 +1,16 @@
+{
+  "prereg_id":"OREPRO-PUBLIC-FORWARD-V3",
+  "status":"PREREGISTERED_NOT_YET_EXECUTED",
+  "supersedes":"OREPRO-PUBLIC-FORWARD-V2",
+  "change_reason":"Gate v5 superseded Gate v4 before week1 execution; no outcome data used.",
+  "week1":{"dates":["2026-08-29","2026-08-30"],"official_virtual_budget_yen":50000,"max_races":5,"max_per_race_yen":10000,"stake_unit_yen":100,"real_money_bet":false},
+  "ledgers":["OREPRO_OFFICIAL","OREPRO_NORMALIZED","MAGI_PURE"],
+  "prediction_model_policy":{"public_baseline":"A_MARKET_ONLY","v3_v4_v5":"SHADOW_ONLY","profitability_claim":false},
+  "selection_policy":{"selector":"OREPRO-WEEK1-CANDIDATE-SELECTION-V4","newcomer_races_excluded":true,"reserve_order_frozen_before_outcomes":true},
+  "feature_restriction":{"required_gate":"KEIBA_PRE_RACE_SNAPSHOT_CONTRACT_V5","real_windows_jvlink_forward_gate_v5":"NOT_YET_PASSED","timestamp_sensitive_current_features":"BLOCKED_UNTIL_PASS","allowed_scope_until_pass":"leakage-safe pre-race odds + strict-history only"},
+  "freeze":{"prediction_card_sha256":true,"orepro_stakes_pre_race":true,"magi_pure_stakes_pre_race":true,"battle_flag_pre_race":true,"post_result_editing":false},
+  "forbidden":["Gate v5未通過current-state featureの使用","結果後の対象レース・買い目・金額・battle flag変更","OREPRO増額分をMAGI_PUREへ混入","VALIDATION/OOS無断開封"],
+  "validation_opened":false,
+  "oos_opened":false,
+  "real_money_bet":false
+}
