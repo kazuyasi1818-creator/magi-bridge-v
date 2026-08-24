@@ -1,7 +1,7 @@
 @echo off
 setlocal
 cd /d "%~dp0"
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0keiba_jvlink_first_capture.ps1"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0keiba_jvlink_first_capture_v2.ps1"
 set RC=%ERRORLEVEL%
 echo.
 if "%RC%"=="0" (
