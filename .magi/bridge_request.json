@@ -1,11 +1,12 @@
 {
-  "request_id":"KEIBA-EXOTICS-BUDGET-COMBINED-AUDIT-20260824",
-  "topic":"競馬MAGIの買い目研究基盤を独立監査する。対象は実馬券や予測性能ではなくsynthetic infrastructureのみ。単一の着順確率分布から馬単・馬連・3連単・3連複を導出する確率エンジンと、ユーザー指定のレース予算B（例1000円/10000円）を上限として100円単位で配分する予算配分器を監査。①4券種の確率恒等式と確率和が内部整合しているか、②配分器のPASSは予算/単位/EV・流動性除外/未使用資金/各種capのplumbing証拠に限定すべきか、③相関した馬券に独立Kellyを適用できないためfractional Kellyを研究用scaffoldに限定する判断が妥当か、④Gate v4実Windows/JV-Link forward capture未実施のままDEV v6/VALIDATION/OOS/実馬券へ進まない制約が維持されているか、⑤最初のDEV exotic-ticket trialをpreregisterする前に必要な最小追加machine testsを列挙する。利益や市場超過を証拠なしに認定しない。",
+  "request_id":"KEIBA-MAGI-WHOLE-DIRECTION-AUDIT-20260824",
+  "topic":"競馬MAGIの2026-08-24時点の全体方向性を独立監査する。新しい予測アイデア・特徴量・モデル・買い方は提案禁止。確認対象は①Gate v5と旧Gate v4記述の整合、②8/29-30公開ForwardをCouncil/DEVが汚染しないか、③DEV3-5全候補Gate失敗後に時刻証明/データ品質を優先する判断、④Council v0.1をShadow限定・disagreement診断限定・T-10 provenance不足時SKIPとした隔離が十分か、⑤現在の優先順位 Gate v5実capture→公開Forward→条件付きCouncil Shadow が妥当か。問題・必須修正・STOP条件だけ指摘し、楽観的に補完しないこと。特にorepro_weekly_operating_protocol_v1.mdがGate v4と書いたままなのにOREPRO-PUBLIC-FORWARD-V3はGate v5 supersede済みである点を、単なる古い文書か実運用リスクか判定すること。",
   "evidence_files":[
-    ".magi/keiba_exotics_budget_combined_audit_packet_v1.json",
-    ".magi/keiba_budget_allocator_synthetic_v1.json",
-    ".magi/keiba_exotic_probability_synthetic_v1.json",
-    ".magi/keiba_exotic_ticket_pipeline_contract_draft_v1.json"
+    ".magi/keiba_magi_direction_audit_packet_20260824_v1.json",
+    ".magi/keiba_gate_v5_preflight_readiness_v1.json",
+    ".magi/keiba_DEV_v3_v5_bridge_evidence_v1.json",
+    ".magi/orepro_public_forward_prereg_v3.json",
+    ".magi/orepro_weekly_operating_protocol_v1.md"
   ],
   "budget_yen":50,
   "fx_yen_per_usd":150
