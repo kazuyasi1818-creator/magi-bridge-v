@@ -1,5 +1,7 @@
 # 俺プロ × 競馬MAGI 公開forward運用 v1
 
+> 2026-08-24整合修正: Week1実行前に Gate v5 が Gate v4 を supersede。以後、本書中の実行Gateは `KEIBA_PRE_RACE_SNAPSHOT_CONTRACT_V5` を正とする。この修正は結果・モデル・選定式・閾値を変更しない文書整合のみ。
+
 ## 目的
 - 実เงินจริงゼロで、競馬MAGIの予想を発走前に公開固定する。
 - 俺プロ公式成績とMAGI純粋成績を分けて追跡する。
@@ -29,7 +31,8 @@
 - 初週の最重要KPIは「公開forwardを改ざんなく完走」すること。
 - 無理に回収率100%を作りにいかない。
 - 勝負レース2倍はOREPRO_OFFICIALにだけ反映し、MAGI_PUREでは通常払戻で計算する。
-- Gate v4の実Windows/JV-Link forward captureが通るまで、時刻依存のcurrent featureを使わない。
+- Gate v5 (`KEIBA_PRE_RACE_SNAPSHOT_CONTRACT_V5`) の実Windows/JV-Link forward captureとprovenance確認が通るまで、時刻依存のcurrent featureを使わない。
+- Gate v4以前の通過結果をGate v5通過の代用にしない。
 - 俺プロ規定投票額を満たすためだけにEV閾値を途中で緩めない。規定未達ならその事実を記録する。
 
 ## 週末終了時の報告
