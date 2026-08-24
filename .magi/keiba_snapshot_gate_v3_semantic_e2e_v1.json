@@ -1,8 +1,8 @@
 {
   "test_id": "KEIBA_SNAPSHOT_GATE_V3_SEMANTIC_E2E_V1",
-  "commit_sha_under_test": "fd4c542c1f51799acc6d3e3a237679ff3e138f08",
+  "commit_sha_under_test": "91a3bdcda45acfc470787414c624977b3557565c",
   "contract_sha256": "656e96ef58d4915fce539578c04a681407f50261f3881d4e99234e0807c33182",
-  "collector_v2_sha256": "1b05137a33c4542ae8e5ebb934775e98bb65a463402ffc512d87c987990d42a7",
+  "collector_v2_sha256": "850fa546c6f1902883ddcddf5d03261a7395e67fbd8eba45884ec2c663926862",
   "builder_v2_sha256": "cc5f32cedbb39c39c79ae70497121149c541459c338a517c58e8e8ac79d49828",
   "checker_v3_sha256": "57029062dfcfe928d47ba3f192d03013ec7ce25cbec7cc96ce485461ca9c1987",
   "features": [
