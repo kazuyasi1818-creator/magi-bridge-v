@@ -4,6 +4,10 @@ import argparse, hashlib, json
 from pathlib import Path
 import orepro_freeze_prediction_v4 as freeze_v4
 
+WEEK1_DATES={'2026-08-29','2026-08-30'}
+WEEK1_VENUES={'新潟','中京','札幌'}
+WEEK1_MAIN_MODEL='A_MARKET_ONLY'
+
 
 def main() -> int:
     ap = argparse.ArgumentParser()
@@ -36,6 +40,12 @@ def main() -> int:
         actual = hashlib.sha256(freeze_v4.canonical_payload(c)).hexdigest()
         if declared != actual:
             errs.append(f'{p.name}:FROZEN_CARD_SHA_MISMATCH')
+        if c.get('race_date_jst') not in WEEK1_DATES:
+            errs.append(f'{p.name}:OUTSIDE_WEEK1_DATES')
+        if c.get('venue') not in WEEK1_VENUES:
+            errs.append(f'{p.name}:OUTSIDE_WEEK1_VENUES')
+        if c.get('model_version') != WEEK1_MAIN_MODEL:
+            errs.append(f'{p.name}:WEEK1_MAIN_MODEL_NOT_A_MARKET_ONLY')
 
         race_id = str(c.get('race_id') or '')
         race_ids.append(race_id)
