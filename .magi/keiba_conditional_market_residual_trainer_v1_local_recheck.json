@@ -1,0 +1,27 @@
+{
+  "test_id":"KEIBA-CONDITIONAL-MARKET-RESIDUAL-TRAINER-V1-LOCAL-RECHECK",
+  "status":"PASS",
+  "synthetic_race_count":40,
+  "checks":{
+    "fit_success":true,
+    "same_input_exact_beta_reproducible":true,
+    "reversed_input_exact_beta_reproducible":true,
+    "same_final_objective":true,
+    "objective_nonworse_than_market_initialization":true,
+    "race_order_canonicalized":true,
+    "zero_initialization":true,
+    "no_randomness":true,
+    "no_alternate_optimizer":true
+  },
+  "max_beta_diff_repeat":0.0,
+  "max_beta_diff_reversed_input":0.0,
+  "iterations":5,
+  "start_objective":1.2996405707597174,
+  "final_objective":1.2991607474575357,
+  "beta":[0.01880719,0.13573381,-0.00810737,-0.02101442,-0.11637453,-0.0028686],
+  "scope":"deterministic synthetic trainer test only; no real DEV fit; no VALIDATION/OOS access",
+  "github_actions_status":"NOT_CLAIMED",
+  "real_money_bet":false,
+  "validation_opened":false,
+  "oos_opened":false
+}
