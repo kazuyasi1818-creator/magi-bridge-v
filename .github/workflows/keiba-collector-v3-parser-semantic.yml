@@ -1,0 +1,64 @@
+name: Keiba collector v3 official fixed-width semantic test
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/keiba-collector-v3-parser-semantic.yml'
+      - 'scripts/keiba_jvlink_realtime_capture_v1.py'
+      - 'scripts/keiba_jvlink_realtime_capture_v3.py'
+
+permissions:
+  contents: write
+
+jobs:
+  parser-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Parse official-position synthetic records
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,os,sys
+          from pathlib import Path
+          sys.path.insert(0,str(Path('scripts').resolve()))
+          import keiba_jvlink_realtime_capture_v3 as v3
+          def put(buf,pos1,n,value,enc='ascii'):
+              b=str(value).encode(enc)[:n].ljust(n,b' '); buf[pos1-1:pos1-1+n]=b
+          def common(buf,rid,race_no='01',announce='08290900'):
+              put(buf,1,2,rid); put(buf,3,1,'1'); put(buf,4,8,'20260829'); put(buf,12,4,'2026'); put(buf,16,4,'0829'); put(buf,20,2,'01'); put(buf,22,2,'01'); put(buf,24,2,'01')
+              if rid=='WE': put(buf,26,8,announce)
+              else: put(buf,26,2,race_no); put(buf,28,8,announce)
+          wh=bytearray(b' '*847); common(wh,'WH');
+          put(wh,36,2,'01'); put(wh,74,3,'480'); put(wh,77,1,' '); put(wh,78,3,'000')
+          put(wh,81,2,'02'); put(wh,119,3,'500'); put(wh,122,1,'+'); put(wh,123,3,'010')
+          wh_o=v3.parse_record_v3(bytes(wh)); h1,h2=wh_o['horses'][:2]
+          we=bytearray(b' '*42); common(we,'WE',announce='00000000'); put(we,34,1,'1'); put(we,35,1,'4'); put(we,36,1,'2'); put(we,37,1,'3')
+          we_o=v3.parse_record_v3(bytes(we))
+          av=bytearray(b' '*78); common(av,'AV'); put(av,3,1,'2'); put(av,36,2,'01'); put(av,74,3,'001'); av_o=v3.parse_record_v3(bytes(av))
+          cc=bytearray(b' '*50); common(cc,'CC'); put(cc,36,4,'1800'); put(cc,40,2,'17'); put(cc,42,4,'1600'); put(cc,46,2,'11'); put(cc,48,1,'4'); cc_o=v3.parse_record_v3(bytes(cc))
+          checks={
+            'wh_000_is_no_previous_not_zero':h1.get('body_weight_change_kg') is None and h1.get('body_weight_change_status')=='NO_PREVIOUS_RACE',
+            'wh_010_is_plus10':h2.get('body_weight_change_kg')==10 and h2.get('body_weight_change_status')=='MEASURED_CHANGE',
+            'we_00000000_has_no_fake_official_time':we_o.get('raw_announcement_code')=='00000000' and we_o.get('source_announcement_time_jst') is None and we_o.get('announcement_time_status')=='INITIAL_STATE_NO_OFFICIAL_TIMESTAMP',
+            'we_states_separate':we_o.get('current_weather_code')=='4' and we_o.get('current_track_condition_turf')=='2' and we_o.get('current_track_condition_dirt')=='3',
+            'av_2_is_exclusion':av_o.get('scratch_exclusion_state')=='EXCLUSION' and 'abnormal_code' not in av_o,
+            'cc_full_parse':cc_o.get('current_distance')=='1800' and cc_o.get('current_track_code')=='17' and cc_o.get('previous_distance')=='1600' and cc_o.get('previous_track_code')=='11'
+          }
+          def sha(p):return hashlib.sha256(Path(p).read_bytes()).hexdigest()
+          out={'test_id':'KEIBA_COLLECTOR_V3_FIXED_WIDTH_OFFICIAL_SEMANTIC_V1','commit_sha_under_test':os.environ.get('GITHUB_SHA'),'collector_v1_sha256':sha('scripts/keiba_jvlink_realtime_capture_v1.py'),'collector_v3_sha256':sha('scripts/keiba_jvlink_realtime_capture_v3.py'),'checks':checks,'status':'PASS' if all(checks.values()) else 'FAIL','real_capture_executed':False,'validation_oos_opened':False}
+          Path('.magi/keiba_collector_v3_fixed_width_official_semantic_v1.json').write_text(json.dumps(out,ensure_ascii=False,indent=2),encoding='utf-8')
+          if not all(checks.values()): raise SystemExit(2)
+          PY
+      - name: Commit parser evidence
+        run: |
+          git config user.name 'magi-parser-v3-bot'
+          git config user.email 'magi-parser-v3-bot@users.noreply.github.com'
+          git add .magi/keiba_collector_v3_fixed_width_official_semantic_v1.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Freeze collector v3 fixed-width official semantic evidence'
+          for attempt in 1 2 3; do git pull --rebase origin main && git push origin HEAD:main && exit 0; sleep $((attempt*2)); done
+          exit 1
