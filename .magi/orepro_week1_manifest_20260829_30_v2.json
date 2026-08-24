@@ -1,0 +1,66 @@
+{
+  "manifest_id": "OREPRO-WEEK1-20260829-30-V2",
+  "status": "PREPARED_WAITING_FOR_RACE_SELECTION",
+  "supersedes": "OREPRO-WEEK1-20260829-30-V1",
+  "race_dates_jst": ["2026-08-29", "2026-08-30"],
+  "platform": "netkeiba 俺プロ",
+  "real_money_bet": false,
+  "official_budget": {
+    "week_total_target_yen": 50000,
+    "selected_races_target": 5,
+    "target_per_race_yen": 10000,
+    "max_per_race_yen": 10000,
+    "unit_yen": 100
+  },
+  "race_selection": {
+    "selector": "OREPRO-WEEK1-CANDIDATE-SELECTION-V2",
+    "primary_slots": 5,
+    "reserve_slots": "all remaining eligible races in frozen data-quality order",
+    "replacement_allowed_only_for": ["pre-race data-quality failure","ticket-universe empty","pre-race scratch/market-data failure that invalidates frozen card"],
+    "replacement_forbidden_for": ["previous race loss","previous race hit","weekly return deterioration","desire to recover losses"],
+    "result_information_used": false
+  },
+  "per_race_outputs": [
+    "frozen prediction card",
+    "MAGI_PURE ticket list and stakes",
+    "OREPRO_OFFICIAL competition-overlay ticket list and stakes",
+    "OREPRO entry sheet",
+    "freeze SHA256",
+    "submission receipt time"
+  ],
+  "ledger_layers": ["OREPRO_OFFICIAL","OREPRO_NORMALIZED","MAGI_PURE"],
+  "battle_race": {
+    "max_per_week": 1,
+    "selection": "事前固定confidence ruleのみ",
+    "OREPRO_OFFICIAL_multiplier": 2,
+    "OREPRO_NORMALIZED_multiplier": 1,
+    "MAGI_PURE_multiplier": 1
+  },
+  "model_policy": {
+    "main": "A_MARKET_ONLY",
+    "shadow": ["C_LATE_PLUS_PATH_v3","C_MARKET_PLUS_HORSE_MISPRICING_v4","C_MARKET_PLUS_RECENCY_TRANSITION_v5"],
+    "shadow_may_replace_main_during_week1": false
+  },
+  "operational_sequence": [
+    "木曜: 出馬表公開後に全レース候補のデータ品質を計算しpriority+reserve順を固定",
+    "各対象レース発走前: safe snapshot取得→ticket universe生成→MAGI_PURE配分",
+    "同時点: competition overlayで公式10,000円を目標配分",
+    "capsで10,000円到達不能なら当該レースを機械除外しreserveへ",
+    "予想カードと両stake列をSHA256固定",
+    "俺プロへ登録しsubmission時刻を記録",
+    "発走後にのみ結果・払戻を追記",
+    "週終了後に3層成績を分離集計"
+  ],
+  "week_end_metrics": {
+    "OREPRO_OFFICIAL": ["stake","return","return_rate","battle_bonus_contribution","rank_eligibility"],
+    "OREPRO_NORMALIZED": ["stake","normal_return","return_rate","max_drawdown"],
+    "MAGI_PURE": ["recommended_stake","normal_return","return_rate","ticket_hit_rate","race_hit_rate","bet_type_return_rate","max_drawdown"],
+    "diagnostic": ["official_minus_normalized","normalized_minus_magi_pure","forced_scale_up_yen","rule_violation_count"]
+  },
+  "hard_blocks": {
+    "timestamp_sensitive_current_features": "blocked until Gate v4 real forward capture PASS",
+    "validation": "closed",
+    "oos": "closed",
+    "real_money": "not used"
+  }
+}
