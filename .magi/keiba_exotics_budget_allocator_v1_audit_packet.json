@@ -1,0 +1,34 @@
+{
+  "audit_id": "KEIBA-EXOTICS-BUDGET-ALLOCATOR-V1-AUDIT",
+  "scope": "synthetic infrastructure audit only",
+  "allocator": "scripts/keiba_exotics_budget_allocator_v1.py",
+  "evidence": ".magi/keiba_exotics_budget_allocator_v1_synthetic.json",
+  "design_intent": [
+    "race budget B is user-selected per race and may be 1000, 10000, or another 100-JPY-aligned amount",
+    "qualify tickets only when preregistered EV gate passes",
+    "allocate in 100-JPY units",
+    "never exceed race budget or preregistered ticket/bet-type/correlation caps",
+    "do not force full-budget spend",
+    "allow NO_BET",
+    "do not place real bets",
+    "do not open VALIDATION/OOS"
+  ],
+  "methods_present_for_future_DEV_comparison": [
+    "equal_among_qualified_tickets",
+    "edge_proportional_with_caps",
+    "fractional_kelly_with_race_cap"
+  ],
+  "important_limitations": [
+    "fractional Kelly is used only as a ticket scoring candidate; correlated exotic tickets make naive independent-ticket Kelly non-optimal",
+    "EV thresholds, caps, allocation method, and deploy fraction are not yet locked for real use",
+    "synthetic PASS is not evidence of profitability or calibration quality"
+  ],
+  "questions_for_auditor": [
+    "Does the allocator fail closed on invalid tickets and obey all monetary caps?",
+    "Does variable budget scaling introduce any hidden stake-cap inconsistency?",
+    "Is the unit-by-unit score/(1+n) balancing deterministic and free of obvious budget/cap bugs?",
+    "Is fractional-Kelly wording sufficiently conservative given correlated tickets?",
+    "What machine tests are still required before this allocator can be eligible for DEV ticket-allocation research?"
+  ],
+  "hard_rule": "PASS may authorize only additional synthetic/DEV plumbing work. It must not authorize real betting, VALIDATION, or OOS."
+}
