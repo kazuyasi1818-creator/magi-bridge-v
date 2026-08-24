@@ -1,0 +1,11 @@
+{
+  "test_id": "OREPRO-BUDGET-OVERLAY-V2-SYNTHETIC",
+  "status": "PASS",
+  "magi_pure_total_stake_yen": 3000,
+  "orepro_registered_total_stake_yen": 10000,
+  "forced_scale_up_total_yen": 7000,
+  "freeze_hash_sha256": "448731dd8c6082c234007479a604e2e468d821f9d3666dea309100e21c4b74ae",
+  "real_money_bet": false,
+  "validation_opened": false,
+  "oos_opened": false
+}
