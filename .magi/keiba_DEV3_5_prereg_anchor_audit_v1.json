@@ -1,0 +1,13 @@
+{
+  "audit_id":"KEIBA_DEV3_5_PREREG_ANCHOR_AUDIT_V1",
+  "status":"LOCAL_ORDER_PASS_EXTERNAL_ANCHOR_UNPROVEN",
+  "scope":"Evidence about artifact ordering only; does not retroactively create an external preregistration anchor.",
+  "trials":[
+    {"version":3,"prereg_sha256":"579afdb6a371d86c8849c49b9d362ad4ca0f8ef90146ad05d0dcc82714070018","prereg_mtime_utc":"2026-08-24T02:02:16+00:00","script_mtime_utc":"2026-08-24T02:02:59+00:00","audit_mtime_utc":"2026-08-24T02:03:00+00:00","local_order_prereg_before_script_before_audit":true},
+    {"version":4,"prereg_sha256":"118072176abc250096ed1022e515bca010e205713779bec25687fbe2d05b8a0a","prereg_mtime_utc":"2026-08-24T02:03:43+00:00","script_mtime_utc":"2026-08-24T02:04:15+00:00","audit_mtime_utc":"2026-08-24T02:04:28+00:00","local_order_prereg_before_script_before_audit":true},
+    {"version":5,"prereg_sha256":"3f404f5d3a2d37cdfcf01c95fb598f28ad5ccfd0766b029eef4d73673f7b2087","prereg_mtime_utc":"2026-08-24T02:05:11+00:00","script_mtime_utc":"2026-08-24T02:05:39+00:00","audit_mtime_utc":"2026-08-24T02:05:52+00:00","local_order_prereg_before_script_before_audit":true}
+  ],
+  "external_preexecution_anchor_verified":false,
+  "interpretation":"Local file ordering is consistent with prereg files being written before scripts/results, but mtimes are mutable and are not a cryptographic third-party pre-execution commitment. Keep the Bridge unresolved item open for v3-v5.",
+  "future_rule":"PREREG_LOCKED -> external hash/timestamp commit -> EXECUTABLE. No future DEV trial may count as externally preregistered without this sequence."
+}
