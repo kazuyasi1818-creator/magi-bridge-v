@@ -1,0 +1,55 @@
+{
+  "audit_id": "KEIBA_FEATURE_TIMING_PROVENANCE_AUDIT_V1",
+  "status": "BLOCKED_FOR_TIMESTAMPED_CURRENT_STATE_FEATURES",
+  "scope": "DEV data provenance audit only; no new model trial",
+  "inputs": {
+    "jvd": {"file":"keiba_DEV_jvd_parsed_v1.csv","sha256":"1eb479a7601992cfad52fdb80ce8c0f37428f76fc40cb42d1ba4cc4603129dc4","rows":29052,"races":2082},
+    "odds": {"file":"keiba_DEV_odds_outcome_join_v1.csv","sha256":"1d4db6f07c704f161a81627402d7094764334e67c5bdac58379e9878f4bd5206","rows":58104,"races":2082},
+    "history": {"file":"keiba_DEV_history_store_2024_20260331_v1.csv","sha256":"60a1e2529b47aae2ea29721ac586cc23cbe185f8928f96b304c495766dc7a898","rows":106905}
+  },
+  "snapshot_evidence": {
+    "odds_timestamp_columns":["snapshot_time_jst","effective_minutes_before_post"],
+    "snapshot_row_counts":{"EARLY":29052,"LATE":29052},
+    "minutes_before_post":{"EARLY":{"min":10,"median":11.0,"max":11},"LATE":{"min":5,"median":6.0,"max":6}}
+  },
+  "jvd_current_feature_coverage": {
+    "carried_weight_x10":{"coverage_pct":100.0},
+    "jockey_code":{"coverage_pct":100.0},
+    "jockey_name_short":{"coverage_pct":100.0},
+    "body_weight_kg":{"coverage_pct":99.86575795125981},
+    "abnormal_code":{"coverage_pct":100.0},
+    "registered_horses":{"coverage_pct":100.0},
+    "starters":{"coverage_pct":100.0}
+  },
+  "jvd_timestamp_like_columns":["post_time_hhmm"],
+  "current_feature_timestamp_proof": {
+    "carried_weight_x10":false,"jockey_code":false,"body_weight_kg":false,"abnormal_code":false,"registered_horses":false,"starters":false,
+    "reason":"Parsed JVD current-row file contains race/post time but no per-record acquisition/update/as-of timestamp proving these values existed at EARLY/LATE snapshot."
+  },
+  "source_semantics_risk": {
+    "post_race_fields_co_resident_in_same_jvd_row":["final_finish","final_win_odds","final_popularity","win_payout_yen_per_100","place_payout_yen_per_100","finishers","dead_heat_flag"],
+    "implication":"Co-residence does not prove leakage by itself, but current fields are not snapshot-safe without independent timestamp provenance."
+  },
+  "cross_source_consistency_current_values": {
+    "jockey_code":{"comparable_rows":28946,"equal_rows":28946,"equal_pct":100.0},
+    "carried_weight":{"comparable_rows":28946,"equal_rows":28946,"equal_pct":100.0},
+    "bodyweight":{"comparable_rows":28946,"equal_rows":28946,"equal_pct":100.0},
+    "abnormal_code":{"comparable_rows":28946,"equal_rows":28946,"equal_pct":100.0}
+  },
+  "abnormal_state_summary": {
+    "jvd_abnormal_nonzero_rows":218,
+    "late_validity_by_abnormal_code":[
+      {"abnormal_code":0,"count":28834,"valid":28834,"invalid":0},
+      {"abnormal_code":1,"count":39,"valid":0,"invalid":39},
+      {"abnormal_code":3,"count":67,"valid":64,"invalid":3},
+      {"abnormal_code":4,"count":112,"valid":112,"invalid":0}
+    ]
+  },
+  "decision": {
+    "green_now":["pre_win_odds with snapshot_time_jst","strictly historical features with history_date < target_race_date"],
+    "not_confirmatory_safe_without_new_provenance":["current jockey","current carried weight","current body weight","current abnormal/scratch state","registered/starters","current track condition/weather from untimestamped current/final rows"],
+    "next_machine_gate":"Require source_time <= snapshot_time_jst per feature value, hash exact input snapshot before execution.",
+    "new_adjacent_dev_trial_allowed_now":false,
+    "validation_oos_opened":false
+  }
+}
