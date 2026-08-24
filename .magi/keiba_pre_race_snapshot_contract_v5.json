@@ -1,0 +1,25 @@
+{
+  "contract_id":"KEIBA_PRE_RACE_SNAPSHOT_CONTRACT_V5",
+  "supersedes":"KEIBA_PRE_RACE_SNAPSHOT_CONTRACT_V4",
+  "status":"PREREG_LOCK_CANDIDATE",
+  "change_reason":"Official 0B11 WH timestamp correction before real capture: WH announcement code is 00000000, so WH uses actual local acquisition time.",
+  "wh_timing_rule":{
+    "source_kind":"JRA_VAN_0B11_WH",
+    "raw_announcement_code":"00000000",
+    "official_announcement_time_available":false,
+    "source_time_basis":"LOCAL_ACQUISITION",
+    "feature_source_time_equals_capture_time":true,
+    "capture_must_be_no_later_than_prediction_snapshot":true,
+    "future_or_post_snapshot_capture_forbidden":true
+  },
+  "wh_value_rules":{
+    "body_weight_000":"SCRATCH_NO_NUMERIC_WEIGHT",
+    "body_weight_999":"UNMEASURABLE_NO_NUMERIC_WEIGHT",
+    "change_000":"NO_PREVIOUS_RACE_NO_NUMERIC_CHANGE",
+    "change_999_or_blank":"NO_NUMERIC_CHANGE"
+  },
+  "we_initial_state_rule":"Unchanged from v4: WE 00000000 uses LOCAL_ACQUISITION from latest complete 0B14 capture available by snapshot.",
+  "all_other_v4_rules":"CARRY_FORWARD_UNCHANGED",
+  "validation_oos_opened":false,
+  "dev_v6_allowed":false
+}
