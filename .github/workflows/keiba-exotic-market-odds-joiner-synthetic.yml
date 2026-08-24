@@ -1,0 +1,102 @@
+name: Keiba exotic market odds joiner synthetic test
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/keiba-exotic-market-odds-joiner-synthetic.yml'
+      - 'scripts/keiba_join_exotic_market_odds_v1.py'
+
+permissions:
+  contents: write
+
+jobs:
+  joiner-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Test pre-snapshot only, no future backfill, stale rejection, and SHA requirement
+        run: |
+          set -euo pipefail
+          python3 -m py_compile scripts/keiba_join_exotic_market_odds_v1.py
+          python3 - <<'PY'
+          import hashlib, importlib.util, json, os
+          from pathlib import Path
+
+          p=Path('scripts/keiba_join_exotic_market_odds_v1.py')
+          spec=importlib.util.spec_from_file_location('joiner', p)
+          m=importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+          sha='a'*64
+          race='2026082901010101'
+          probs=[
+            {'race_id':race,'bet_type':'QUINELLA_UMA_REN','ticket_key':'01-02','model_probability':0.20},
+            {'race_id':race,'bet_type':'EXACTA_UMA_TAN','ticket_key':'01>02','model_probability':0.10},
+            {'race_id':race,'bet_type':'TRIO_3REN_PUKU','ticket_key':'01-02-03','model_probability':0.08},
+            {'race_id':race,'bet_type':'TRIFECTA_3REN_TAN','ticket_key':'01>02>03','model_probability':0.03},
+            {'race_id':race,'bet_type':'QUINELLA_UMA_REN','ticket_key':'03-04','model_probability':0.15},
+          ]
+          odds=[
+            # A valid pre-snapshot quote and a later future quote; joiner must choose 08:59, never 09:01.
+            {'race_id':race,'bet_type':'QUINELLA_UMA_REN','ticket_key':'01-02','market_odds':5.0,'odds_source_time_jst':'2026-08-29T08:59:00+09:00','source_file_sha256':sha,'odds_source_id':'Q_PRE'},
+            {'race_id':race,'bet_type':'QUINELLA_UMA_REN','ticket_key':'01-02','market_odds':99.0,'odds_source_time_jst':'2026-08-29T09:01:00+09:00','source_file_sha256':sha,'odds_source_id':'Q_FUTURE'},
+            # Future-only quote: must be skipped, not backfilled from the future.
+            {'race_id':race,'bet_type':'EXACTA_UMA_TAN','ticket_key':'01>02','market_odds':12.0,'odds_source_time_jst':'2026-08-29T09:00:01+09:00','source_file_sha256':sha,'odds_source_id':'E_FUTURE_ONLY'},
+            # Too old for 300-second max age.
+            {'race_id':race,'bet_type':'TRIO_3REN_PUKU','ticket_key':'01-02-03','market_odds':20.0,'odds_source_time_jst':'2026-08-29T08:50:00+09:00','source_file_sha256':sha,'odds_source_id':'TRIO_STALE'},
+            # Exact snapshot quote: valid.
+            {'race_id':race,'bet_type':'TRIFECTA_3REN_TAN','ticket_key':'01>02>03','market_odds':40.0,'odds_source_time_jst':'2026-08-29T09:00:00+09:00','source_file_sha256':sha,'odds_source_id':'TF_EXACT'},
+            # Pre-snapshot but missing valid SHA: reject.
+            {'race_id':race,'bet_type':'QUINELLA_UMA_REN','ticket_key':'03-04','market_odds':7.0,'odds_source_time_jst':'2026-08-29T08:59:30+09:00','source_file_sha256':'bad','odds_source_id':'Q_BAD_SHA'},
+          ]
+          out=m.join(probs,odds,'2026-08-29T09:00:00+09:00',300)
+          joined={(x['bet_type'],x['ticket_key']):x for x in out['joined']}
+          skipped={(x['bet_type'],x['ticket_key']):x for x in out['skipped']}
+          checks={
+            'valid_pre_snapshot_quote_joined':('QUINELLA_UMA_REN','01-02') in joined,
+            'future_quote_not_selected':joined[('QUINELLA_UMA_REN','01-02')]['odds_source_id']=='Q_PRE' and joined[('QUINELLA_UMA_REN','01-02')]['market_odds']==5.0,
+            'future_only_ticket_skipped':skipped[('EXACTA_UMA_TAN','01>02')]['reason']=='NO_PRE_SNAPSHOT_ODDS',
+            'stale_ticket_skipped':skipped[('TRIO_3REN_PUKU','01-02-03')]['reason']=='STALE_PRE_SNAPSHOT_ODDS',
+            'exact_snapshot_quote_joined':joined[('TRIFECTA_3REN_TAN','01>02>03')]['odds_source_id']=='TF_EXACT' and joined[('TRIFECTA_3REN_TAN','01>02>03')]['odds_age_seconds']==0.0,
+            'bad_sha_skipped':skipped[('QUINELLA_UMA_REN','03-04')]['reason']=='MISSING_OR_INVALID_SOURCE_SHA256',
+            'all_joined_times_not_future':all(x['odds_source_time_jst']<=x['prediction_snapshot_time_jst'] for x in out['joined']),
+            'future_backfill_disabled':out['future_odds_backfill_allowed'] is False,
+            'final_odds_not_purchase_price':out['post_race_final_odds_as_purchase_price'] is False,
+            'validation_oos_closed':out['validation_oos_opened'] is False,
+            'no_real_bet_flag':out['place_bets'] is False,
+          }
+          status='PASS' if all(checks.values()) else 'FAIL'
+          evidence={
+            'test_id':'KEIBA_EXOTIC_MARKET_ODDS_JOINER_SYNTHETIC_V1',
+            'commit_sha_under_test':os.environ.get('GITHUB_SHA'),
+            'joiner_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+            'snapshot_time_jst':'2026-08-29T09:00:00+09:00',
+            'max_age_seconds_tested':300,
+            'joined_count':len(out['joined']),
+            'skipped_count':len(out['skipped']),
+            'checks':checks,
+            'status':status,
+            'synthetic_only':True,
+            'real_odds_used':False,
+            'real_bets_placed':False,
+            'validation_oos_opened':False,
+          }
+          Path('.magi/keiba_exotic_market_odds_joiner_synthetic_v1.json').write_text(json.dumps(evidence,ensure_ascii=False,indent=2),encoding='utf-8')
+          print(json.dumps(evidence,ensure_ascii=False,indent=2))
+          if status!='PASS': raise SystemExit(2)
+          PY
+
+      - name: Commit joiner evidence
+        run: |
+          git config user.name 'magi-exotics-bot'
+          git config user.email 'magi-exotics-bot@users.noreply.github.com'
+          git add .magi/keiba_exotic_market_odds_joiner_synthetic_v1.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Freeze exotic market odds joiner synthetic evidence'
+          for attempt in 1 2 3; do
+            git pull --rebase origin main && git push origin HEAD:main && exit 0
+            sleep $((attempt*2))
+          done
+          exit 1
