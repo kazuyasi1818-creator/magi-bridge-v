@@ -1,0 +1,64 @@
+{
+  "policy_id": "KEIBA-RESIDUAL-FEATURE-POLICY-V2",
+  "status": "DRAFT_GUARDRAIL_ONLY_NOT_EXECUTABLE",
+  "supersedes": "KEIBA-RESIDUAL-FEATURE-POLICY-V1",
+  "baseline_market_fields": ["market_p", "log_market_p", "pre_win_odds", "odds"],
+  "residual_feature_whitelist": [
+    "horse_prior_starts",
+    "days_since_last_start_rebuilt",
+    "same_surface_as_last",
+    "same_venue_as_last",
+    "abs_distance_change_m",
+    "same_class_code_as_last"
+  ],
+  "last_start_dependent_features": [
+    "days_since_last_start_rebuilt",
+    "same_surface_as_last",
+    "same_venue_as_last",
+    "abs_distance_change_m",
+    "same_class_code_as_last"
+  ],
+  "explicitly_held_out": [
+    "last_finish",
+    "last_final_odds",
+    "last_final_popularity",
+    "horse_market_win_resid_mean_all",
+    "horse_market_win_resid_mean_last5",
+    "horse_finish_vs_market_rank_mean_all",
+    "horse_finish_vs_market_rank_mean_last5"
+  ],
+  "rules": {
+    "current_market_is_baseline_only": true,
+    "unknown_residual_features_fail_closed": true,
+    "held_out_features_fail_closed": true,
+    "duplicate_features_fail_closed": true,
+    "empty_residual_set_fail_closed": true,
+    "feature_order_must_match_whitelist": true,
+    "newcomer_races_excluded": true,
+    "zero_prior_history_must_not_be_imputed_as_observed_history": true
+  },
+  "zero_prior_start_policy": {
+    "condition": "horse_prior_starts == 0",
+    "required_raw_state": "all last_start_dependent_features are missing/unavailable",
+    "residual_score_before_race_centering": 0.0,
+    "fit_residual_coefficients_on_this_row": false,
+    "keep_horse_in_race_probability_evaluation": true,
+    "reason": "No prior-race context exists. Preserve market baseline instead of fabricating historical context."
+  },
+  "redundancy_audit": {
+    "source": "KEIBA-RESIDUAL-FEATURE-REDUNDANCY-DIAG-V2",
+    "max_abs_spearman": 0.3161221380,
+    "max_vif": 1.0992376271,
+    "decision": "KEEP_ALL_SIX; no feature removed for multicollinearity"
+  },
+  "execution_prerequisites": [
+    "Race-time Snapshot Gate v5 real Windows/JV-Link forward provenance PASS",
+    "new externally anchored trial prereg before execution",
+    "source data hashes fixed before execution",
+    "residual model class and all numeric alpha/clip/uncertainty rules frozen before execution"
+  ],
+  "note": "Architecture scope only. Previous v4 wording is superseded; Gate v5 is authoritative. No new DEV trial is authorized by this file.",
+  "validation_opened": false,
+  "oos_opened": false,
+  "real_money_bet": false
+}
