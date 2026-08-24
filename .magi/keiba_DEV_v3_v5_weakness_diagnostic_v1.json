@@ -1,0 +1,111 @@
+{
+  "diagnostic_id": "KEIBA-DEV-V3-V5-WEAKNESS-DIAGNOSTIC-V1",
+  "status": "EXPLORATORY_DIAGNOSTIC_ONLY",
+  "created_at_jst": "2026-08-24T13:35:00+09:00",
+  "scope": {
+    "stage": "DEV_ONLY",
+    "eval_period": "2026-01-04..2026-03-29",
+    "eval_races": 858,
+    "validation_opened": false,
+    "oos_opened": false,
+    "selection_or_stake_filter_promotion_allowed": false
+  },
+  "inputs": {
+    "keiba_magi_DEV_v3_v5_bundle_sha256": "a161813023a4917cc0062692e135b375ef6d5ae35cb93bb32f0fde8a89984837",
+    "keiba_leakage_safe_features_2024_20260719_sha256": "2bb13293f0c7bde2b4ff4471995faa5ba6b460a622b4922edf2606b0685912ab"
+  },
+  "metric": {
+    "name": "race_level_winner_logloss_improvement_vs_A_MARKET_ONLY",
+    "formula": "log(p_candidate_of_actual_winner / p_market_of_actual_winner)",
+    "positive_is_better": true
+  },
+  "global": {
+    "v3": {"mean": 0.0025200492, "ci95": [-0.0038315332, 0.0084515913]},
+    "v4": {"mean": 0.0035079984, "ci95": [-0.0025780704, 0.0092713802]},
+    "v5": {"mean": 0.0019240767, "ci95": [-0.0033890265, 0.0069604373]},
+    "conclusion": "All point estimates are positive, but all CIs cross zero and month-stability gates failed. No candidate is promoted."
+  },
+  "broad_pre_race_diagnostic_slices": [
+    {
+      "slice": "NEWCOMER_OR_AVG_PRIOR_STARTS_LE_1",
+      "n_races": 45,
+      "v3_mean": -0.0255782202,
+      "v3_ci95": [-0.05638, 0.00237],
+      "v4_mean": -0.0129731745,
+      "v4_ci95": [-0.03486, 0.00567],
+      "v5_mean": -0.0129035550,
+      "v5_ci95": [-0.03461, 0.00544],
+      "interpretation": "All three candidates deteriorated versus market, but CIs still include zero. Strongest common weakness signal; not proof."
+    },
+    {
+      "slice": "FIELD_SIZE_LE_9",
+      "n_races": 69,
+      "v3_mean": -0.01515,
+      "v3_ci95": [-0.03306, 0.00264],
+      "v4_mean": -0.01053,
+      "v4_ci95": [-0.02924, 0.00913],
+      "v5_mean": -0.00746,
+      "v5_ci95": [-0.02270, 0.00845],
+      "market_favorite_win_rate": 0.3913,
+      "mean_actual_winner_market_probability": 0.2749,
+      "interpretation": "All three candidates were negative in small fields while the market baseline was comparatively concentrated/accurate. Candidate adjustment may add noise; not a causal conclusion."
+    },
+    {
+      "slice": "FAVORITE_MARKET_P_LT_0_20",
+      "n_races": 94,
+      "v3_mean": -0.01047,
+      "v3_ci95": [-0.03431, 0.01018],
+      "v4_mean": -0.00373,
+      "v4_ci95": [-0.02302, 0.01367],
+      "v5_mean": -0.01061,
+      "v5_ci95": [-0.03006, 0.00653],
+      "interpretation": "All three candidates were negative when no horse had a strong market share. This is consistent with difficulty in diffuse/uncertain races, but is exploratory."
+    },
+    {
+      "slice": "DISTANCE_1800_TO_2199_M",
+      "n_races": 345,
+      "v3_mean": -0.0032098068,
+      "v3_ci95": [-0.01287, 0.00582],
+      "v4_mean": -0.0039285933,
+      "v4_ci95": [-0.01272, 0.00450],
+      "v5_mean": -0.0024135755,
+      "v5_ci95": [-0.01072, 0.00546],
+      "interpretation": "Broad common negative point estimate. Because distance can proxy race-class/composition, do not create a distance filter from this posthoc result."
+    },
+    {
+      "slice": "G3",
+      "n_races": 23,
+      "v3_mean": -0.0020422983,
+      "v3_ci95": [-0.02994, 0.02322],
+      "v4_mean": -0.0186133571,
+      "v4_ci95": [-0.06130, 0.01807],
+      "v5_mean": -0.0096168338,
+      "v5_ci95": [-0.04741, 0.02322],
+      "interpretation": "All three point estimates are negative, but sample is small and uncertainty is large. Diagnostic only."
+    }
+  ],
+  "non_promotable_positive_diagnostics": {
+    "note": "These are recorded to prevent selective reporting, but must not be turned into a betting filter.",
+    "examples": [
+      {"slice": "DISTANCE_1400_TO_1799_M", "n_races": 244, "v3_mean": 0.00871, "v4_mean": 0.01077, "v5_mean": 0.00961},
+      {"slice": "FIELD_SIZE_16_TO_18", "n_races": 419, "v3_mean": 0.00495, "v4_mean": 0.00659, "v5_mean": 0.00344},
+      {"slice": "FEBRUARY_2026", "n_races": 282, "v3_mean": 0.00821, "v4_mean": 0.00968, "v5_mean": 0.00673}
+    ]
+  },
+  "mechanistic_read": [
+    "v4 and v5 depend on historical horse information, so history-sparse/newcomer races are a plausible structural weakness rather than an arbitrary subgroup.",
+    "v3 uses only market-path information yet also deteriorates in newcomer and diffuse-market slices, suggesting that uncertainty is not solved merely by short-horizon odds movement.",
+    "Small fields show a common negative point estimate while market favorite hit rate is relatively high; extra model adjustment may be unnecessary in some concentrated races.",
+    "The 1800-2199m signal may be composition confounding and is not treated as a distance effect without prospective confirmation."
+  ],
+  "decision": {
+    "dev_v6_now": false,
+    "reason": "Repeated adjacent-model instability already identified; do not proliferate another variant before timing/data provenance bottleneck is resolved.",
+    "next": [
+      "Keep A_MARKET_ONLY as the public forward baseline role; v3-v5 remain SHADOW diagnostics, not promoted models.",
+      "Attach fixed pre-race shadow diagnostic tags to OrePro forward races without changing race selection, tickets, or stake.",
+      "After sufficient forward races, test whether the predeclared weakness tags reproduce before using them to motivate a new DEV hypothesis.",
+      "Race-time Snapshot Gate v4 real Windows/JV-Link forward capture remains the prerequisite for timestamp-sensitive current-feature research."
+    ]
+  }
+}
