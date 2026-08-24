@@ -1,0 +1,19 @@
+{
+  "contract_id": "KEIBA_PRE_RACE_SNAPSHOT_CONTRACT_V1",
+  "purpose": "Machine-prove that every current-race feature used for an EARLY/LATE prediction was available no later than that prediction snapshot.",
+  "required_columns": ["race_id","horse_no","snapshot_role","prediction_snapshot_time_jst","feature_name","feature_value","feature_source_time_jst","source_kind","source_file_sha256","source_row_id"],
+  "snapshot_roles": ["EARLY", "LATE"],
+  "current_features_requiring_timestamp_proof": ["current_surface","current_distance","current_class_code","current_course_code","current_jockey_code","current_jockey_name","current_carried_weight_x10","body_weight_kg","body_weight_change_kg","abnormal_code","registered_horses","starters","track_condition","weather"],
+  "forbidden_feature_names": ["final_finish","target_win","target_top3","final_win_odds","final_popularity","win_payout_yen_per_100","place_payout_yen_per_100"],
+  "forbidden_source_kinds_for_current_features": ["JVD_FINAL_PARSED","POST_RACE_FINAL_STATE","RESULT_FILE"],
+  "rules": [
+    "feature_source_time_jst must parse as an offset-aware timestamp and be <= prediction_snapshot_time_jst.",
+    "Each race_id/horse_no/snapshot_role/feature_name must resolve to exactly one frozen value.",
+    "source_file_sha256 must be a 64-character hexadecimal SHA-256.",
+    "Post-race/outcome fields are forbidden as prediction features regardless of timestamp.",
+    "Current-race features may not be sourced from the final/post-race parsed JVD dataset.",
+    "No later cancellation/exclusion/bodyweight/track/weather state may be backfilled into an earlier snapshot."
+  ],
+  "pass_condition": "Zero violations across all rows and exact input SHA archived before model execution.",
+  "validation_oos_opened": false
+}
