@@ -1,11 +1,11 @@
 {
-  "request_id":"KEIBA-SNAPSHOT-GATE-V3-FINAL-COMPACT-20260824",
-  "topic":"競馬MAGI Race-time Snapshot Gate v3の最終監査。v3固有事項だけを監査する。v2は再監査しない。公式JV-Data仕様に基づくAV scratch/exclusion分離、WH 000=0kg、WE芝/ダ別、CC full parse、0B14 latest-complete-capture semanticsが妥当か、修正後collectorの固定長parser CIとGate v3 semantic E2Eが十分か、実Windows/JV-Link forward capture plumbing testへ進めてよいかを判定する。モデル/アウトカムを見ての変更はなく、VALIDATION/OOS閉鎖・DEV v6禁止は維持。前回v3 BridgeはAPI予算保護で最終verdict前に停止したため、今回はv3-only軽量証拠で完結させる。",
+  "request_id":"KEIBA-SNAPSHOT-GATE-V4-FINAL-20260824",
+  "topic":"競馬MAGI Race-time Snapshot Gate v4最終監査。v3は一度synthetic監査PASSしたが、その後モデル/アウトカム/実captureを一切見ず公式JV-Data仕様を再照合し、WH増減差000は0kgではなく前走なし、WE初期状態は発表コード00000000を取り得ることを確認したためv3をsupersedeした。v4はWH000をnumeric changeとして出さず、001-998だけsigned numeric。WE initial 00000000には偽の公式時刻を作らず、snapshot以前のlatest complete 0B14 captureに含まれる場合だけLOCAL_ACQUISITIONとしてcapture時刻をsource時刻にする。AV分離、芝/ダ別、CC full parse、latest-complete-0B14によるwithdrawn event非carry-forwardは継続。固定長parser CIは6/6 PASS、v4 E2Eは6/6 PASS、Gate v4 0違反。①公式仕様証拠とv4修正の整合、②v3→v4がresult-driven/Gate緩和でないこと、③WE initialのLOCAL_ACQUISITION処理がfail-safeか、④実Windows/JV-Link forward capture plumbing testへ進めてよいかを判定する。PASSでもDEV v6/VALIDATION/OOSは解禁しない。",
   "evidence_files":[
-    ".magi/keiba_snapshot_gate_v3_final_audit_packet.json",
-    ".magi/keiba_jvdata_semantic_spec_evidence_v1.json",
-    ".magi/keiba_snapshot_gate_v3_semantic_e2e_v1.json",
-    ".magi/keiba_collector_v2_fixed_width_semantic_v1.json"
+    ".magi/keiba_snapshot_gate_v4_final_audit_packet.json",
+    ".magi/keiba_jvdata_semantic_spec_evidence_v2.json",
+    ".magi/keiba_snapshot_gate_v4_official_semantic_e2e_v1.json",
+    ".magi/keiba_collector_v3_fixed_width_official_semantic_v1.json"
   ],
   "budget_yen":50,
   "fx_yen_per_usd":150
