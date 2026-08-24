@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import sys
 import keiba_jvlink_realtime_capture_v1 as base
+
+_BASE_PARSE_RECORD = base.parse_record
 
 
 def parse_record_v2(raw: bytes) -> dict:
-    out = base.parse_record(raw)
+    # Call the frozen v1 parser implementation, not base.parse_record after monkeypatch.
+    out = _BASE_PARSE_RECORD(raw)
     rid = out.get('record_id')
 
     if rid == 'WH':
@@ -47,6 +49,8 @@ def parse_record_v2(raw: bytes) -> dict:
     return out
 
 
+# base.main()/write_capture calls base.parse_record; redirect it only after
+# preserving the original implementation above.
 base.parse_record = parse_record_v2
 
 if __name__ == '__main__':
