@@ -122,7 +122,10 @@ def main():
                 row_id = (r.get("source_row_id") or "").strip()
                 key = (race_id, horse_no, role, feature)
 
-                for field_name, field_value in [("race_id",race_id),("horse_no",horse_no),("feature_name",feature),("feature_value",value),("source_row_id",row_id)]:
+                for field_name, field_value in [
+                    ("race_id",race_id),("horse_no",horse_no),("feature_name",feature),
+                    ("feature_value",value),("source_row_id",row_id)
+                ]:
                     if not field_value:
                         violations.append({"type":"BLANK_REQUIRED_VALUE","line":i,"field":field_name})
 
