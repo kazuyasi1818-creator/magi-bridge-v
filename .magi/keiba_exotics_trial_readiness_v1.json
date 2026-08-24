@@ -1,0 +1,65 @@
+{
+  "readiness_id": "KEIBA-EXOTICS-TRIAL-READINESS-V1",
+  "status": "INFRASTRUCTURE_PASS_TRIAL_BLOCKED",
+  "recorded_before_any_exotic_dev_execution": true,
+  "infrastructure": {
+    "unified_probability_engine": "PASS_SYNTHETIC",
+    "horse_counts_tested": [3, 5, 8, 12, 16, 18],
+    "max_trifecta_ticket_count_tested": 4896,
+    "probability_identity_tolerance": 1e-10,
+    "timestamped_market_odds_joiner": "PASS_SYNTHETIC_FAIL_CLOSED",
+    "variable_budget_allocator": "PASS_SYNTHETIC",
+    "budgets_explicitly_tested_yen": [1000, 10000],
+    "stake_unit_yen": 100,
+    "cap_binding_tests": {
+      "single_ticket_cap": "PASS",
+      "bet_type_cap": "PASS",
+      "correlation_group_cap": "PASS",
+      "mixed_caps": "PASS"
+    },
+    "bridge_independent_audit": "PASS_NONE_HUMAN_ACTION_FALSE"
+  },
+  "supported_bet_types": [
+    "EXACTA_UMA_TAN",
+    "QUINELLA_UMA_REN",
+    "TRIFECTA_3REN_TAN",
+    "TRIO_3REN_PUKU"
+  ],
+  "hard_blockers": [
+    {
+      "id": "REAL_FORWARD_CAPTURE",
+      "state": "NOT_EXECUTED",
+      "rule": "Race-time Snapshot Gate v4 must pass on a real Windows/JV-Link forward capture before current-race timestamp-sensitive features may be unlocked."
+    },
+    {
+      "id": "PREDICTIVE_CANDIDATE",
+      "state": "NO_CURRENT_DEV_CANDIDATE_PASSED",
+      "rule": "Ticket/allocator plumbing PASS must not be interpreted as predictive edge. A leakage-safe horse/order probability candidate must pass its preregistered DEV probability-quality gate before ROI/ticket-selection promotion."
+    }
+  ],
+  "forbidden_until_blockers_clear": [
+    "open VALIDATION",
+    "open OOS_LOCKED",
+    "place real bets",
+    "claim profitability or market superiority",
+    "select an allocation method from realized ROI",
+    "backfill future/current-state features into historical snapshots"
+  ],
+  "next_allowed_actions": [
+    "prepare real JV-Link forward capture and redacted handoff",
+    "freeze the first prospective probability-trial prereg only after the exact data collection window and feature availability are known",
+    "continue synthetic/destructive tests that do not use race outcomes or open locked data"
+  ],
+  "evidence_bindings": {
+    "probability_engine_sha256": "b1af85df7361a5b84f38742badea12f741f31bf800f12d88e81f23cebd0d3937",
+    "allocator_sha256": "ecdd28d7d1bf93966634c17a88debd4c20f910ee6b3160b5abcead16fb3491fb",
+    "market_odds_joiner_sha256": "03438ffc56948a002e8c10db0caecb2f72b25419b5e188dc117bff4f7981157f",
+    "required_machine_test_commit": "6ff1e6b0ed9165659d70070a17228d42f981a568",
+    "market_odds_joiner_evidence_commit": "2de4a9edb7bacbec0b72550dd45284a863cafcb0",
+    "bridge_audit_response_commit": "841a2c87702cc64d1912f9154f6bb2b3879b67e8"
+  },
+  "real_bets_placed": false,
+  "validation_opened": false,
+  "oos_opened": false,
+  "dev_v6_executed": false
+}
