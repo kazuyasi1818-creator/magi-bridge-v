@@ -1,0 +1,37 @@
+{
+  "packet_id":"KEIBA-MAGI-DIRECTION-AUDIT-20260824-V1",
+  "created_at_jst":"2026-08-24T15:16:00+09:00",
+  "purpose":"Daily whole-system governance audit after multiple same-day design changes. This packet describes intended policy, not predictive-performance evidence.",
+  "current_intended_direction":{
+    "official_week1_forward":"Baseline/public line only; 2026-08-29/30, virtual money only, pre-race freeze, no post-result edits.",
+    "validation_oos":"KEEP_CLOSED",
+    "timestamp_sensitive_current_features":"BLOCK_UNTIL_REAL_GATE_V5_PASS",
+    "dev3_to_dev5":"ALL_FAILED_CANDIDATE_GATE; do not tune adjacent failed variants; prioritize timing/data-quality provenance.",
+    "council_v0_1":"SHADOW_DESIGN_CANDIDATE_ONLY; cannot replace public/baseline line; single-win probability research only; no promotion from short forward results.",
+    "council_expert_roles":["ABILITY","PACE","MARKET"],
+    "council_market_rule":"Use leakage-safe T-10 market probability; strict backward/as-of only.",
+    "council_disagreement":"Diagnostic only; must not change selection/ticket/stake during v0.1.",
+    "council_failed_dev_import":"PROHIBITED: do not import DEV3 odds-path, DEV4 historical mispricing, or DEV5 recency-transition as active Council filters/features merely because they exist.",
+    "council_missing_provenance_rule":"If required T-10 provenance cannot be proven, SHADOW_SKIP rather than later backfill.",
+    "priority_order":[
+      "1. Real Windows/JV-Link Gate v5 forward-capture provenance and timing/data-quality confirmation",
+      "2. Execute the frozen 2026-08-29/30 public Forward without contamination",
+      "3. Run Council only as shadow where its exact pre-race inputs independently satisfy provenance gates"
+    ]
+  },
+  "audit_questions":[
+    "Are there material contradictions among current Gate v5 rules, public Forward rules, DEV3-5 conclusions, and the Council shadow policy?",
+    "Is there any path by which Council or a failed DEV idea could contaminate or silently replace the frozen public/baseline Forward?",
+    "Is the stated priority order scientifically/governance-wise sound given current blockers?",
+    "Does the older operating protocol text that still says Gate v4 create an actionable configuration/documentation conflict now that Gate v5 supersedes it?",
+    "Identify only problems, required corrections, or STOP conditions. Do not propose new predictive features, new models, new betting strategies, or new research branches."
+  ],
+  "requested_verdict_format":{
+    "reported_verdict":"PASS | PASS_WITH_REQUIRED_CORRECTIONS | FAIL",
+    "revision_class":"NONE | DOCUMENTATION | GOVERNANCE | SCIENTIFIC",
+    "human_action_required":"boolean",
+    "critical_findings":"array",
+    "required_before_week1":"array",
+    "can_proceed_with_current_priority_order":"boolean"
+  }
+}
