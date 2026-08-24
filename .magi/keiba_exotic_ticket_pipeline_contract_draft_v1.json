@@ -1,0 +1,89 @@
+{
+  "contract_id": "KEIBA-EXOTIC-TICKET-PIPELINE-DRAFT-V1",
+  "status": "DRAFT_NOT_EXECUTABLE",
+  "purpose": "1つの発走前着順確率分布から馬単・馬連・3連単・3連複の買い目確率を作り、同一snapshot時点の購入可能オッズと結合し、ユーザー指定レース予算Bの範囲で資金配分するためのI/O契約。",
+  "pipeline": [
+    "leakage_safe_horse_scores",
+    "unified_order_probability_engine",
+    "derive_EXACTA_QUINELLA_TRIFECTA_TRIO_probabilities",
+    "join_timestamped_purchase_available_odds",
+    "compute_EV_and_risk_metadata",
+    "ticket_gate",
+    "dynamic_budget_allocator_B_yen",
+    "human_review_before_any_real_bet"
+  ],
+  "supported_bet_types": [
+    "EXACTA_UMA_TAN",
+    "QUINELLA_UMA_REN",
+    "TRIFECTA_3REN_TAN",
+    "TRIO_3REN_PUKU"
+  ],
+  "probability_engine_contract": {
+    "engine_id": "KEIBA_EXOTIC_PROBABILITY_ENGINE_V1",
+    "input": ["race_id", "horse_no", "positive_score", "prediction_snapshot_time_jst"],
+    "hard_rule": "全券種は同一の着順確率分布から導出し、券種ごとに別モデルを後付けしない。",
+    "consistency_requirements": [
+      "sum exacta probabilities = 1",
+      "sum quinella probabilities = 1",
+      "sum trifecta probabilities = 1",
+      "sum trio probabilities = 1",
+      "quinella(i,j) = exacta(i>j)+exacta(j>i)",
+      "trio(i,j,k) = six trifecta order probabilities summed"
+    ]
+  },
+  "market_join_contract": {
+    "required_fields": [
+      "race_id",
+      "bet_type",
+      "ticket_key",
+      "market_odds",
+      "odds_source_time_jst",
+      "prediction_snapshot_time_jst",
+      "source_file_sha256"
+    ],
+    "hard_time_gate": "odds_source_time_jst <= prediction_snapshot_time_jst",
+    "post_race_final_odds_as_purchase_price": false,
+    "missing_snapshot_odds_policy": "FAIL_CLOSED_SKIP_TICKET",
+    "later_odds_backfill_for_missing_snapshot": false
+  },
+  "ticket_gate_contract": {
+    "required_before_allocation": [
+      "model_probability is valid",
+      "market_odds is purchase-time auditable",
+      "EV threshold from a preregistered trial is satisfied",
+      "liquidity/availability gate is satisfied",
+      "correlation_group is assigned"
+    ],
+    "no_bet_allowed": true,
+    "no_force_ticket_count": true
+  },
+  "budget_allocator_contract": {
+    "allocator_id": "KEIBA_RACE_BUDGET_ALLOCATOR_V1",
+    "race_budget_symbol": "B",
+    "B_examples_yen": [1000, 3000, 5000, 10000],
+    "B_is_upper_bound_not_spend_target": true,
+    "minimum_unit_yen": 100,
+    "allowed_methods_for_DEV_comparison_only": [
+      "equal_among_qualified_tickets",
+      "edge_proportional_with_caps",
+      "fractional_kelly_with_race_cap"
+    ],
+    "method_not_yet_selected": true,
+    "caps_required": [
+      "race_total_stake <= B",
+      "single_ticket_cap",
+      "bet_type_cap",
+      "correlation_group_cap"
+    ],
+    "unused_budget_allowed": true
+  },
+  "governance": {
+    "real_bets_placed": false,
+    "validation_opened": false,
+    "oos_opened": false,
+    "DEV_v6_unlocked": false,
+    "Gate_v4_real_forward_capture_required_first": true,
+    "result_driven_threshold_change_forbidden": true,
+    "method_selection_from_validation_or_oos_forbidden": true
+  }
+}
