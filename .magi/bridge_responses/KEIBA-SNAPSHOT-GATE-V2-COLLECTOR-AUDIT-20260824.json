@@ -1,0 +1,142 @@
+{
+  "request_id": "KEIBA-SNAPSHOT-GATE-V2-COLLECTOR-AUDIT-20260824",
+  "trigger_commit_sha": "fd50c518c20d9a921ec6063490600add38a7675f",
+  "topic": "競馬MAGI Race-time Snapshot Gate v2と前走時刻証明パイプラインの統合監査。v1 checker監査待ちの間に重大な抜けを自己発見したためv2へsupersedeした。v2はfeature_source_timeだけでなくsource_capture_timeもprediction snapshot以前を必須化し、OFFICIAL_ANNOUNCEMENTとLOCAL_ACQUISITIONを分離、未知featureをfail-closed、feature→source_kind allowlist、実source fileをmanifestから再hashしてrowのsource SHAを照合する。合成PASS=0違反、破壊bundleはannouncement/capture時刻逆転、duplicate、final source、post-race feature、source不適合、unverified SHA、未知feature等10種類を検出してFAIL。さらにJRA-VAN SDK 5.0.0(2026-08-04)では64bit JV-LinkとPython3.14公式サンプルがあり、pywin32 Dispatch('JVDTLab.JVLink')、JVGets、JVWatchEventが公式開発ガイドに示されるため、収集設計を旧x86前提から公式64bit Python優先へ修正した。0B11 WH馬体重と0B14 WE/AV/JC/TC/CC速報をforward captureし、raw SHA+発表時刻+取得時刻を固定する。監査目的は①v2 checkerに重大な見逃し/過剰拒否が残るか、②source timeとcapture timeの二重Gateが妥当か、③公式0B11/0B14収集設計がGate解除経路として妥当か、④実データ取得前に直すべき点、⑤VALIDATION/OOSを閉鎖しDEV v6をまだ禁止する判断の妥当性。結果都合のGate緩和は禁止。",
+  "started_at_utc": "2026-08-24T02:35:19.880232+00:00",
+  "budget_yen": 50.0,
+  "fx_yen_per_usd": 150.0,
+  "evidence_files": [
+    ".magi/keiba_pre_race_snapshot_contract_v2.json",
+    ".magi/keiba_snapshot_gate_checker_code_v2.md",
+    ".magi/keiba_snapshot_gate_checker_test_v2.json",
+    ".magi/keiba_jvlink_realtime_source_map_v1.json",
+    ".magi/keiba_realtime_capture_collector_spec_v1.json"
+  ],
+  "ok": true,
+  "stages": [
+    {
+      "stage": "gpt_initial",
+      "speaker": "GPT / 主担当",
+      "text": "はい、MAGI主担当として、証拠を横断的に精査します。主な論点はKEIBA Snapshot Gate v2の監査要件、そのchecker動作、公式JV-Link収集設計の正当性、Gate緩和経路の遮断、実収集前修正点の有無、DEV/VALIDATION/OOS管理方針等であり、下記基準で検討します。\n\n---\n\n## 1. 確認済み（証拠十分により事実と断定）\n\n### v2 CheckerのGate挙動と明確な違反検出項目\n- **仕様固有のFail条件10種「合成PASS=0違反、破壊bundleはannouncement/capture時刻逆転、duplicate、final source、post-race feature、source不適合、unverified SHA、未知feature等」**は全て[keiba_snapshot_gate_checker_code_v2.md]および[keiba_snapshot_gate_checker_test_v2.json]で明文化済。公式PASS/FAILシミュレーションで予想通りに反応していることがsynthetic_fail_csvにて数値・検出タイプとして観測済み（違反数: 12例、タイプ明示）。\n- **feature_source_timeとsource_capture_time**は両者とも prediction_snapshot_time_jst より後になれば即FAIL。更にOFFICIAL_ANNOUNCEMENT/LOCAL_ACQUISITIONで順序・一致条件を厳格判定。\n- **SHA-256 rehashおよびmanifest検証**義務はcheckerコード・契約双方に記述があり、PASS条件は「再計算で全SHA-256一致しなければFAIL」。\n- **特徴量名→source_kind許可リスト、および未知featureはfail-closed**もチェックコード・契約で二重に規定。\n- **post-race, final-state feature禁止は時刻無関係で硬直的(block unconditional)**。\n- **VALIDATION/OOSは\"opened\":false明記。DEV v6一切禁止など設計上の型保証。**\n\n### JRA-VAN JV-Link 5.0.0 (64bit, Python3.14)\n- Windows公式64bitサポート・3.14サンプルあり。pywin32のDispatch('JVDTLab.JVLink')による現行64bit収集設計に公式根拠あり。[keiba_jvlink_realtime_source_map_v1.json 具備]。\n- 32bit限定継承の理由は消滅、推奨環境も証拠化。\n\n### 公式0B11, 0B14 forward capture設計\n- 0B11/0B14でアナウンス出てからJVLinkで即時に値取得、raw SHA＋発表・取得時刻を添付して保存。正規のsource kind,特徴量対応完備。[keiba_realtime_capture_collector_spec_v1.json]具体説明。\n- Pollingによるbaseline検証が必須で、イベントpushはphase2以降。\n\n### Gateバイパス不可確認\n- \"**final-state JVD file remains forbidden for current-race features**\" [keiba_jvlink_realtime_source_map_v1.json]。\n- 旧履歴(DEV期)リアルタイムfeedによる後追い合法化(laundering)は明確に禁止。\n- validation_oos_opened:false で新規モデル評価禁止。\n\n---\n\n## 2. 有力だが未証明（証拠はあるが、実データ/追加検証・特定状況での抜け/過剰拒否リスク）\n\n### v2 Checkerに重大な見逃し/過剰拒否の残存\n- [keiba_snapshot_gate_checker_test_v2.json] synthetic FAILバンドルで上述10型違反は確実に検出されており、明白なルールmissは検知済み。しかし、\n    - 線形時系列以外の機微 (微小clock skewやサブセカンド誤差)・タイムゾーン跨ぎ挙動やストレージI/O競合等、「全実際現場での稀なcorner case」はsynthetic test範囲外。\n    - 検査はpython SHA-256準拠だが、実際のローカルファイルシステムでのバイナリ変化やAPI層の不一致(例:余白, コード化, byteorder違い)は未実見。\n    - 未来のJRA-VAN仕様変更やJV-Link非互換が万一発生した場合の\"想定外例外\"まではFAIL型に網羅されていない。\n\n### 公式現行spec設計の抜け/異常経路\n- 現スペック設計(直接raw, offset-aware時刻ペア保存)は確かに理論上充分だが、「JV-Link/JRA-VANサーバ障害」「発表時刻の記録抜け」「Timezone/JSTズレ取り扱い」等は稼働前なので実地観測前提。  \n- Event push未テスト、複数PC/クロック同期齟齬時の連動確認なし。\n\n---\n\n## 3. 弱まった/棄却（証拠上否定 or 現状未発生扱い）\n\n### v2 Checker設計・現収集設計への根本的不備主張\n- 上記証拠により、「重大な通過抜けを自発発見しv1→v2 supersede」は合理的であり、v2がv1を包括上位で穴埋めしている。  \n現有設計で仕様型抜けによるバイパス/undetectableなGate破りは観測されておらず、仕様抜け放置の主張は減退。\n\n---\n\n## 4. 次の機械検証（今後必要な事項・実データ取得前に行うべきこと/優先順）\n\n1. **初回live captureの本番実行**  \n   - Polling baseline手順をWindows現地で稼働し、0B11/0B14から最低1日分をraw→SHA保存。\n   - capture時のraw SHAと表明SHAが正確一致し、Gate v2に投入しゼロ違反(PASS)かつ、SHA不一致や時刻異常も発生しないか確認。\n\n2. **Clock auditの自動記録/通知**  \n   - システムクロック状態(JST/UTC, タイムゾーン, オフセット)を定期記録、異常値(ズレ/巻き戻り)検知時はcheckpoint fail。\n\n3. **エッジケース検査（API/ファイル例外系）**  \n   - JV-Linkエラー応答、JVInit失敗、取得値空/壊れ、発表日時不可解析データなど失敗系含めて合成raw投入、全部FAILになるか回帰。\n\n4. **特徴量追加やAPI仕様/フィールド名・型変更時**  \n   - allowlist・fail-close挙動が新フィールド混入時も確保されるか、合成CSVで新feature→FAILを実施。\n\n---\n\n# まとめ：出力分類\n\n### 【確認済み】\n- v2 Checkerは合成テストで仕様通り違反型を完全検出(10種)。\n- 全フィーチャはsource→allowlistでfail-closed。\n- 書類上、現行JV-Link/Python設計はGate要件網羅・突破手段なし。\n- SHA実ファイル照合はmanifest再hash型でPASS必須。\n- 旧JVD final-state利用不可。\n\n### 【有力だが未証明】\n- 稼働前の微細異常系や想定外障害、現地クロックズレ例外はsynthetic外で未判定。",
+      "structured": null,
+      "agenda": null,
+      "model": "gpt-4.1",
+      "usage": {
+        "provider": "openai",
+        "input_tokens": 5699,
+        "cached_input_tokens": 0,
+        "output_tokens": 1800,
+        "total_tokens": 7499,
+        "usd": 0.025798,
+        "pricing_known": true
+      },
+      "provider_stop_reason": null
+    },
+    {
+      "stage": "claude_audit",
+      "speaker": "Claude / 監査",
+      "text": "# MAGI 独立監査報告 — Snapshot Gate v2 統合監査\n\n**対象:** keiba_pre_race_snapshot_contract_v2.json / keiba_snapshot_gate_checker_code_v2.md / keiba_snapshot_gate_checker_test_v2.json / keiba_jvlink_realtime_source_map_v1.json / keiba_realtime_capture_collector_spec_v1.md  \n**監査役:** MAGI独立監査 (reported_verdict; Gate権限なし)\n\n---\n\n## 0. GPT案への総評\n\nGPT案の大枠は証拠と概ね整合しているが、以下の点で **不十分・不正確・検証漏れ** がある。それぞれ節で指摘する。\n\n---\n\n## 1. 数値・事実照合\n\n### 1-1. 違反検出数「10種」の表記\n\n**GPT案の記述:** 「合成PASS=0違反、破壊bundleはannouncement/capture時刻逆転、duplicate、final source、post-race feature、source不適合、unverified SHA、未知feature等10種類」\n\n**証拠 [keiba_snapshot_gate_checker_test_v2.json]:**\n\n```\n\"detected_types\": [\n  \"ANNOUNCEMENT_AFTER_CAPTURE\",\n  \"CAPTURE_AFTER_PREDICTION_SNAPSHOT\",\n  \"DUPLICATE_FROZEN_FEATURE\",\n  \"FEATURE_SOURCE_NOT_APPROVED\",\n  \"FORBIDDEN_FINAL_SOURCE\",\n  \"FORBIDDEN_POST_RACE_FEATURE\",\n  \"LOCAL_ACQUISITION_TIME_MISMATCH\",\n  \"SOURCE_AFTER_PREDICTION_SNAPSHOT\",\n  \"SOURCE_SHA_NOT_VERIFIED_BY_MANIFEST\",\n  \"UNKNOWN_FEATURE_FAIL_CLOSED\"\n]\n\"violation_count\": 12\n```\n\n型の数は10種。violation_count=12（一つの合成bundleで同型が複数発火しうる）。GPT案は「10種類」と書きつつ本文でほぼ全型を列挙しており数値自体は正しいが、**型数=10とviolation_count=12の区別が曖昧**。これは文章修正で直せる。\n\n**判定:** REVISE（文章修正で対応可）\n\n---\n\n### 1-2. contract_sha256の不整合\n\n**証拠 [keiba_snapshot_gate_checker_test_v2.json]:**\n\n```json\n\"contract_sha256\": \"de48eb349b1e020d767ac91298c4faed0d64d2ad1378e6f137665f9c54899cdc\"\n```\n\n**証拠 [keiba_pre_race_snapshot_contract_v2.json のヘッダ(Bridge供給)]:**\n\n```\nsha256: 5fefae5a413c46eaa98cfe7edf2cd51384fbf666b481d86ad928a8daa3facc98\n```\n\n**問題:** テストファイルが参照するcontract_sha256（`de48eb...`）と、実際にBridgeが供給したcontract_v2.jsonのSHA-256（`5fefae...`）が **一致しない**。\n\n**GPT案はこの不整合を指摘していない。** これは監査上の重大な見落としである。\n\n**解釈の分岐:**\n\n| 可能性 | 含意 |\n|---|---|\n| A: テストが旧バージョンのcontractに対して書かれており、現在供給されたcontractと齟齬がある | テストの有効性に疑義。テストを現行contractに対して再実行・再凍結が必要 |\n| B: Bridgeが異なるバイト列のcontractを供給した（改行・BOM等の差異） | 同上。どちらのcontractに対してcheckerが実行されたか不明 |\n| C: 単純なバージョン管理の混在（test作成時とcontract最終化のタイミングズレ） | 同上 |\n\n**いずれの場合も、テストファイルのcontract参照SHAと現行contractのSHAが一致することを確認しなければ、synthetic PASSの証明力は限定的となる。**\n\n**反証条件:** Bridgeがcontract_v2.jsonを再供給しSHA=`de48eb...`に一致すれば不整合は解消する。またはテストファイルを現行contractのSHA（`5fefae...`）で更新し、checkerを再実行してPASSを再確認すれば解消する。\n\n**判定:** REJECT on this sub-point — 新しい機械的確認（再hash・再実行）が必要。文章修正では解決しない。\n\n---\n\n### 1-3. checker_sha256の検証可否\n\n**証拠 [keiba_snapshot_gate_checker_code_v2.md]:**\n\n```\nCanonical tested SHA-256: 3e4bcc4b8bd045ac8f79f53ae90a5570c18eecd6594c606522840c1621f8bdeb\n```\n\n**証拠 [keiba_snapshot_gate_checker_test_v2.json]:**\n\n```json\n\"checker_sha256\": \"3e4bcc4b8bd045ac8f79f53ae90a5570c18eecd6594c606522840c1621f8bdeb\"\n```\n\nこちらは一致している。ただし、`.py`ファイル自体はBridgeに供給されておらず、SHA照合は",
+      "structured": null,
+      "agenda": null,
+      "model": "claude-sonnet-4-6",
+      "usage": {
+        "provider": "anthropic",
+        "input_tokens": 2394,
+        "cache_write_tokens": 7112,
+        "cache_read_tokens": 0,
+        "output_tokens": 1500,
+        "total_tokens": 11006,
+        "usd": 0.056352,
+        "pricing_known": true
+      },
+      "provider_stop_reason": "max_tokens"
+    },
+    {
+      "stage": "gpt_revise",
+      "speaker": "GPT / 改訂",
+      "text": "# 改訂案 — MAGI Snapshot Gate v2統合監査（証拠一致主義・数値/言明精緻化対応版）\n\n## はじめに\n\n本稿はMAGI主担当として、与えられた証拠（下記ファイル群）**のみ**に基づき、「Snapshot Gate v2」＋前走時刻証明パイプラインとそのchecker/公式収集設計のGate厳密性を監査する。  \n**Gate条件・方針・閾値・許可されたsubsetなどは一切変更しない。** 新規データ・再計算・機械的検証が必要な論点は必ず『未解決』と記載し、文章修正で解決しない。\n\n---\n\n## 0. 使用証拠\n\n- keiba_pre_race_snapshot_contract_v2.json（Bridge SHA: `5fefae5a...`)\n- keiba_snapshot_gate_checker_code_v2.md\n- keiba_snapshot_gate_checker_test_v2.json\n- keiba_jvlink_realtime_source_map_v1.json\n- keiba_realtime_capture_collector_spec_v1.json\n\n---\n\n## 1. **確認済み（証拠のみに基づき”事実”と認定可能な論点）**\n\n### (1-1) v2 Checkerルール・構造の明確化\n\n- v2 Checkerは**10種の違反型**（[keiba_snapshot_gate_checker_test_v2.jsonの`detected_types`](#reference-1)）をfail-closedで検出し、**各種違反判定ロジック**（feature⇒source_kind編成, SHA256再計算, 必須時刻ペア, post-race禁止, duplicate, source approval…等）を厳格に実装（[keiba_snapshot_gate_checker_code_v2.md](#reference-2)）。\n- **合成FAILテスト**（synthetic_fail_csv）は**違反型10種類・違反件数12件**（違反型:10種＝複数件可能性。違反件数:12件）を正しく検出、PASSテストで0違反で通過することが数値・証拠から再現性を持って確認できる。\n- **特徴量名→許可source_kindの許可リストによるfail-close、未知featureおよび許可外sourceは明確に不許可（fail-closed）**。\n- **feature_source_time_jst・source_capture_time_jstはprediction_snapshot_time_jstを超えれば即FAIL、OFFICIAL_ANNOUNCEMENT/LOCAL_ACQUISITIONで順序・一致条件あり。**  \n- **post-race field、final-state/prohibited source、invalid role・basisなどは無条件にblock。**\n- **SHA-256 rehash/manifest検証は必須。** supplied SHAは一つずつ実ファイル（manifest）から再hash、照合できなければFAIL（Bridge再計算済みも明記）。\n- **validation_oos_opened=false、DEV v6やVALIDATION/OOS解禁は現状”全禁止”状態であることも証拠から明示。**\n\n### (1-2) JRA-VAN公式JV-Link 5.0.0設計\n\n- **公式最新環境（64bit JV-Link＋Python3.14＋pywin32サンプル）**が利用可。現行設計も証拠で公式系統のみサポートし、旧32bitに固執しないことが明記（[keiba_jvlink_realtime_source_map_v1.json](#reference-3)）。\n- **収集経路/公式ガイドルール/JRA-VAN SDKリリース日等も網羅。**\n\n### (1-3) 0B11・0B14 current-state forward capture正当性\n\n- 0B11/0B14の**rawレコードと発表時刻・取得時刻（両方）をペアで即時保存・SHA化**。provenance拘束力は時刻ペアの**両方をsnapshot以前まで必須**とするGate論理で担保。\n- **取得設計（pollingがbaseline）やappend-only ledger保存、derived stateの二次可変禁止、Gate突破経路のブロックなど仕様に明記。**\n- **final-state JVDの回避経路遮断、短期間再利用による旧期laundering全面禁止も証拠済。**  \n\n---\n\n## 2. **有力だが未証明（現行仕様は理論的に合理的だが、現地エラー／細部の未実地観測境界）**\n\n### (2-1) 実地corner-caseの未証明\n\n- **checkerの「重大な見逃し/過剰拒否」**については  \n    - 合成FAILで明示的10種は確実に網羅、ルール型は一通り漏れていない。\n    - だが、「clock skew」や「ファイルI/O・サブセカンド精度」等、想定外の環境起因例外（例: ストレージ差、ローカルJV-Link隠れエラー、クロックずれなど）は合成検証範囲外。  \n    - JRA-VANの将来仕様変更・APIエラー等も同様、**実環境未観測ゆえ『未証明』**である\n\n### (2-2) current-state取得設計の抜け経路未観測\n\n- **設計は理論上盤石・合理的だが、下記は未観測リスクとして残存（未解決）：**\n    - JV-Linkソフト異常/通信orAPI未応答\n    - 発表時刻欠損レコード混入\n    - クロック監査でのタイムゾーン異常や巻き戻り（起こり得るが合成で証明不能）\n\n---\n\n## 3. **弱体化/否定（現時点で否定・後退・重点警告）**\n\n### (3-1) contract_sha256の検証不一致\n\n- 合成テスト[keiba_snapshot_gate_checker_test_v2.json]の`contract_sha256`(`de48eb...`)とBridge提供の契約ファイル`keiba_pre_race_snapshot_contract_v2.json`(`5fefae...`)がSHA256として**食い違っており、checkerテストは現行契約に対するPASS証明力を一部欠く**。\n    - 文章修正だけでの解決不可。\n    - **対処（未解決）:** テストCSVを現行contractに対し再生成し、再検証(PASSになることを新規データ・計算で証明)する必要あり。現状、checkerとtestの検証対象contract一致保証は成立していない。\n    - **このため「checker PASS証明は現行contract用として未成立」という重大な検証漏れを公式認定**。\n\n### (3-2) checker_py本体未添付\n\n- SHAは一致するが、`keiba_snapshot_gate_checker_code_v2.md`は実行体の内容説明であって、実行した`.py`スクリプト自体・入力/出力ファイルセットがBridgeに添付されていない。そのため、「現物バイト列で本当に合成PASSしたか」の全機械証明責任も未了。\n    - 本体code,入力CSV,出力JSON全セットが揃えば反証可。\n    - 現状は数値主張のlevel-downであることを注記。\n\n---\n\n## 4. **実データ取得前に即対応すべき点・優先付け**\n\n- **contract/testのSHA不一致—checker合成テストを現行contractバイト列で再捕捉・再凍結し直す（新規",
+      "structured": null,
+      "agenda": null,
+      "model": "gpt-4.1",
+      "usage": {
+        "provider": "openai",
+        "input_tokens": 8763,
+        "cached_input_tokens": 5504,
+        "output_tokens": 1800,
+        "total_tokens": 10563,
+        "usd": 0.02367,
+        "pricing_known": true
+      },
+      "provider_stop_reason": null
+    },
+    {
+      "stage": "claude_verdict",
+      "speaker": "Claude / 最終監査",
+      "text": "reported_verdict: REVISE\nrevision_class: EVIDENCE_RECONCILIATION\nhuman_action_required: false\nnext_action: GPT案の内容は証拠との整合性・論点整理ともに概ね適切だが、contract SHA不一致の扱いを『重大な検証漏れ』として明記した点は正しい。ただし「checker PASS証明は現行contract用として未成立」という断定は証拠から導ける。文章上『現物バイト列未添付ゆえlevel-down』と書くだけでは不十分で、SHA不一致に起因する再凍結必要性を実施条件として明示すべき。same evidenceで修正可能なため REVISE/EVIDENCE_RECONCILIATION で返す。human作業不要、機械再計算で解決できる。\n\n確認できた事実:\n- 合成PASSテスト0違反・合成FAILテスト10種12件検出はtest_v2.jsonとchecker_code_v2.mdの双方で数値一致確認（証拠直接参照）\n- feature→source_kind allowlist・fail-closed・SHA manifest再計算・時刻二重Gate・post-race禁止等の主要ルールはcontract_v2とchecker_code_v2の記述が整合\n- collector_spec_v1はappend-only raw SHA化・時刻ペア即時記録・final-state JVD回避・historical laundering禁止を明示し設計合理性は確認可\n- validation_oos_opened=false・DEV v6禁止は全5証拠ファイルで一貫しており、判断の妥当性は証拠範囲で確認可\n- JRA-VAN SDK 5.0.0の64bit対応・Python3.14サンプル・pywin32 JVGets経路はsource_map_v1.jsonで証拠あり（実行未済は別問題）\n\n未解決点:\n- test_v2.jsonのcontract_sha256(de48eb...)とBridge提供contract_v2.jsonのSHA(5fefae...)が不一致。同一証拠内で整合しないため文章修正だけでは解決不可。現行contractに対する合成PASS/FAIL再生成・再凍結が必要\n- checker本体.pyファイル・入力CSV・出力JSON全セットがBridgeに未添付のため、「実バイト列で合成PASSした」という全機械証明は未完結。SHA照合に留まる\n- clock skew・JV-Link隠れエラー・発表時刻欠損レコード等の実環境corner-caseは合成テスト範囲外であり、実地捕捉前の未証明リスクとして残存\n\n必要な機械検証:\n- 現行contract_v2.json(SHA:5fefae...)を対象として合成テストCSV/manifestを再生成し、checker_v2.pyを再実行してPASS/FAIL両ケースの違反型・件数・exit_codeを再凍結・Bridge提出すること\n- checker_v2.pyの実バイト列SHA(3e4bcc...)をBridgeで独立再計算し、入力CSV・出力JSONとセットで提出することで機械証明を完結させること\n\n理由: GPT案の主要論点（v2 checker設計・時刻二重Gate妥当性・公式0B11/0B14収集経路・VALIDATION/OOS閉鎖判断）は証拠から再現可能な範囲で正確に記述されている。唯一の構造的問題はtest_v2.jsonのcontract_sha256(de48eb...)とBridge提供contract_v2.json(5fefae...)の不一致で、これはGPT案も指摘しているが『公式認定』という表現が証拠外の権威付けになっている。修正点：①SHA不一致を事実として中立的に記述、②再凍結を必要条件として条件文で記載、③checker本体未添付は機械証明の未完結として記述し評価を下げすぎない。これらは同一証拠内の整合修正であり新規データ取得不要。",
+      "structured": {
+        "reported_verdict": "REVISE",
+        "revision_class": "EVIDENCE_RECONCILIATION",
+        "human_action_required": false,
+        "confirmed_facts": [
+          "合成PASSテスト0違反・合成FAILテスト10種12件検出はtest_v2.jsonとchecker_code_v2.mdの双方で数値一致確認（証拠直接参照）",
+          "feature→source_kind allowlist・fail-closed・SHA manifest再計算・時刻二重Gate・post-race禁止等の主要ルールはcontract_v2とchecker_code_v2の記述が整合",
+          "collector_spec_v1はappend-only raw SHA化・時刻ペア即時記録・final-state JVD回避・historical laundering禁止を明示し設計合理性は確認可",
+          "validation_oos_opened=false・DEV v6禁止は全5証拠ファイルで一貫しており、判断の妥当性は証拠範囲で確認可",
+          "JRA-VAN SDK 5.0.0の64bit対応・Python3.14サンプル・pywin32 JVGets経路はsource_map_v1.jsonで証拠あり（実行未済は別問題）"
+        ],
+        "unresolved": [
+          "test_v2.jsonのcontract_sha256(de48eb...)とBridge提供contract_v2.jsonのSHA(5fefae...)が不一致。同一証拠内で整合しないため文章修正だけでは解決不可。現行contractに対する合成PASS/FAIL再生成・再凍結が必要",
+          "checker本体.pyファイル・入力CSV・出力JSON全セットがBridgeに未添付のため、「実バイト列で合成PASSした」という全機械証明は未完結。SHA照合に留まる",
+          "clock skew・JV-Link隠れエラー・発表時刻欠損レコード等の実環境corner-caseは合成テスト範囲外であり、実地捕捉前の未証明リスクとして残存"
+        ],
+        "required_machine_tests": [
+          "現行contract_v2.json(SHA:5fefae...)を対象として合成テストCSV/manifestを再生成し、checker_v2.pyを再実行してPASS/FAIL両ケースの違反型・件数・exit_codeを再凍結・Bridge提出すること",
+          "checker_v2.pyの実バイト列SHA(3e4bcc...)をBridgeで独立再計算し、入力CSV・出力JSONとセットで提出することで機械証明を完結させること"
+        ],
+        "next_action": "GPT案の内容は証拠との整合性・論点整理ともに概ね適切だが、contract SHA不一致の扱いを『重大な検証漏れ』として明記した点は正しい。ただし「checker PASS証明は現行contract用として未成立」という断定は証拠から導ける。文章上『現物バイト列未添付ゆえlevel-down』と書くだけでは不十分で、SHA不一致に起因する再凍結必要性を実施条件として明示すべき。same evidenceで修正可能なため REVISE/EVIDENCE_RECONCILIATION で返す。human作業不要、機械再計算で解決できる。",
+        "rationale": "GPT案の主要論点（v2 checker設計・時刻二重Gate妥当性・公式0B11/0B14収集経路・VALIDATION/OOS閉鎖判断）は証拠から再現可能な範囲で正確に記述されている。唯一の構造的問題はtest_v2.jsonのcontract_sha256(de48eb...)とBridge提供contract_v2.json(5fefae...)の不一致で、これはGPT案も指摘しているが『公式認定』という表現が証拠外の権威付けになっている。修正点：①SHA不一致を事実として中立的に記述、②再凍結を必要条件として条件文で記載、③checker本体未添付は機械証明の未完結として記述し評価を下げすぎない。これらは同一証拠内の整合修正であり新規データ取得不要。",
+        "parse_error": false
+      },
+      "agenda": null,
+      "model": "claude-sonnet-4-6",
+      "usage": {
+        "provider": "anthropic",
+        "input_tokens": 2754,
+        "cache_write_tokens": 7612,
+        "cache_read_tokens": 0,
+        "output_tokens": 1158,
+        "total_tokens": 11524,
+        "usd": 0.054177,
+        "pricing_known": true
+      },
+      "provider_stop_reason": "end_turn"
+    }
+  ],
+  "final_structured": {
+    "reported_verdict": "REVISE",
+    "revision_class": "EVIDENCE_RECONCILIATION",
+    "human_action_required": false,
+    "confirmed_facts": [
+      "合成PASSテスト0違反・合成FAILテスト10種12件検出はtest_v2.jsonとchecker_code_v2.mdの双方で数値一致確認（証拠直接参照）",
+      "feature→source_kind allowlist・fail-closed・SHA manifest再計算・時刻二重Gate・post-race禁止等の主要ルールはcontract_v2とchecker_code_v2の記述が整合",
+      "collector_spec_v1はappend-only raw SHA化・時刻ペア即時記録・final-state JVD回避・historical laundering禁止を明示し設計合理性は確認可",
+      "validation_oos_opened=false・DEV v6禁止は全5証拠ファイルで一貫しており、判断の妥当性は証拠範囲で確認可",
+      "JRA-VAN SDK 5.0.0の64bit対応・Python3.14サンプル・pywin32 JVGets経路はsource_map_v1.jsonで証拠あり（実行未済は別問題）"
+    ],
+    "unresolved": [
+      "test_v2.jsonのcontract_sha256(de48eb...)とBridge提供contract_v2.jsonのSHA(5fefae...)が不一致。同一証拠内で整合しないため文章修正だけでは解決不可。現行contractに対する合成PASS/FAIL再生成・再凍結が必要",
+      "checker本体.pyファイル・入力CSV・出力JSON全セットがBridgeに未添付のため、「実バイト列で合成PASSした」という全機械証明は未完結。SHA照合に留まる",
+      "clock skew・JV-Link隠れエラー・発表時刻欠損レコード等の実環境corner-caseは合成テスト範囲外であり、実地捕捉前の未証明リスクとして残存"
+    ],
+    "required_machine_tests": [
+      "現行contract_v2.json(SHA:5fefae...)を対象として合成テストCSV/manifestを再生成し、checker_v2.pyを再実行してPASS/FAIL両ケースの違反型・件数・exit_codeを再凍結・Bridge提出すること",
+      "checker_v2.pyの実バイト列SHA(3e4bcc...)をBridgeで独立再計算し、入力CSV・出力JSONとセットで提出することで機械証明を完結させること"
+    ],
+    "next_action": "GPT案の内容は証拠との整合性・論点整理ともに概ね適切だが、contract SHA不一致の扱いを『重大な検証漏れ』として明記した点は正しい。ただし「checker PASS証明は現行contract用として未成立」という断定は証拠から導ける。文章上『現物バイト列未添付ゆえlevel-down』と書くだけでは不十分で、SHA不一致に起因する再凍結必要性を実施条件として明示すべき。same evidenceで修正可能なため REVISE/EVIDENCE_RECONCILIATION で返す。human作業不要、機械再計算で解決できる。",
+    "rationale": "GPT案の主要論点（v2 checker設計・時刻二重Gate妥当性・公式0B11/0B14収集経路・VALIDATION/OOS閉鎖判断）は証拠から再現可能な範囲で正確に記述されている。唯一の構造的問題はtest_v2.jsonのcontract_sha256(de48eb...)とBridge提供contract_v2.json(5fefae...)の不一致で、これはGPT案も指摘しているが『公式認定』という表現が証拠外の権威付けになっている。修正点：①SHA不一致を事実として中立的に記述、②再凍結を必要条件として条件文で記載、③checker本体未添付は機械証明の未完結として記述し評価を下げすぎない。これらは同一証拠内の整合修正であり新規データ取得不要。",
+    "parse_error": false
+  },
+  "final_text": "reported_verdict: REVISE\nrevision_class: EVIDENCE_RECONCILIATION\nhuman_action_required: false\nnext_action: GPT案の内容は証拠との整合性・論点整理ともに概ね適切だが、contract SHA不一致の扱いを『重大な検証漏れ』として明記した点は正しい。ただし「checker PASS証明は現行contract用として未成立」という断定は証拠から導ける。文章上『現物バイト列未添付ゆえlevel-down』と書くだけでは不十分で、SHA不一致に起因する再凍結必要性を実施条件として明示すべき。same evidenceで修正可能なため REVISE/EVIDENCE_RECONCILIATION で返す。human作業不要、機械再計算で解決できる。\n\n確認できた事実:\n- 合成PASSテスト0違反・合成FAILテスト10種12件検出はtest_v2.jsonとchecker_code_v2.mdの双方で数値一致確認（証拠直接参照）\n- feature→source_kind allowlist・fail-closed・SHA manifest再計算・時刻二重Gate・post-race禁止等の主要ルールはcontract_v2とchecker_code_v2の記述が整合\n- collector_spec_v1はappend-only raw SHA化・時刻ペア即時記録・final-state JVD回避・historical laundering禁止を明示し設計合理性は確認可\n- validation_oos_opened=false・DEV v6禁止は全5証拠ファイルで一貫しており、判断の妥当性は証拠範囲で確認可\n- JRA-VAN SDK 5.0.0の64bit対応・Python3.14サンプル・pywin32 JVGets経路はsource_map_v1.jsonで証拠あり（実行未済は別問題）\n\n未解決点:\n- test_v2.jsonのcontract_sha256(de48eb...)とBridge提供contract_v2.jsonのSHA(5fefae...)が不一致。同一証拠内で整合しないため文章修正だけでは解決不可。現行contractに対する合成PASS/FAIL再生成・再凍結が必要\n- checker本体.pyファイル・入力CSV・出力JSON全セットがBridgeに未添付のため、「実バイト列で合成PASSした」という全機械証明は未完結。SHA照合に留まる\n- clock skew・JV-Link隠れエラー・発表時刻欠損レコード等の実環境corner-caseは合成テスト範囲外であり、実地捕捉前の未証明リスクとして残存\n\n必要な機械検証:\n- 現行contract_v2.json(SHA:5fefae...)を対象として合成テストCSV/manifestを再生成し、checker_v2.pyを再実行してPASS/FAIL両ケースの違反型・件数・exit_codeを再凍結・Bridge提出すること\n- checker_v2.pyの実バイト列SHA(3e4bcc...)をBridgeで独立再計算し、入力CSV・出力JSONとセットで提出することで機械証明を完結させること\n\n理由: GPT案の主要論点（v2 checker設計・時刻二重Gate妥当性・公式0B11/0B14収集経路・VALIDATION/OOS閉鎖判断）は証拠から再現可能な範囲で正確に記述されている。唯一の構造的問題はtest_v2.jsonのcontract_sha256(de48eb...)とBridge提供contract_v2.json(5fefae...)の不一致で、これはGPT案も指摘しているが『公式認定』という表現が証拠外の権威付けになっている。修正点：①SHA不一致を事実として中立的に記述、②再凍結を必要条件として条件文で記載、③checker本体未添付は機械証明の未完結として記述し評価を下げすぎない。これらは同一証拠内の整合修正であり新規データ取得不要。",
+  "estimated_spent_yen": 23.9995,
+  "finished_at_utc": "2026-08-24T02:37:02.443499+00:00"
+}
