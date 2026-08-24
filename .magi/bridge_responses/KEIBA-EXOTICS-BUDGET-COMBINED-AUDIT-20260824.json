@@ -1,0 +1,143 @@
+{
+  "request_id": "KEIBA-EXOTICS-BUDGET-COMBINED-AUDIT-20260824",
+  "trigger_commit_sha": "f2fca0ef9aa96f7c1d5251051629a838908c55e6",
+  "topic": "競馬MAGIの買い目研究基盤を独立監査する。対象は実馬券や予測性能ではなくsynthetic infrastructureのみ。単一の着順確率分布から馬単・馬連・3連単・3連複を導出する確率エンジンと、ユーザー指定のレース予算B（例1000円/10000円）を上限として100円単位で配分する予算配分器を監査。①4券種の確率恒等式と確率和が内部整合しているか、②配分器のPASSは予算/単位/EV・流動性除外/未使用資金/各種capのplumbing証拠に限定すべきか、③相関した馬券に独立Kellyを適用できないためfractional Kellyを研究用scaffoldに限定する判断が妥当か、④Gate v4実Windows/JV-Link forward capture未実施のままDEV v6/VALIDATION/OOS/実馬券へ進まない制約が維持されているか、⑤最初のDEV exotic-ticket trialをpreregisterする前に必要な最小追加machine testsを列挙する。利益や市場超過を証拠なしに認定しない。",
+  "started_at_utc": "2026-08-24T03:40:44.713094+00:00",
+  "budget_yen": 50.0,
+  "fx_yen_per_usd": 150.0,
+  "evidence_files": [
+    ".magi/keiba_exotics_budget_combined_audit_packet_v1.json",
+    ".magi/keiba_budget_allocator_synthetic_v1.json",
+    ".magi/keiba_exotic_probability_synthetic_v1.json",
+    ".magi/keiba_exotic_ticket_pipeline_contract_draft_v1.json"
+  ],
+  "ok": true,
+  "stages": [
+    {
+      "stage": "gpt_initial",
+      "speaker": "GPT / 主担当",
+      "text": "はい、MAGI買い目基盤の独立監査要請について、提示証拠ファイルをもとに議論します。指定された「競馬MAGIの買い目研究基盤」のテーマ範囲内（実券や予測性能ではなくsynthetic infrastructureのみ）で、質問①〜⑤も含め、エビデンスごとに主要数値照合を行いながら、「確認済み」「有力だが未証明」「弱まった/棄却」「次の機械検証」に整理します。  \n---\n\n## ① 4券種の確率恒等式と内部整合性\n\n### 確認済み\n- **確率エンジン（keiba_exotic_probability_synthetic_v1.json）**\n  - win/exacta/quinella/trifecta/trio いずれも **sum = 1.0**（\"probability_sums\"部）、truthyでpass記録あり。\n  - 「quinella equals two exacta orders」「trio equals six trifecta orders」もtruthy。\n  - \"all_probabilities_positive\" も pass。\n- **pipeline contract/contract evidence**\n  - 全券種が一つの着順確率分布から導出、「券種ごとに別モデルを後付けしない」の文言あり。\n  - 一致条件（sum exacta=1等）・内部恒等式（quinella = 2 exacta, trio = 6 trifecta）明示。\n  - 「confirmed_synthetic_invariants」証拠あり。\n\n#### 主要数値の照合\n- \"win\"=1.0, \"exacta\"=1.0, \"quinella\"=1.0, \"trifecta\"=1.0, \"trio\"=1.0  \n- 上記全てファイルa7b01c4...から取得。\n\n#### 反証条件\n- 券種ごとの別モデル導出や部分的な確率和≠1がsyntheticテストで見つかった場合はfail。\n\n#### 整理\n- 確率恒等式・内部整合性→**「確認済み」**（synthetic範囲）\n\n---\n\n## ② 予算配分器(PASS判定範囲)\n\n### 確認済み\n- **keiba_budget_allocator_synthetic_v1.json**\n  - 各B（1000/10000円）で \"budget_not_exceeded\"/\"all_stakes_100yen_units\"/\"unspent_nonnegative\" すべてPASS。\n  - 「weak-EV and liquidity-fail tickets rejected」(=閾値/流動性制約による除外あり)。\n  - 配分方法（equal/edge/kelly）いずれも使われうる。\n  - **「cash may remain unspent」「B_is_upper_bound_not_spend_target」:** 余剰金認める設計。\n  - 各種cap（race/single-ticket/bet-type/correlation-group）設計的に適用済み。\n\n#### 主要数値の照合\n- (例) B=1000で配分額=700未満/未使用300、B=10000で配分=7000未満/未使用3000（\"case_summary\"部）。\n- いずれの配分方法も「B10000でB1000より全体配分が減らない」こと（全ケースで\"stake_gte\"=true）。\n\n#### PASS判定の根拠\n- システマティックなunit基準、キャップ、EV/流動性gate、余剰金など「実装のplumbing・risk-controlが証明されただけ」であり、「予測性能や利益主張」は未対象（明記あり）。\n\n#### 反証条件\n- 合算stakeがbudget超え/余剰金マイナス/100円未満配分/不正な閾値通過等の検出。\n- \"market-odds profitability\"や実利益への何らかの言及。\n\n#### 整理\n- **「PASSはplumbing・リスクコントロール範囲のみ」→「確認済み」**\n- **「利益・live sizing主張なし」→「確認済み」**\n\n---\n\n## ③ Fractional Kellyの扱い\n\n### 確認済み\n- **evidence記載**\n  - 「fractional Kelly weights are preliminary research scaffolding; correlated parimutuel tickets are not independent bets and must not be treated as independent Kelly live sizing.」\n  - 「研究用scaffoldとしてのみ位置付け、ライブSIZEには使用不可」明記。\n\n#### 主要数値照合\n- 配分事例: fractional_kelly_with_race_cap__B1000 ＝100円のみ配分/未使用900\n- **適用は「研究用バリエーション」扱いで、実運用には移行していない（status: synthetic only）**\n\n#### 反証条件\n- 実運用（live method selected）が発生。\n- 獲得利益やアウトパフォームの言及。\n\n#### 整理\n- **「研究仮設扱い」→『確認済み』**\n- **「liveでは使用不可」→『確認済み』**\n\n---\n\n## ④ Gate運用整合性（forward capture → DEV解放）\n\n### 確認済み\n- **「current_gate_state」by audit_packet**\n  - real_windows_jvlink_forward_capture_executed: false\n  - DEV_v6_allowed: false, validation_opened: false, oos_opened: false, real_bets_placed: false\n- **pipeline/gov契約**\n  - 「Gate v4 real_forward_capture required first」\n  - DEV/validation/OOS/start forbidden明記、「実forward-capture通過前に進まない」設計維持明示。\n\n#### 反証条件\n- 上記制約破れやバイパス痕跡。\n\n#### 整理\n- **「Gate維持、次ステージ未解放」→『確認済み』**\n\n---\n\n## ⑤ 最低追加機械検証（DEV exotic-ticket trial前）\n\n### 有力だが未証明（to next tests）\n- **証拠は現状すべてsynthetic（合成データ/自己整合チェック）ベース。**\n- 「実market oddsとの取り扱い・JOIN整合」「スナップショットタイム vs. odds_source_time のハードゲート」「purchase-available odds未充足時のfail確定」など、PIPELINE I/O検証未済。\n- (例) 案件：\n  1. **着順確率→馬券候補列挙/各型全数出力テスト（券種ごとの組み合わせ爆発/再現性）**\n  2. **market_odds実値JOIN時のfail-safe動作（\"missing_snapshot_odds\" fail、タイムゲート等）**\n  3. **CAP同系統チケット被り時の合計stake超過抑制チェック**\n  4. **EV/LiquidityGate実走テスト（特に異常データや閾値付近）**\n  5. **未使用資金＆stake合計妥当性（四捨五入・端数切捨て確認）**\n  6. **correlation-groupによるリスク制御正常動作**\n\n#### 整理\n- **次の機械検証として上記（1-6）は必須**  \n- 実馬券、利益判定、市場予測力などはテーマ外。\n\n---\n\n## まとめ\n\n| 論点 | 判定 | 補足 |\n|---|---|---|\n| ① 4券種確率恒等式・内部整合 | 確認済み | synthetic上で恒等式pass、証拠多数 |\n| ② 予算配分器のPASS範囲 | 確認済み | plumbing/risk-controlのみで利益証",
+      "structured": null,
+      "agenda": null,
+      "model": "gpt-4.1",
+      "usage": {
+        "provider": "openai",
+        "input_tokens": 4472,
+        "cached_input_tokens": 0,
+        "output_tokens": 1800,
+        "total_tokens": 6272,
+        "usd": 0.023344,
+        "pricing_known": true
+      },
+      "provider_stop_reason": null
+    },
+    {
+      "stage": "claude_audit",
+      "speaker": "Claude / 監査",
+      "text": "# MAGI独立監査報告書\n## 対象: 競馬MAGIエキゾチック買い目基盤 Synthetic Infrastructure Audit v1\n\n**監査役**: MAGI独立監査AI\n**証拠基底**: keiba_exotics_budget_combined_audit_packet_v1.json (SHA-256: 7a03e933...)、keiba_budget_allocator_synthetic_v1.json (SHA-256: 614aacdc...)、keiba_exotic_probability_synthetic_v1.json (SHA-256: a7b01c43...)、keiba_exotic_ticket_pipeline_contract_draft_v1.json (SHA-256: d146fd1b...)\n**監査範囲**: 上記4ファイルに記録されたsynthetic infrastructureの主張のみ。実馬券・予測性能・市場超過は監査対象外。\n\n---\n\n## GPT案の全体評価\n\nGPT案は構造・方向性ともに概ね妥当だが、以下の点で修正・補強が必要。\n\n1. 数値照合の精度が不十分な箇所がある\n2. 「確認済み」とした項目の一部に証拠から再計算できない前提が混入している\n3. ⑤の追加機械テストリストが証拠と対応付けられておらず、主張の根拠が不明確\n4. 反証条件の記述が一部あいまいで数値化されていない\n\n以下、①〜⑤について証拠ファイルに直接対応させて監査する。\n\n---\n\n## ① 4券種の確率恒等式と内部整合性\n\n### 証拠照合\n\n**出典**: keiba_exotic_probability_synthetic_v1.json\n\n```\nprobability_sums:\n  win:       1.0\n  exacta:    1.0\n  quinella:  1.0\n  trifecta:  1.0\n  trio:      1.0\n\nchecks:\n  win_sum_is_1:                     true\n  exacta_sum_is_1:                  true\n  quinella_sum_is_1:                true\n  trifecta_sum_is_1:                true\n  trio_sum_is_1:                    true\n  quinella_equals_two_exacta_orders: true\n  trio_equals_six_trifecta_orders:   true\n  all_probabilities_positive:        true\n  expected_ticket_counts:            true\n```\n\nhorse_count = 5 のとき、理論上の組み合わせ数は以下の通り。\n\n| 券種 | 理論的組み合わせ数 | 検証可否 |\n|------|-------------------|---------|\n| 単勝 (win) | 5 | ○ |\n| 馬単 (exacta) | 5×4 = 20 | ○ |\n| 馬連 (quinella) | C(5,2) = 10 | ○ |\n| 3連単 (trifecta) | 5×4×3 = 60 | ○ |\n| 3連複 (trio) | C(5,3) = 10 | ○ |\n\n恒等式の数値的整合: horse_count=5 において quinella=10組、各 quinella(i,j) = exacta(i,j) + exacta(j,i) が成立するなら quinella sum = exacta sum = 1.0 は代数的に一致する。同様に trio(i,j,k) = Σ_{6通り} trifecta(...) より trio sum = trifecta sum = 1.0 は代数的必然。これらは証拠の checks フラグと一致しており、**内部整合は確認済み**。\n\n### 残存限定事項（GPT案の不足点）\n\nGPT案は「horse_count=5という限定条件」を明示していない。horse_count が変化した場合（例: 実際の競馬は最大18頭）の組み合わせ爆発とsumの保持が未テストである。この点はGPT案が「確認済み」と断言した範囲を超えており、**「horse_count=5のsyntheticテストにおいて確認済み」と限定すべき**。\n\n### reported_verdict: PASS（条件付き）\n\n**条件**: horse_count=5のsynthetic環境に限定。18頭等の実規模での検証は未実施。\n\n**反証条件（数値化）**: 任意の horse_count N において確率和が 1.0 ± 1e-10 を外れる、または quinella(i,j) ≠ exacta(i,j)+exacta(j,i) の差が 1e-10 を超えるケースが機械計算で検出された場合、PASSは取り消し。\n\n---\n\n## ② 予算配分器のPASS範囲\n\n### 証拠照合\n\n**出典**: keiba_budget_allocator_synthetic_v1.json\n\n全6メソッド×予算組み合わせのcheckフラグを証拠から直接転記して照合する。\n\n| チェック項目 | equal/B1000 | equal/B10000 | edge/B1000 | edge/B10000 | kelly/B1000 | kelly/B10000 |\n|------------|:-----------:|:------------:|:----------:|:-----------:|:-----------:|:------------:|\n| budget_not_exceeded | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |\n| all_",
+      "structured": null,
+      "agenda": null,
+      "model": "claude-sonnet-4-6",
+      "usage": {
+        "provider": "anthropic",
+        "input_tokens": 2304,
+        "cache_write_tokens": 5422,
+        "cache_read_tokens": 0,
+        "output_tokens": 1500,
+        "total_tokens": 9226,
+        "usd": 0.049745,
+        "pricing_known": true
+      },
+      "provider_stop_reason": "max_tokens"
+    },
+    {
+      "stage": "gpt_revise",
+      "speaker": "GPT / 改訂",
+      "text": "案を**証拠ファイルで再照合し、指摘された問題点（数値根拠の明示・確認済み範囲の限定・反証条件の具体化）を修正**しました。改善点・後退点双方を明記し、「未解決」はそのまま列挙しています。\n\n---\n\n# MAGI買い目研究基盤 synthetic infrastructure 監査改訂案 v2\n\n**証拠：**  \n- keiba_exotics_budget_combined_audit_packet_v1.json (SHA-256: 7a03e933...)  \n- keiba_budget_allocator_synthetic_v1.json (SHA-256: 614aacdc...)  \n- keiba_exotic_probability_synthetic_v1.json (SHA-256: a7b01c43...)  \n- keiba_exotic_ticket_pipeline_contract_draft_v1.json (SHA-256: d146fd1b...)\n\n---\n\n## ① 4券種確率恒等式・内部整合\n\n### 【証拠根拠】\n- **keiba_exotic_probability_synthetic_v1.json**  \n  - `probability_sums`にて、win, exacta, quinella, trifecta, trio いずれも **1.0**（horse_count=5）。\n  - checks: quinella=2exacta, trio=6trifecta 項目は truthy。\n  - all_probabilities_positive = true\n\n- **pipeline/PACKET証拠**  \n  - 「全券種同一の着順確率分布から派生」「sum=1恒等式」explicitに記載。\n\n### 【限定・反証条件・修正点】\n- **限定**: この確認はhorse_count=5でのsynthetic用意された出力のみ。「実馬18頭等含む一般化」は未検証。  \n- **反証条件**: horse_count=N（N≠5含む）のsyntheticテストにて  \n  (a) 各券種確率和が 1.0 ± 1e-10 を外れる、  \n  (b) quinella(i,j) ≠ exacta(i,j)+exacta(j,i)、trioとtrifectaの和が1e-10超ズレ  \n のどちらかが検出された場合、このPASSは棄却とする。\n\n#### **限定補足**  \n- horse_count=5では:\n  - 馬単: 20組（5x4）、馬連: 10組（C(5,2)=10）、3連単: 60組（5x4x3）、3連複: 10組（C(5,3)=10）。  \n- 各sum, 恒等式チェックは証拠true――実際にhorse数一般の組み合わせ式通りか、他パラメタでも保証されるかは未検証で**【未解決】**。\n- 本改訂で「（horse_count=5での）確認済み」と明確化。  \n  - 18頭・一般化未済で悪化、一方、エビデンスに即した範囲限定が改善点。\n\n---\n\n## ② 予算配分器 PASS範囲限定\n\n### 【証拠根拠】\n- **keiba_budget_allocator_synthetic_v1.json**  \n  - B=1000, 10000円両ケースで\"budget_not_exceeded\": true, 100円unit, 未使用予算非負。\n  - weak-EV, illiquid除外→両方pass, 各種capの設計・動作記載あり。\n  - cash may remain unspent/Bは上限（targetではない）も明記。\n- case_summary: B=1000でstake=700/unspent=300など、全パターンbudget util≦1。\n\n### 【限定・反証条件・修正点】\n- **限定**: 本passは「資金配分ロジック(plumbing)とリスク制御に限定」。\n 利益性・市場優越・ライブサイズ根拠は**全く含まない**ことを記載（pipeline_contract内にも明記）。\n- **反証条件**: 検証例として「合計stake＞B」「未使用資金<0」「100円未満配分」「利益主張」などの検出でpass invalid。\n- **数値根拠強化**:  \n  - 具体例:\n    - equal/B1000: stake=700, unspent=300\n    - edge_proportional/B10000: stake=7000, unspent=3000\n    - kelly/B1000: stake=100, unspent=900\n    - いずれもbudget 100%消費でなく余剰金許容。証拠case_summary一致。\n- **【新規解決】**: stake_gteルール（B10000でB1000より配分が減らない）が各法でpass。\n\n---\n\n## ③ Fractional Kellyの厳格制限\n\n### 【証拠根拠】\n- **evidence**: 「fractional Kelly weights are preliminary research scaffolding」「correlated parimutuel tickets are not independent bets...」\n- 配分実例（kelly/B1000: 100円, unspent=900円）、live sizingには適用せず。\n\n### 【限定・反証条件・修正点】\n- **限定**: あくまで「研究用scaffold」であり「独立Kelly本番用では使えない」設計。Liveにかかる発動・利益主張なし。\n- **反証条件**: 「live method selected」/「利益スキーム文言」/「不当なサイズ拡大」を証拠で検出した場合即否定。\n- **強調**: 配分は研究比較の一手法であって本質的な「意味のある最適化」根拠ではなく、「独立性仮定」を理由に本番用途拒否が設計要件で記載。\n- **【維持改善】**: 問題なし。GPT案も明記していたが根拠引用箇所を補強。\n\n---\n\n## ④ Gate/forward capture 制約の徹底\n\n### 【証拠根拠】\n- audit_packet: real_windows_jvlink_forward_capture_executed=false、DEV_v6/validation/oos/real_betsいずれもfalse\n- pipeline/governance: Gate v4 必須、validation/oos/unlock forbidden\n\n### 【限定・反証条件・修正点】\n- **限定**: とにかく「forward capture通過以前は検証次段階へ進まない」証拠。\n- **反証条件**: いずれかのステージが by evidence で open/実行済であればfail。\n- **維持**: GPT案の記述にエビデンス引用追加。違反検出で判定を即fail。\n- **【維持】**: 指摘なし、元案と同等。\n\n---\n\n## ⑤ DEV exotic-ticket trial 前の最小追加機械検証\n\n### 【証拠根拠／未解決】\n- **現証拠はpure synthetic**で実market_oddsやI/O contract全objのむき出し動作テストは未証明。\n- pipeline_contract/market_join_contract/ticket_gate_contractなどに「未充足時skip/FAIL」「時刻整合強制」「四種チケット組み合せ」等要件が列挙されている。\n\n### 【要追加検証リスト（分析痕跡・未解決）】\n1. 任意horse数の全券種組合せ爆発時、券種ごと確率和=1と恒等式維持の確認（horse_count拡張）\n2. オッズjoin時「odds_source_time_jst<=prediction_snapshot_time_jst」厳格チェック\n3. snapshot_odds不備時、実際に\"FAIL_CLOSED_SKIP_TICKET\"動作\n4. 単一・�",
+      "structured": null,
+      "agenda": null,
+      "model": "gpt-4.1",
+      "usage": {
+        "provider": "openai",
+        "input_tokens": 7543,
+        "cached_input_tokens": 3968,
+        "output_tokens": 1800,
+        "total_tokens": 9343,
+        "usd": 0.023534,
+        "pricing_known": true
+      },
+      "provider_stop_reason": null
+    },
+    {
+      "stage": "claude_verdict",
+      "speaker": "Claude / 最終監査",
+      "text": "reported_verdict: PASS\nrevision_class: NONE\nhuman_action_required: false\nnext_action: GPT改訂案v2はevidence範囲内での主張を正確に限定し、反証条件・数値根拠・未解決事項を適切に明記している。required_machine_tests 3件（horse_count拡張, 時刻gate統合, cap超過拒否）を実施し、全PASSを確認後にDEV exotic-ticket trialのpreregistrationを検討する。Gate v4 real forward capture未通過の制約は維持。\n\n確認できた事実:\n- keiba_exotic_probability_synthetic_v1.json: horse_count=5, 全券種確率和=1.0, quinella=2exacta, trio=6trifecta, all_positive=true (SHA-256: a7b01c43...)\n- keiba_budget_allocator_synthetic_v1.json: B=1000/10000両ケースで予算超過なし, 100円単位, 未使用資金≥0, EV/流動性除外, B10000でstake≥B1000 (SHA-256: 614aacdc...)\n- 配分器PASSはplumbing/リスク制御のみ。利益性・市場優越・ライブサイズ根拠は証拠に含まれず、audit_packetのnot_claimedに明記。\n- fractional Kellyは'preliminary research scaffolding'かつ'correlated parimutuel tickets are not independent'として本番用途を設計上拒否（audit_packet known_limitation）。\n- real_windows_jvlink_forward_capture_executed=false, DEV_v6/validation/oos/real_betsいずれもfalse。Gate v4制約が維持されている（audit_packet current_gate_state, governance）。\n\n未解決点:\n- horse_count=5以外（例:18頭）でのsyntheticテスト未実施。確率和恒等式の一般化は未検証。\n- pipeline_contractのmarket_join（時刻ゲート）・ticket_gate・FAIL_CLOSED動作の統合テストは証拠に存在しない。\n- 予算配分器において配分方法（equal/edge_proportional/kelly）はmethod_not_yet_selected=trueのまま。DEV比較前に選択根拠なし。\n\n必要な機械検証:\n- horse_count拡張（例:8,12,18）での全券種確率和=1.0±1e-10および恒等式（quinella=2exacta, trio=6trifecta）の機械確認。\n- オッズjoin統合テスト: odds_source_time_jst>prediction_snapshot_time_jstのケースでFAIL_CLOSED_SKIP_TICKETが発火することの機械確認。\n- 単票cap・bet_type_cap・correlation_group_cap各上限を意図的に超えるケースでallocatorが拒否/切り捨てることの機械確認。\n\n理由: GPT案v2はevidence4ファイルと照合し、(1)確率恒等式はhorse_count=5 synthetic限定と明記、(2)配分器PASSはplumbing限定で利益主張なし、(3)fractional Kelly研究scaffolding限定の根拠をaudit_packet known_limitationから引用、(4)Gate v4制約は全フラグfalseで維持確認、(5)DEV前必要テストを列挙—いずれも過大主張なく証拠と整合。horse_count一般化・統合pipeline動作・cap拒否の機械テスト未実施は未解決として正しく分類されており、重大な誤記や過大主張はない。",
+      "structured": {
+        "reported_verdict": "PASS",
+        "revision_class": "NONE",
+        "human_action_required": false,
+        "confirmed_facts": [
+          "keiba_exotic_probability_synthetic_v1.json: horse_count=5, 全券種確率和=1.0, quinella=2exacta, trio=6trifecta, all_positive=true (SHA-256: a7b01c43...)",
+          "keiba_budget_allocator_synthetic_v1.json: B=1000/10000両ケースで予算超過なし, 100円単位, 未使用資金≥0, EV/流動性除外, B10000でstake≥B1000 (SHA-256: 614aacdc...)",
+          "配分器PASSはplumbing/リスク制御のみ。利益性・市場優越・ライブサイズ根拠は証拠に含まれず、audit_packetのnot_claimedに明記。",
+          "fractional Kellyは'preliminary research scaffolding'かつ'correlated parimutuel tickets are not independent'として本番用途を設計上拒否（audit_packet known_limitation）。",
+          "real_windows_jvlink_forward_capture_executed=false, DEV_v6/validation/oos/real_betsいずれもfalse。Gate v4制約が維持されている（audit_packet current_gate_state, governance）。"
+        ],
+        "unresolved": [
+          "horse_count=5以外（例:18頭）でのsyntheticテスト未実施。確率和恒等式の一般化は未検証。",
+          "pipeline_contractのmarket_join（時刻ゲート）・ticket_gate・FAIL_CLOSED動作の統合テストは証拠に存在しない。",
+          "予算配分器において配分方法（equal/edge_proportional/kelly）はmethod_not_yet_selected=trueのまま。DEV比較前に選択根拠なし。"
+        ],
+        "required_machine_tests": [
+          "horse_count拡張（例:8,12,18）での全券種確率和=1.0±1e-10および恒等式（quinella=2exacta, trio=6trifecta）の機械確認。",
+          "オッズjoin統合テスト: odds_source_time_jst>prediction_snapshot_time_jstのケースでFAIL_CLOSED_SKIP_TICKETが発火することの機械確認。",
+          "単票cap・bet_type_cap・correlation_group_cap各上限を意図的に超えるケースでallocatorが拒否/切り捨てることの機械確認。"
+        ],
+        "next_action": "GPT改訂案v2はevidence範囲内での主張を正確に限定し、反証条件・数値根拠・未解決事項を適切に明記している。required_machine_tests 3件（horse_count拡張, 時刻gate統合, cap超過拒否）を実施し、全PASSを確認後にDEV exotic-ticket trialのpreregistrationを検討する。Gate v4 real forward capture未通過の制約は維持。",
+        "rationale": "GPT案v2はevidence4ファイルと照合し、(1)確率恒等式はhorse_count=5 synthetic限定と明記、(2)配分器PASSはplumbing限定で利益主張なし、(3)fractional Kelly研究scaffolding限定の根拠をaudit_packet known_limitationから引用、(4)Gate v4制約は全フラグfalseで維持確認、(5)DEV前必要テストを列挙—いずれも過大主張なく証拠と整合。horse_count一般化・統合pipeline動作・cap拒否の機械テスト未実施は未解決として正しく分類されており、重大な誤記や過大主張はない。",
+        "parse_error": false
+      },
+      "agenda": null,
+      "model": "claude-sonnet-4-6",
+      "usage": {
+        "provider": "anthropic",
+        "input_tokens": 2722,
+        "cache_write_tokens": 5922,
+        "cache_read_tokens": 0,
+        "output_tokens": 1011,
+        "total_tokens": 9655,
+        "usd": 0.045539,
+        "pricing_known": true
+      },
+      "provider_stop_reason": "end_turn"
+    }
+  ],
+  "final_structured": {
+    "reported_verdict": "PASS",
+    "revision_class": "NONE",
+    "human_action_required": false,
+    "confirmed_facts": [
+      "keiba_exotic_probability_synthetic_v1.json: horse_count=5, 全券種確率和=1.0, quinella=2exacta, trio=6trifecta, all_positive=true (SHA-256: a7b01c43...)",
+      "keiba_budget_allocator_synthetic_v1.json: B=1000/10000両ケースで予算超過なし, 100円単位, 未使用資金≥0, EV/流動性除外, B10000でstake≥B1000 (SHA-256: 614aacdc...)",
+      "配分器PASSはplumbing/リスク制御のみ。利益性・市場優越・ライブサイズ根拠は証拠に含まれず、audit_packetのnot_claimedに明記。",
+      "fractional Kellyは'preliminary research scaffolding'かつ'correlated parimutuel tickets are not independent'として本番用途を設計上拒否（audit_packet known_limitation）。",
+      "real_windows_jvlink_forward_capture_executed=false, DEV_v6/validation/oos/real_betsいずれもfalse。Gate v4制約が維持されている（audit_packet current_gate_state, governance）。"
+    ],
+    "unresolved": [
+      "horse_count=5以外（例:18頭）でのsyntheticテスト未実施。確率和恒等式の一般化は未検証。",
+      "pipeline_contractのmarket_join（時刻ゲート）・ticket_gate・FAIL_CLOSED動作の統合テストは証拠に存在しない。",
+      "予算配分器において配分方法（equal/edge_proportional/kelly）はmethod_not_yet_selected=trueのまま。DEV比較前に選択根拠なし。"
+    ],
+    "required_machine_tests": [
+      "horse_count拡張（例:8,12,18）での全券種確率和=1.0±1e-10および恒等式（quinella=2exacta, trio=6trifecta）の機械確認。",
+      "オッズjoin統合テスト: odds_source_time_jst>prediction_snapshot_time_jstのケースでFAIL_CLOSED_SKIP_TICKETが発火することの機械確認。",
+      "単票cap・bet_type_cap・correlation_group_cap各上限を意図的に超えるケースでallocatorが拒否/切り捨てることの機械確認。"
+    ],
+    "next_action": "GPT改訂案v2はevidence範囲内での主張を正確に限定し、反証条件・数値根拠・未解決事項を適切に明記している。required_machine_tests 3件（horse_count拡張, 時刻gate統合, cap超過拒否）を実施し、全PASSを確認後にDEV exotic-ticket trialのpreregistrationを検討する。Gate v4 real forward capture未通過の制約は維持。",
+    "rationale": "GPT案v2はevidence4ファイルと照合し、(1)確率恒等式はhorse_count=5 synthetic限定と明記、(2)配分器PASSはplumbing限定で利益主張なし、(3)fractional Kelly研究scaffolding限定の根拠をaudit_packet known_limitationから引用、(4)Gate v4制約は全フラグfalseで維持確認、(5)DEV前必要テストを列挙—いずれも過大主張なく証拠と整合。horse_count一般化・統合pipeline動作・cap拒否の機械テスト未実施は未解決として正しく分類されており、重大な誤記や過大主張はない。",
+    "parse_error": false
+  },
+  "final_text": "reported_verdict: PASS\nrevision_class: NONE\nhuman_action_required: false\nnext_action: GPT改訂案v2はevidence範囲内での主張を正確に限定し、反証条件・数値根拠・未解決事項を適切に明記している。required_machine_tests 3件（horse_count拡張, 時刻gate統合, cap超過拒否）を実施し、全PASSを確認後にDEV exotic-ticket trialのpreregistrationを検討する。Gate v4 real forward capture未通過の制約は維持。\n\n確認できた事実:\n- keiba_exotic_probability_synthetic_v1.json: horse_count=5, 全券種確率和=1.0, quinella=2exacta, trio=6trifecta, all_positive=true (SHA-256: a7b01c43...)\n- keiba_budget_allocator_synthetic_v1.json: B=1000/10000両ケースで予算超過なし, 100円単位, 未使用資金≥0, EV/流動性除外, B10000でstake≥B1000 (SHA-256: 614aacdc...)\n- 配分器PASSはplumbing/リスク制御のみ。利益性・市場優越・ライブサイズ根拠は証拠に含まれず、audit_packetのnot_claimedに明記。\n- fractional Kellyは'preliminary research scaffolding'かつ'correlated parimutuel tickets are not independent'として本番用途を設計上拒否（audit_packet known_limitation）。\n- real_windows_jvlink_forward_capture_executed=false, DEV_v6/validation/oos/real_betsいずれもfalse。Gate v4制約が維持されている（audit_packet current_gate_state, governance）。\n\n未解決点:\n- horse_count=5以外（例:18頭）でのsyntheticテスト未実施。確率和恒等式の一般化は未検証。\n- pipeline_contractのmarket_join（時刻ゲート）・ticket_gate・FAIL_CLOSED動作の統合テストは証拠に存在しない。\n- 予算配分器において配分方法（equal/edge_proportional/kelly）はmethod_not_yet_selected=trueのまま。DEV比較前に選択根拠なし。\n\n必要な機械検証:\n- horse_count拡張（例:8,12,18）での全券種確率和=1.0±1e-10および恒等式（quinella=2exacta, trio=6trifecta）の機械確認。\n- オッズjoin統合テスト: odds_source_time_jst>prediction_snapshot_time_jstのケースでFAIL_CLOSED_SKIP_TICKETが発火することの機械確認。\n- 単票cap・bet_type_cap・correlation_group_cap各上限を意図的に超えるケースでallocatorが拒否/切り捨てることの機械確認。\n\n理由: GPT案v2はevidence4ファイルと照合し、(1)確率恒等式はhorse_count=5 synthetic限定と明記、(2)配分器PASSはplumbing限定で利益主張なし、(3)fractional Kelly研究scaffolding限定の根拠をaudit_packet known_limitationから引用、(4)Gate v4制約は全フラグfalseで維持確認、(5)DEV前必要テストを列挙—いずれも過大主張なく証拠と整合。horse_count一般化・統合pipeline動作・cap拒否の機械テスト未実施は未解決として正しく分類されており、重大な誤記や過大主張はない。",
+  "estimated_spent_yen": 21.3243,
+  "finished_at_utc": "2026-08-24T03:42:00.696104+00:00"
+}
