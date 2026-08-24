@@ -15,24 +15,69 @@
     "source_file_sha256",
     "source_row_id"
   ],
-  "snapshot_roles": ["EARLY", "LATE"],
+  "snapshot_roles": [
+    "EARLY",
+    "LATE"
+  ],
   "allowed_feature_sources": {
-    "pre_win_odds": ["JRA_VAN_ODDS_TIMESERIES", "TARGET_PRE_RACE_EXPORT"],
-    "body_weight_kg": ["JRA_VAN_0B11_WH"],
-    "body_weight_change_kg": ["JRA_VAN_0B11_WH"],
-    "weather": ["JRA_VAN_0B14_WE", "TARGET_PRE_RACE_EXPORT"],
-    "track_condition": ["JRA_VAN_0B14_WE", "TARGET_PRE_RACE_EXPORT"],
-    "abnormal_code": ["JRA_VAN_0B14_AV", "TARGET_PRE_RACE_EXPORT"],
-    "current_jockey_code": ["JRA_VAN_0B14_JC", "TARGET_PRE_RACE_EXPORT"],
-    "current_jockey_name": ["JRA_VAN_0B14_JC", "TARGET_PRE_RACE_EXPORT"],
-    "current_carried_weight_x10": ["JRA_VAN_0B14_JC", "TARGET_PRE_RACE_EXPORT"],
-    "current_post_time": ["JRA_VAN_0B14_TC", "TARGET_PRE_RACE_EXPORT"],
-    "current_distance": ["JRA_VAN_0B14_CC", "TARGET_PRE_RACE_EXPORT"],
-    "current_course_code": ["JRA_VAN_0B14_CC", "TARGET_PRE_RACE_EXPORT"],
-    "current_surface": ["TARGET_PRE_RACE_EXPORT"],
-    "current_class_code": ["TARGET_PRE_RACE_EXPORT"],
-    "registered_horses": ["TARGET_PRE_RACE_EXPORT"],
-    "starters": ["TARGET_PRE_RACE_EXPORT"]
+    "pre_win_odds": [
+      "JRA_VAN_ODDS_TIMESERIES",
+      "TARGET_PRE_RACE_EXPORT"
+    ],
+    "body_weight_kg": [
+      "JRA_VAN_0B11_WH"
+    ],
+    "body_weight_change_kg": [
+      "JRA_VAN_0B11_WH"
+    ],
+    "weather": [
+      "JRA_VAN_0B14_WE",
+      "TARGET_PRE_RACE_EXPORT"
+    ],
+    "track_condition": [
+      "JRA_VAN_0B14_WE",
+      "TARGET_PRE_RACE_EXPORT"
+    ],
+    "abnormal_code": [
+      "JRA_VAN_0B14_AV",
+      "TARGET_PRE_RACE_EXPORT"
+    ],
+    "current_jockey_code": [
+      "JRA_VAN_0B14_JC",
+      "TARGET_PRE_RACE_EXPORT"
+    ],
+    "current_jockey_name": [
+      "JRA_VAN_0B14_JC",
+      "TARGET_PRE_RACE_EXPORT"
+    ],
+    "current_carried_weight_x10": [
+      "JRA_VAN_0B14_JC",
+      "TARGET_PRE_RACE_EXPORT"
+    ],
+    "current_post_time": [
+      "JRA_VAN_0B14_TC",
+      "TARGET_PRE_RACE_EXPORT"
+    ],
+    "current_distance": [
+      "JRA_VAN_0B14_CC",
+      "TARGET_PRE_RACE_EXPORT"
+    ],
+    "current_course_code": [
+      "JRA_VAN_0B14_CC",
+      "TARGET_PRE_RACE_EXPORT"
+    ],
+    "current_surface": [
+      "TARGET_PRE_RACE_EXPORT"
+    ],
+    "current_class_code": [
+      "TARGET_PRE_RACE_EXPORT"
+    ],
+    "registered_horses": [
+      "TARGET_PRE_RACE_EXPORT"
+    ],
+    "starters": [
+      "TARGET_PRE_RACE_EXPORT"
+    ]
   },
   "forbidden_feature_names": [
     "final_finish",
@@ -43,8 +88,15 @@
     "win_payout_yen_per_100",
     "place_payout_yen_per_100"
   ],
-  "forbidden_source_kinds": ["JVD_FINAL_PARSED", "POST_RACE_FINAL_STATE", "RESULT_FILE"],
-  "source_time_basis_values": ["OFFICIAL_ANNOUNCEMENT", "LOCAL_ACQUISITION"],
+  "forbidden_source_kinds": [
+    "JVD_FINAL_PARSED",
+    "POST_RACE_FINAL_STATE",
+    "RESULT_FILE"
+  ],
+  "source_time_basis_values": [
+    "OFFICIAL_ANNOUNCEMENT",
+    "LOCAL_ACQUISITION"
+  ],
   "rules": [
     "Both feature_source_time_jst and source_capture_time_jst must be offset-aware and <= prediction_snapshot_time_jst.",
     "For OFFICIAL_ANNOUNCEMENT, feature_source_time_jst <= source_capture_time_jst.",
