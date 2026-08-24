@@ -1,0 +1,16 @@
+{
+  "test_id":"KEIBA_JVLINK_REALTIME_COLLECTOR_PARSER_TEST_V1",
+  "collector_sha256":"969d08db1f18254a022f3f0b518fcb01539aa4217d7d73df4fadc53ab091d25b",
+  "scope":"Synthetic fixed-width parser tests only; COM/JV-Link network calls were not executed in this environment.",
+  "synthetic_records":[
+    {"record_id":"WH","expected_race_id":"2026082301020101","expected_announcement":"2026-08-23T09:00:00.000+09:00","expected_body_weight_kg":480,"expected_body_weight_change_kg":10,"observed":"PASS"},
+    {"record_id":"WE","expected_scope_key":"20260823010201","expected_announcement":"2026-08-23T08:30:00.000+09:00","expected_weather_code":"1","expected_turf":"2","expected_dirt":"3","observed":"PASS"},
+    {"record_id":"AV","expected_race_id":"2026082301020101","expected_horse_no":"08","expected_abnormal_code":"1","expected_reason_code":"001","observed":"PASS"},
+    {"record_id":"JC","expected_race_id":"2026082301020101","expected_horse_no":"01","expected_weight_x10":"570","expected_jockey_code":"01234","observed":"PASS"},
+    {"record_id":"TC","expected_race_id":"2026082301020101","expected_current_post_time":"1010","expected_previous_post_time":"1000","observed":"PASS"}
+  ],
+  "record_ids_passed":["WH","WE","AV","JC","TC"],
+  "cc_parser_status":"HEADER_AND_ANNOUNCEMENT_ONLY_UNTIL_REAL_CC_CAPTURE",
+  "result":"PASS",
+  "validation_oos_opened":false
+}
