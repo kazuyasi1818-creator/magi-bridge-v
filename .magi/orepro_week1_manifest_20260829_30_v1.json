@@ -1,0 +1,58 @@
+{
+  "manifest_id": "OREPRO-WEEK1-20260829-30-V1",
+  "status": "PREPARED_WAITING_FOR_RACE_SELECTION",
+  "race_dates_jst": ["2026-08-29", "2026-08-30"],
+  "real_money_bet": false,
+  "platform": "netkeiba 俺プロ",
+  "competition_target": {
+    "weekly_rank_eligibility_attempt": true,
+    "target_races": 5,
+    "target_official_virtual_stake_yen": 50000,
+    "max_per_race_yen": 10000,
+    "important": "5レース/5万円は段位内ランキング規定を狙う目安。MAGIの事前Gateを途中で緩めてまで達成しない。"
+  },
+  "selection_sequence": [
+    "枠順確定後に候補レース集合を作る",
+    "race-time safe data availabilityを確認",
+    "MAGI probability quality / data completenessで候補順位を固定",
+    "候補から最大5レースを発走前に選定",
+    "各レースのprediction cardをhash固定",
+    "俺プロへ発走2分前より十分早く登録",
+    "発走後にのみ結果をledgerへ追記"
+  ],
+  "preferred_operational_buffer": {
+    "orepro_official_change_deadline": "post_time_minus_2_minutes",
+    "magi_internal_freeze_target": "post_time_minus_10_minutes when usable snapshot exists; otherwise latest preregistered safe snapshot",
+    "no_last_second_reoptimization": true
+  },
+  "battle_race": {
+    "max_per_week": 1,
+    "selection_rule": "結果を見る前に、事前固定されたconfidence/edgeルールでのみ選ぶ。単発高配当狙いの後付け指定は禁止。",
+    "magi_pure_multiplier": 1,
+    "orepro_official_multiplier": 2
+  },
+  "bet_types": ["EXACTA_UMA_TAN", "QUINELLA_UMA_REN", "TRIFECTA_3REN_TAN", "TRIO_3REN_PUKU"],
+  "budget": {
+    "B_max_yen_per_race": 10000,
+    "unit_yen": 100,
+    "allocator": "KEIBA_EXOTICS_BUDGET_ALLOCATOR_V1",
+    "force_full_budget": false,
+    "if_total_weekly_stake_below_50000": "記録して規定未達を受け入れる。EV/Gateの事後変更はしない。"
+  },
+  "feature_restriction": {
+    "gate_v4_real_windows_jvlink_forward_capture": "NOT_YET_PASSED",
+    "timestamp_sensitive_current_features": "BLOCKED_UNTIL_PASS",
+    "safe_scope": "leakage-safe pre-race odds and strict-history features only until unlock"
+  },
+  "week_end_outputs": [
+    "OREPRO_OFFICIAL weekly return rate",
+    "MAGI_PURE weekly return rate",
+    "race hit rate",
+    "ticket hit rate",
+    "bet-type return rate",
+    "virtual max drawdown",
+    "battle-race contribution",
+    "rule violation count",
+    "unmet ranking requirement if any"
+  ]
+}
