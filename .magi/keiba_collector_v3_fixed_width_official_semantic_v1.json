@@ -1,0 +1,17 @@
+{
+  "test_id": "KEIBA_COLLECTOR_V3_FIXED_WIDTH_OFFICIAL_SEMANTIC_V1",
+  "commit_sha_under_test": "f07431fa4796281810bc8790e3c582db88b78df4",
+  "collector_v1_sha256": "f00bdbf31507554aa30cdb754279fe1ae6f1cd37495c650eb910ff1f94542f5c",
+  "collector_v3_sha256": "b133c47b0c5fc29cfa43dc45a06e47855ddd2e510fed83af7363a8846775b81a",
+  "checks": {
+    "wh_000_is_no_previous_not_zero": true,
+    "wh_010_is_plus10": true,
+    "we_00000000_has_no_fake_official_time": true,
+    "we_states_separate": true,
+    "av_2_is_exclusion": true,
+    "cc_full_parse": true
+  },
+  "status": "PASS",
+  "real_capture_executed": false,
+  "validation_oos_opened": false
+}
