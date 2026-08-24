@@ -1,0 +1,14 @@
+{
+  "test_id":"KEIBA_SNAPSHOT_GATE_CHECKER_TEST_V1",
+  "checker_sha256":"d359e7e1084e94f655bea855425f353601361736008b5d1fbe50691e8e0b7658",
+  "contract_sha256":"00be6cf0b757640025489ed1ef180d5c1f39d2fdb1c81b30f9769e2267cb1214",
+  "synthetic_pass_input_sha256":"a8ae330f24a4cdf805510530aece4fe0ea9062d96f255d1c5f5a9a5dd6d0f383",
+  "synthetic_fail_input_sha256":"1037bc791534cc765cca24430a20fb14e5e0e29d44adced16c26a7a5eab3253a",
+  "tests":[
+    {"name":"valid_timestamped_pre_race_features","expected":"PASS","observed":"PASS","exit_code":0,"violation_count":0},
+    {"name":"destructive_fail_bundle","expected":"FAIL","observed":"FAIL","exit_code":2,"violation_count":3,"violation_types":["SOURCE_AFTER_PREDICTION_SNAPSHOT","CURRENT_FEATURE_FROM_FINAL_SOURCE","FORBIDDEN_POST_RACE_FEATURE"]}
+  ],
+  "result":"PASS",
+  "validation_oos_opened":false,
+  "note":"Synthetic destructive tests only; no DEV/VALIDATION/OOS race outcomes were opened or evaluated."
+}
