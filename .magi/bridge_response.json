@@ -1,138 +1,19 @@
 {
-  "request_id": "KEIBA-FEATURE-TIMING-PROVENANCE-AUDIT-20260824",
-  "topic": "競馬MAGI feature timing/data provenance監査。DEV v3-v5は全candidate Gate FAILでBridge PASS、VALIDATION候補0件。ここから隣接モデルを増やさず、現在レース特徴量がEARLY/LATE予測時点で本当に取得可能だったかを監査する。証拠ではオッズにsnapshot_time_jst/effective_minutes_before_postあり。一方JVD current-rowの騎手・斤量・馬体重・abnormal_code・登録/出走頭数は高カバレッジだが、取得/更新/as-of timestamp列がなく、同一行にfinal_finish/final_odds/final_popularity/payoutも共存。current featuresをconfirmatory-safeと扱わない判断、source_time<=snapshot_timeの機械Gate、追加の隣接DEV trial停止が妥当か判定する。またDEV v3-v5 preregはローカルmtime順序ではprereg→script→auditだが、外部pre-execution anchorは未証明である点を正しく残す。新データやGate変更を要求せず、現証拠の判定と次のunlock条件を監査すること。",
-  "started_at_utc": "2026-08-24T02:15:17.345174+00:00",
+  "request_id": "KEIBA-SNAPSHOT-GATE-V2-CHECKER-AUDIT-20260824",
+  "topic": "競馬MAGI Race-time Snapshot Gate v2の実装監査。既存監査でcurrent JVD stateはsnapshot-safeでないため新隣接DEV trialは禁止済み。今回は解除条件をコード化した。契約は1 feature valueごとにrace_id/horse_no/snapshot_role/prediction_snapshot_time_jst/feature_name/value/feature_source_time_jst/source_kind/source_file_sha256/source_row_idを要求し、feature_source_time_jst<=prediction_snapshot_time_jst、重複frozen feature禁止、post-race feature禁止、current featureをJVD_FINAL_PARSED等final sourceから使うことを禁止する。checkerは合成PASS入力を0 violationでPASSし、破壊テストではsource-after-snapshot/current-feature-from-final-source/forbidden-post-race-featureの3違反を検出してexit 2でFAILした。監査目的は①Gate v2の解除条件を十分コード化できているか、②見逃し/過剰拒否の重大欠陥がないか、③このcheckerを今後のpre-race snapshot入力に適用する前提で進めてよいか、④VALIDATION/OOSを閉じたまま次に何を収集すべきか、を判定すること。モデル/Gate基準を結果都合で緩めない。",
+  "started_at_utc": "2026-08-24T02:23:13.037539+00:00",
   "budget_yen": 50.0,
   "fx_yen_per_usd": 150.0,
   "evidence_files": [
-    ".magi/keiba_feature_timing_bridge_evidence_v1.json",
-    ".magi/keiba_DEV3_5_prereg_anchor_audit_v1.json"
+    ".magi/race_time_snapshot_gate_v2.json",
+    ".magi/keiba_pre_race_snapshot_contract_v1.json",
+    "scripts/keiba_snapshot_gate_check_v1.py",
+    ".magi/keiba_snapshot_gate_checker_test_v1.json",
+    ".magi/keiba_prereg_anchor_registry_v1.json"
   ],
-  "ok": true,
-  "stages": [
-    {
-      "stage": "gpt_initial",
-      "speaker": "GPT / 主担当",
-      "text": "以下、MAGI監査ルールと証拠をもとに、指示通りの分類で現時点のファクト・判定をまとめます。\n\n---\n\n## 1. 確認済み（証拠から直接判明）\n\n### レース特徴量の取得時点証明状況\n- **オッズデータのみ「snapshot_time_jst」「effective_minutes_before_post」で特徴量の時点証明ができる**  \n  - 証拠: keiba_feature_timing_bridge_evidence_v1.json, `\"odds_timestamp_columns\":[\"snapshot_time_jst\",\"effective_minutes_before_post\"]`  \n  - EARLY (約10-11分前), LATE (約5-6分前)の2時点ともsnapshot件数が合致している（29052行）\n\n- **JVD（競馬成績DB） current特徴量（騎手、斤量、馬体重、abnormal_code, 登録/出走頭数）は\"as-of timestamp\"/acquisition/update記録がない**  \n  - 証拠: keiba_feature_timing_bridge_evidence_v1.json  \n  - `\"current_feature_timestamp_proof\": ... no per-record acquisition/update/as-of timestamp proving these values existed at EARLY/LATE snapshot.`\n\n- **JVD current-rowデータにはpost-race情報（final_finish, final_odds等）が同一行に混在しているため、特徴量単体で当時時点の情報だった証明はできない（feature leakage懸念）**  \n  - 証拠: `\"post_race_fields_co_resident_in_same_jvd_row\"`  \n\n- **cross source(odds, JVD, history)で各current特徴の現値は一致している**が、これは\"値が後から修正されなかった\"事しか示さない。時点証明にはならない。  \n  - 証拠: `\"cross_source_consistency_current_values\"`でcomparable_rows=equal_rows=28946（100％一致）  \n\n- **監査Gateの現状**  \n  - `\"status\": \"BLOCKED_FOR_TIMESTAMPED_CURRENT_STATE_FEATURES\"`\n  - `\"next_machine_gate\":\"Require source_time <= snapshot_time_jst per feature value, hash exact input snapshot before execution.\"`\n  - `\"new_adjacent_dev_trial_allowed_now\":false`（追加モデル開発も不可）\n  - `\"validation_oos_opened\":false`（本番/検証セット検証も不可）\n\n---\n\n## 2. 有力だが未証明（推測はできるが証拠で裏付けできない）\n\n### JVD current特徴量が実際にEARLY/LATE取得時点で存在していたかの個別証明\n- **各raceの\"registered_horses\",\"starters\",\"carried_weight_x10\",\"jockey_code\"等の値自体は高カバレッジ(100%)で整合**  \n  → だが「当該snapshot時刻に確実にこの値だった」証拠はなく、後追い投入の可能性を排除できない。\n- **post_raceフィールド（final_xxx, payout等）が同一JVD行内に併存する設計**  \n  → 処理状況次第で「結果逆算値がpre-race snapshot欄に後で上書きされた」リスクを否定できない。\n- **JVD側「post_time_hhmm」列が唯一の時間情報だが十分なプロベナンスではない**  \n  → \"post_time_hhmm\"はレース予定時刻であり、「情報がいつ取得できたか」の証明には使えない。\n\n---\n\n## 3. 弱まった／棄却\n\n- **cross source一致（current値の突合100%）が時点安全性・leakageなしの根拠になる**  \n  → **棄却**。値の一致は「最終値がどの時点から不変だった」保証にはならない。  \n  - 例：全部「後から最終正解で埋めた」場合もその一致が起きるため。\n- **カバレッジ100%が時点安全証拠となる**  \n  → **弱まった・補助的ファクトに留まる**。整合性として有用だが、時系列的な安全性・独立した「いつ取得できたか」の証拠にはならない。\n\n---\n\n## 4. 次の機械検証（unlock条件）\n\n- **要件：機械的に source_time <= snapshot_time_jst を各feature値ごとに証明できること**  \n  - ソース（例：オッズ）はこの要件を満たしているので「confirmatory-safe」。\n  - JVD current特徴量（騎手、斤量、馬体重、abnormal/scratch状態、頭数等）はその証拠が現状ない。\n- **今後のunlock条件**  \n  - 新たなtimestamp付き記録の用意、または既存データのas-of取得履歴が見つかり、それにより「このID/行のこのfeatureの値は○○時点で観測済」が機械可読で立証されること。\n- **追加の隣接モデル開発・Validation/OOS開放は現状では不可**（Gate方針どおり）\n\n---\n\n## 5. DEV v3-v5 prereg anchorの扱い\n\n- **prereg→script→auditのローカルmtime順序には偽装兆候がないが、第三者的なpre-execution anchor証明は未達成**  \n  - 証拠: keiba_DEV3_5_prereg_anchor_audit_v1.json\n- **したがって外部prereg anchor未証明であり、「本当にこの順でfixし公開したか」を議論なしにDEV/OOS判定には使えない**\n\n---\n\n# 総括\n\n### ≪確認済み≫\n- current特徴量（騎手、斤量、馬体重等）は「at snapshot時点取得済みである独立証拠」がなく、confirmatory-safeではない。\n- 追加モデル開発/Validationは今のデータ＆Gateで不可。  \n- オッズ系featureはsnapshot安全が証明可能。\n\n### ≪有力だが未証明≫\n- JVD current特徴量は本来予測時点で観測可能と想定される値だが、現証拠では時点安全は実証できない。\n\n### ≪弱まった/棄却≫\n- current値突合100%やカバレッジ100%は時点証拠にならない。\n\n### ≪次の機械検証・unlock条件≫\n- JVD current特徴で「source_time <= snapshot_time_jst」が記録として並ぶas-of型証拠が出てくれば解禁可。\n- それまで現Gate/BLOCKED判定が妥当。\n\n---\n\n証拠中の数値列/件数（EARLY・LATE snapshot数、current値coverage、cross source一致率等）は照合済みで、事実関係・Gate根拠は明白です。  \n結論として、「現状のデータ運用のままで隣接モデル・Validation/OOSを解放する根拠にはならない」が確定しています。",
-      "structured": null,
-      "agenda": null,
-      "model": "gpt-4.1",
-      "usage": {
-        "provider": "openai",
-        "input_tokens": 2393,
-        "cached_input_tokens": 0,
-        "output_tokens": 1653,
-        "total_tokens": 4046,
-        "usd": 0.01801,
-        "pricing_known": true
-      },
-      "provider_stop_reason": null
-    },
-    {
-      "stage": "claude_audit",
-      "speaker": "Claude / 監査",
-      "text": "# MAGI独立監査レポート — GPT案精査\n\n## 監査前提確認\n\n証拠ファイル2件のSHA-256を研究テーマ記載値と照合する。\n\n| ファイル | 研究テーマ記載SHA-256 | 証拠content冒頭のaudit_id |\n|---|---|---|\n| keiba_feature_timing_bridge_evidence_v1.json | 68e00f50b1fbb242124764ef6ff4539edb0ac03e2902929850d116f1b7c41f82 | KEIBA_FEATURE_TIMING_PROVENANCE_AUDIT_V1 |\n| keiba_DEV3_5_prereg_anchor_audit_v1.json | 71ad5c6728047f1cde6c99a61ffa269dfcc346fd1707ee89fd3fe74d3847a2d5 | KEIBA_DEV3_5_PREREG_ANCHOR_AUDIT_V1 |\n\nSHA-256の一致確認はBridgeサーバー側で再計算済みとの記載あり。本監査はその事実を受理する。contentの内部数値整合は以下で個別照合する。\n\n---\n\n## A. 数値整合性の個別照合\n\n### A-1. oddsスナップショット行数\n\n証拠: `snapshot_row_counts: EARLY=29052, LATE=29052`  \n証拠: `odds.rows=58104, races=2082`  \n照合: 29052 × 2 = 58,104 ✓  \n照合: 29052 ÷ 2082 = 13.95頭/レース（平均）。競馬レース規模として合理的 ✓\n\nGPT案は「snapshot件数が合致している（29052行）」と記述。合致の対象が曖昧（EARLY単独か合計かが不明）。正確には「EARLY=29052、LATE=29052、合計=odds.rowsの58104と一致」が正確な記述。**文章修正で修正可能、数値誤りではない。**\n\n### A-2. EARLY/LATE分前\n\n証拠: `EARLY: min=10, median=11.0, max=11` / `LATE: min=5, median=6.0, max=6`  \nGPT案は「約10-11分前、約5-6分前」と記述。minとmax範囲の明示がなく「約」で処理している。証拠では全行がmin=maxに近い狭域に集中しているがmedianのみで記述するのは情報の省略。**重大誤りではないが、min/medianの両記載が監査的に正確。文章修正で修正可能。**\n\n### A-3. JVD coverage数値\n\n証拠からの各feature coverage:\n\n| Feature | coverage_pct |\n|---|---|\n| carried_weight_x10 | 100.0 |\n| jockey_code | 100.0 |\n| jockey_name_short | 100.0 |\n| body_weight_kg | 99.866% |\n| abnormal_code | 100.0 |\n| registered_horses | 100.0 |\n| starters | 100.0 |\n\nGPT案は「高カバレッジ(100%)」と全feature一括記述。body_weight_kgは100.0%ではなく99.866%。**数値の不正確な記述。文章修正で修正可能。ただしbody_weight_kgのみ100%未満であることは監査的に明記すべき差異。**\n\n### A-4. cross_source_consistency\n\n証拠: `comparable_rows=28946, equal_rows=28946, equal_pct=100.0` — jockey_code / carried_weight / bodyweight / abnormal_code 全4項目  \njvd.rows=29052に対してcomparable_rows=28946。差分: 29052 - 28946 = 106行。この106行についての説明が証拠に存在しない。\n\nGPT案はcomparable_rows=equal_rows=28946 (100%一致)と正確に転記しているが、「106行が比較不能である理由・影響」に言及していない。**選択バイアス観点で補足が必要。ただし証拠側にも理由の記載がなく、新たな機械計算なしに原因を特定することは不可能。未検証事項として明記すべき。**\n\n### A-5. abnormal_code summary\n\n証拠:\n\n| code | count | valid | invalid |\n|---|---|---|---|\n| 0 | 28834 | 28834 | 0 |\n| 1 | 39 | 0 | 39 |\n| 3 | 67 | 64 | 3 |\n| 4 | 112 | 112 | 0 |\n\n合計: 28834 + 39 + 67 + 112 = 29052 ✓ (jvd.rows一致)  \ninvalid合計: 0 + 39 + 3 + 0 = 42行  \n証拠の `jvd_abnormal_nonzero_rows=218` は 39+67+112=218 ✓\n\nGPT案はabnormal_code summaryの数値を個別に引用していない。この表はfeature timing監査とは直接連動する主張ではないため省略自体は許容範囲。ただし**42行のinvalid（特に abnormal_code=1の39行全",
-      "structured": null,
-      "agenda": null,
-      "model": "claude-sonnet-4-6",
-      "usage": {
-        "provider": "anthropic",
-        "input_tokens": 2179,
-        "cache_write_tokens": 2793,
-        "cache_read_tokens": 0,
-        "output_tokens": 1500,
-        "total_tokens": 6472,
-        "usd": 0.039511,
-        "pricing_known": true
-      },
-      "provider_stop_reason": "max_tokens"
-    },
-    {
-      "stage": "gpt_revise",
-      "speaker": "GPT / 改訂",
-      "text": "# MAGI独立監査指摘による案改訂版  \n（競馬MAGI feature timing/data provenance監査 — DEV v3–v5時点）\n\n---\n\n## 1. ファクト（証拠から直接判明）\n\n### レース特徴量の取得時点証明\n- **オッズデータは「snapshot_time_jst」「effective_minutes_before_post」列によりスナップショット時点が明確に証明可能**\n  - 証拠: `keiba_feature_timing_bridge_evidence_v1.json`\n  - 各レース毎にEARLY=29,052行, LATE=29,052行。合計=58,104行は `odds.rows` と一致（=2,082レース×約14頭/レース）。\n  - EARLYスナップショットは分前分布[min=10, median=11.0, max=11]。LATEは[min=5, median=6.0, max=6]。全体が狭いレンジに収まる。\n\n- **JVD（競馬成績系 current特徴量）には取得/更新/as-of timestamp（時点証拠となる列）が一切存在しない**\n  - 証拠:`current_feature_timestamp_proof` より、carried_weight_x10, jockey_code, body_weight_kg, abnormal_code, registered_horses, startersすべて値時点証拠なし。\n\n- **JVD current行にはpost-race情報（final_finish, final_win_odds等）も一緒に存在し、pre/postの明確な分離がない設計となっている**\n  - 証拠: `post_race_fields_co_resident_in_same_jvd_row`。これ自体でleakageは直ちに証明されないが、「単体featureが確実にsnapshot時刻で観測できた」証明にならない。\n\n- **cross source一致率は100%（comparable_rows=28,946; equal_pct=100.0）と高い整合性が確認されているが、約106行が比較不能(comparable_rows/jvd.rows=28,946/29,052)。この比較不能行の性質・影響については現証拠からは判明しない（未解決として分離）**\n  - 証拠: `cross_source_consistency_current_values`\n  - 値の一致が「時点安全」やfeature leakage排除の直接証拠にはならない点は重要（推論でなくファクト）。\n\n- **JVD側current特徴量 coverageは以下の通り（直近案の単純\"100%\"表現は誤り）**  \n  | carried_weight_x10 | jockey_code | jockey_name_short | body_weight_kg | abnormal_code | registered_horses | starters |\n  |----|----|----|----|----|----|----|\n  |100.0%|100.0%|100.0%|99.87%|100.0%|100.0%|100.0%|  \n  - `body_weight_kg` のみ厳密には100%未満(99.87%)。残差（約0.13%）は欠損だが監査結果上の制約には必須ではない。\n\n- **監査Gate現状**\n  - `\"status\": \"BLOCKED_FOR_TIMESTAMPED_CURRENT_STATE_FEATURES\"`\n  - `\"next_machine_gate\":\"Require source_time <= snapshot_time_jst per feature value, hash exact input snapshot before execution.\"`\n  - `\"new_adjacent_dev_trial_allowed_now\":false`\n  - `\"validation_oos_opened\":false`\n  - — 追加のDEVモデル開発やvalidation set解放など一切不可。（現方針通り）\n\n- **DEV v3–v5のprereg→script→auditのローカルmtime順序は一貫性あり。だが“外部的な第三者pre-execution anchor”には未到達**\n  - 証拠: `keiba_DEV3_5_prereg_anchor_audit_v1.json`  \n  - \"local_order_prereg_before_script_before_audit\": true だが、外部anchor証明`external_preexecution_anchor_verified`=false。\n\n---\n\n## 2. 有力だが未証明（推論・未検証証拠）\n\n- **JVD current特徴量「当該snapshot時点で値が観測された」証拠は存在しない。**  \n   値自体（例：騎手コード/馬体重/斤量/登録頭数）は100%に迫るカバレッジで格納されているが、「それが本当にsnap時点で既知だった」ことを保証する記録（acquisition/update/as-of timestamp）は一切記載がない。\n- **設計上、post-race列（final_xxx, payout等）と同居していることから、「後からfinal値で埋め直した」可能性は排除不可能。時系列安全（feature leakageの否定）は現証拠からは実証できない。**\n- **cross source一致率の高さも「値の変化がなかっただけ」を表すに留まり、“観測時系列が正しかった証明”にはつながらない。**  \n- **JVD \"post_time_hhmm\"は予定時刻のみで、取得時刻・as-of証拠にはならない。**\n\n---\n\n## 3. 棄却／弱体化（それ自体の根拠力を否定または限定）\n\n- **current値のcross source突合100%を「時点安全・feature leakage無し」の直接根拠にするロジックは**  \n  - →【明確に棄却】。  \n  - 値一致は「どの時点で入庫されたか」「途中で上書きされていないか」の隔証にはならない。\n- **カバレッジ100%（または約99.9%）の高さは“時点安全性”エビデンスとしては補助ファクトに止まる。**  \n  - ※値の有無として整合性判断には資するが、時点プロベナンス証明の決定論的理由にはならない。\n\n---\n\n## 4. 未解決・未検証事項\n\n- **cross source一致/比較不能の約106行（=jvd.rows- comparable_rows）の内訳/理由は証拠に記述なく未検証。選択的バイアスが懸念となるケースも完全には否定できないので注意事項として残す。**\n- **dev v3-5の外部anchor未証明。将来unlock条件として \"PREREG_LOCKED -> external hash/timestamp commit -> EXECUTABLE\" が必要と明示されている。**\n- **DEV/OOS応募戦略やGate/閾値/feature subset指定について後出しで便宜的変更は一切認められない。（MAGI監査ルール）**\n\n---\n\n## 5. 次ステップ（unlock条件）\n\n- **現状（JVD current特徴量）は、「source_time <= snapshot_time_jstの、機械読解可能/as-of 証拠」が1featureずつ全行について記録・linkされていない ⇒ confirmatory-safeでないと認定。このため新しいDEV/OOS試行不可。**\n- **今後unlock条件は、該当「as-of snapshot証拠」あるいは新規timestamp付き記録が追加で提出・検証された場合に限られる。**\n- **オッズ系featureは現状でsnapshot安全（証拠から繰り返し確認）。**\n- **DEV/OOS検証やモデル開発以降の解放判断は、現行Gate/証拠/ルール下では「不可」で確定。**\n\n---\n\n## 6. DEV v3–v5の外部anchor\n\n- **mtime順序は整合的だが、第三者的な外部anchorが成立しない（",
-      "structured": null,
-      "agenda": null,
-      "model": "gpt-4.1",
-      "usage": {
-        "provider": "openai",
-        "input_tokens": 5322,
-        "cached_input_tokens": 0,
-        "output_tokens": 1800,
-        "total_tokens": 7122,
-        "usd": 0.025044,
-        "pricing_known": true
-      },
-      "provider_stop_reason": null
-    },
-    {
-      "stage": "claude_verdict",
-      "speaker": "Claude / 最終監査",
-      "text": "reported_verdict: PASS\nrevision_class: NONE\nhuman_action_required: false\nnext_action: 新規DEV/OOS試行・隣接モデル追加は不可。JVD current特徴量のas-of timestamp付き記録が新規提出されたときのみsource_time<=snapshot_time_jst機械Gateを実施してunlockを検討する。外部anchor未証明はBridge未解決項目として維持。\n\n確認できた事実:\n- オッズデータはsnapshot_time_jst/effective_minutes_before_post列によりEARLY=29,052行・LATE=29,052行の時点証明が可能（証拠: keiba_feature_timing_bridge_evidence_v1.json）\n- JVD current特徴量（jockey_code等6列）はacquisition/update/as-of timestamp列が全て存在せず、current_feature_timestamp_proofがすべてfalse\n- JVD current行にはfinal_finish/final_win_odds等post-race列が同居しており、後書き上書きの可能性を排除できないため単独でconfirmatory-safeと扱えない\n- cross source一致率100%（comparable=28,946行）は値の一致を示すが観測時系列の正しさは証明せず、leakage否定根拠にならない\n- DEV v3-v5のprereg→script→auditローカルmtime順序は一貫（local_order=true）だが外部anchor未証明（external_preexecution_anchor_verified=false）\n\n未解決点:\n- JVD comparable_rows(28,946)とjvd.rows(29,052)の差106行の内訳・選択バイアス可能性は証拠に記述なく未検証\n- DEV v3-v5の外部第三者pre-execution anchorは未証明のままBridgeで未解決項目として継続\n- JVD current特徴量のsource_time<=snapshot_time_jst per-feature証明はas-of記録の新規提出まで不可能\n\n必要な機械検証:\n- source_time <= snapshot_time_jst を特徴量値ごとに全行で検証するGate（as-of timestamp付き記録が提出された場合に実施）\n- as-of provenance記録が追加された場合の入力スナップショットhash検証\n\n理由: GPT案は証拠ファイル2件の主要数値・判定を正確に反映している。BLOCKED状態・confirmatory-safe否定・new_adjacent_dev_trial=false・external_anchor=falseの各結論はいずれも証拠から直接導出可能で過大主張なし。body_weight_kgの99.87%表記等の精度修正も証拠と整合。cross source一致をleakage否定根拠として使わない点も正しく記述されている。限界・未解決事項も証拠に基づき明示されており、PASSを妨げる重大誤記・過大主張は確認されない。",
-      "structured": {
-        "reported_verdict": "PASS",
-        "revision_class": "NONE",
-        "human_action_required": false,
-        "confirmed_facts": [
-          "オッズデータはsnapshot_time_jst/effective_minutes_before_post列によりEARLY=29,052行・LATE=29,052行の時点証明が可能（証拠: keiba_feature_timing_bridge_evidence_v1.json）",
-          "JVD current特徴量（jockey_code等6列）はacquisition/update/as-of timestamp列が全て存在せず、current_feature_timestamp_proofがすべてfalse",
-          "JVD current行にはfinal_finish/final_win_odds等post-race列が同居しており、後書き上書きの可能性を排除できないため単独でconfirmatory-safeと扱えない",
-          "cross source一致率100%（comparable=28,946行）は値の一致を示すが観測時系列の正しさは証明せず、leakage否定根拠にならない",
-          "DEV v3-v5のprereg→script→auditローカルmtime順序は一貫（local_order=true）だが外部anchor未証明（external_preexecution_anchor_verified=false）"
-        ],
-        "unresolved": [
-          "JVD comparable_rows(28,946)とjvd.rows(29,052)の差106行の内訳・選択バイアス可能性は証拠に記述なく未検証",
-          "DEV v3-v5の外部第三者pre-execution anchorは未証明のままBridgeで未解決項目として継続",
-          "JVD current特徴量のsource_time<=snapshot_time_jst per-feature証明はas-of記録の新規提出まで不可能"
-        ],
-        "required_machine_tests": [
-          "source_time <= snapshot_time_jst を特徴量値ごとに全行で検証するGate（as-of timestamp付き記録が提出された場合に実施）",
-          "as-of provenance記録が追加された場合の入力スナップショットhash検証"
-        ],
-        "next_action": "新規DEV/OOS試行・隣接モデル追加は不可。JVD current特徴量のas-of timestamp付き記録が新規提出されたときのみsource_time<=snapshot_time_jst機械Gateを実施してunlockを検討する。外部anchor未証明はBridge未解決項目として維持。",
-        "rationale": "GPT案は証拠ファイル2件の主要数値・判定を正確に反映している。BLOCKED状態・confirmatory-safe否定・new_adjacent_dev_trial=false・external_anchor=falseの各結論はいずれも証拠から直接導出可能で過大主張なし。body_weight_kgの99.87%表記等の精度修正も証拠と整合。cross source一致をleakage否定根拠として使わない点も正しく記述されている。限界・未解決事項も証拠に基づき明示されており、PASSを妨げる重大誤記・過大主張は確認されない。",
-        "parse_error": false
-      },
-      "agenda": null,
-      "model": "claude-sonnet-4-6",
-      "usage": {
-        "provider": "anthropic",
-        "input_tokens": 2748,
-        "cache_write_tokens": 3293,
-        "cache_read_tokens": 0,
-        "output_tokens": 828,
-        "total_tokens": 6869,
-        "usd": 0.033013,
-        "pricing_known": true
-      },
-      "provider_stop_reason": "end_turn"
-    }
-  ],
-  "final_structured": {
-    "reported_verdict": "PASS",
-    "revision_class": "NONE",
-    "human_action_required": false,
-    "confirmed_facts": [
-      "オッズデータはsnapshot_time_jst/effective_minutes_before_post列によりEARLY=29,052行・LATE=29,052行の時点証明が可能（証拠: keiba_feature_timing_bridge_evidence_v1.json）",
-      "JVD current特徴量（jockey_code等6列）はacquisition/update/as-of timestamp列が全て存在せず、current_feature_timestamp_proofがすべてfalse",
-      "JVD current行にはfinal_finish/final_win_odds等post-race列が同居しており、後書き上書きの可能性を排除できないため単独でconfirmatory-safeと扱えない",
-      "cross source一致率100%（comparable=28,946行）は値の一致を示すが観測時系列の正しさは証明せず、leakage否定根拠にならない",
-      "DEV v3-v5のprereg→script→auditローカルmtime順序は一貫（local_order=true）だが外部anchor未証明（external_preexecution_anchor_verified=false）"
-    ],
-    "unresolved": [
-      "JVD comparable_rows(28,946)とjvd.rows(29,052)の差106行の内訳・選択バイアス可能性は証拠に記述なく未検証",
-      "DEV v3-v5の外部第三者pre-execution anchorは未証明のままBridgeで未解決項目として継続",
-      "JVD current特徴量のsource_time<=snapshot_time_jst per-feature証明はas-of記録の新規提出まで不可能"
-    ],
-    "required_machine_tests": [
-      "source_time <= snapshot_time_jst を特徴量値ごとに全行で検証するGate（as-of timestamp付き記録が提出された場合に実施）",
-      "as-of provenance記録が追加された場合の入力スナップショットhash検証"
-    ],
-    "next_action": "新規DEV/OOS試行・隣接モデル追加は不可。JVD current特徴量のas-of timestamp付き記録が新規提出されたときのみsource_time<=snapshot_time_jst機械Gateを実施してunlockを検討する。外部anchor未証明はBridge未解決項目として維持。",
-    "rationale": "GPT案は証拠ファイル2件の主要数値・判定を正確に反映している。BLOCKED状態・confirmatory-safe否定・new_adjacent_dev_trial=false・external_anchor=falseの各結論はいずれも証拠から直接導出可能で過大主張なし。body_weight_kgの99.87%表記等の精度修正も証拠と整合。cross source一致をleakage否定根拠として使わない点も正しく記述されている。限界・未解決事項も証拠に基づき明示されており、PASSを妨げる重大誤記・過大主張は確認されない。",
-    "parse_error": false
-  },
-  "final_text": "reported_verdict: PASS\nrevision_class: NONE\nhuman_action_required: false\nnext_action: 新規DEV/OOS試行・隣接モデル追加は不可。JVD current特徴量のas-of timestamp付き記録が新規提出されたときのみsource_time<=snapshot_time_jst機械Gateを実施してunlockを検討する。外部anchor未証明はBridge未解決項目として維持。\n\n確認できた事実:\n- オッズデータはsnapshot_time_jst/effective_minutes_before_post列によりEARLY=29,052行・LATE=29,052行の時点証明が可能（証拠: keiba_feature_timing_bridge_evidence_v1.json）\n- JVD current特徴量（jockey_code等6列）はacquisition/update/as-of timestamp列が全て存在せず、current_feature_timestamp_proofがすべてfalse\n- JVD current行にはfinal_finish/final_win_odds等post-race列が同居しており、後書き上書きの可能性を排除できないため単独でconfirmatory-safeと扱えない\n- cross source一致率100%（comparable=28,946行）は値の一致を示すが観測時系列の正しさは証明せず、leakage否定根拠にならない\n- DEV v3-v5のprereg→script→auditローカルmtime順序は一貫（local_order=true）だが外部anchor未証明（external_preexecution_anchor_verified=false）\n\n未解決点:\n- JVD comparable_rows(28,946)とjvd.rows(29,052)の差106行の内訳・選択バイアス可能性は証拠に記述なく未検証\n- DEV v3-v5の外部第三者pre-execution anchorは未証明のままBridgeで未解決項目として継続\n- JVD current特徴量のsource_time<=snapshot_time_jst per-feature証明はas-of記録の新規提出まで不可能\n\n必要な機械検証:\n- source_time <= snapshot_time_jst を特徴量値ごとに全行で検証するGate（as-of timestamp付き記録が提出された場合に実施）\n- as-of provenance記録が追加された場合の入力スナップショットhash検証\n\n理由: GPT案は証拠ファイル2件の主要数値・判定を正確に反映している。BLOCKED状態・confirmatory-safe否定・new_adjacent_dev_trial=false・external_anchor=falseの各結論はいずれも証拠から直接導出可能で過大主張なし。body_weight_kgの99.87%表記等の精度修正も証拠と整合。cross source一致をleakage否定根拠として使わない点も正しく記述されている。限界・未解決事項も証拠に基づき明示されており、PASSを妨げる重大誤記・過大主張は確認されない。",
-  "estimated_spent_yen": 17.3367,
-  "finished_at_utc": "2026-08-24T02:16:40.751665+00:00"
+  "ok": false,
+  "error": "Bridge HTTP 500: {\"error\":\"未対応の証拠ファイル形式です: keiba_snapshot_gate_check_v1.py\"}",
+  "stages": [],
+  "estimated_spent_yen": 0.0,
+  "finished_at_utc": "2026-08-24T02:23:13.219471+00:00"
 }
