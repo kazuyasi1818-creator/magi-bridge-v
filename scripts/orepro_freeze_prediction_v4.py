@@ -5,6 +5,7 @@ from copy import deepcopy
 from pathlib import Path
 import orepro_freeze_prediction_v3 as v3
 
+EXPECTED_TEMPLATE = 'OREPRO-PREDICTION-CARD-V3'
 ALLOWED_TOP = {
     'template_id','race_id','race_date_jst','venue','race_no','post_time_jst',
     'prediction_frozen_at_jst','submission_deadline_jst','model_version','shadow_model_versions',
@@ -40,6 +41,8 @@ def unknown(prefix: str, obj: object, allowed: set[str]) -> list[str]:
 
 def validate(card: dict) -> list[str]:
     errs = set(v3.validate(card))
+    if card.get('template_id') != EXPECTED_TEMPLATE:
+        errs.add('PREDICTION_CARD_TEMPLATE_NOT_V3')
     errs.update(unknown('', card, ALLOWED_TOP))
     errs.update(unknown('data_snapshot.', card.get('data_snapshot'), ALLOWED_SNAPSHOT))
     errs.update(unknown('competition_overlay_caps.', card.get('competition_overlay_caps'), ALLOWED_CAPS))
