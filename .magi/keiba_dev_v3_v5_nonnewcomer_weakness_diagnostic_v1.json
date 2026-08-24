@@ -1,0 +1,82 @@
+{
+  "diagnostic_id": "KEIBA-DEV-V3-V5-NONNEWCOMER-WEAKNESS-DIAGNOSTIC-V1",
+  "scope": "DEV-only retrospective weakness diagnosis; newcomer races excluded; not a strategy-promotion artifact",
+  "source_trials": [3,4,5],
+  "race_count_total_per_trial": 858,
+  "newcomer_races_excluded_per_trial": 45,
+  "nonnewcomer_races_analyzed_per_trial": 813,
+  "outcome_use_policy": {
+    "used_for_diagnosis": true,
+    "allowed_to_change_current_week1_selection_or_stakes": false,
+    "allowed_to_retroactively_promote_v3_v4_v5": false,
+    "reason": "subgroup/scope findings are retrospective and may be affected by multiplicity"
+  },
+  "overall_mean_logloss_improvement_after_newcomer_exclusion": {
+    "v3": 0.004075,
+    "v4": 0.004420,
+    "v5": 0.002745
+  },
+  "monthly_after_newcomer_exclusion": {
+    "v3": {"202601": 0.006556, "202602": 0.009679, "202603": -0.002925},
+    "v4": {"202601": 0.001113, "202602": 0.010603, "202603": 0.001693},
+    "v5": {"202601": 0.000913, "202602": 0.007510, "202603": 0.000049}
+  },
+  "newcomer_diagnostic_only": {
+    "race_count_per_trial": 45,
+    "mean_improvement": {"v3": -0.025578, "v4": -0.012973, "v5": -0.012904},
+    "interpretation": "consistent with low-information concern, but newcomer exclusion is adopted prospectively because of data sufficiency/user scope, not because these retrospective results create a winning filter"
+  },
+  "shared_weakness_candidates_nonnewcomer": [
+    {
+      "tag": "SMALL_FIELD_LE_10",
+      "n_per_trial": 110,
+      "mean_improvement": {"v3": -0.00303, "v4": -0.00331, "v5": -0.00132},
+      "bootstrap95": {"v3": [-0.01738,0.01122], "v4": [-0.01819,0.01209], "v5": [-0.01406,0.01126]},
+      "status": "WEAKNESS_CANDIDATE_NOT_CONFIRMED"
+    },
+    {
+      "tag": "DIST_1800_2199",
+      "n_per_trial": 324,
+      "mean_improvement": {"v3": -0.00076, "v4": -0.00247, "v5": -0.00094},
+      "bootstrap95": {"v3": [-0.01045,0.00846], "v4": [-0.01147,0.00664], "v5": [-0.00949,0.00727]},
+      "status": "WEAKNESS_CANDIDATE_NOT_CONFIRMED"
+    },
+    {
+      "tag": "MARKET_TOP1_P_LT_0_20",
+      "n_per_trial": 90,
+      "mean_improvement": {"v3": -0.00961, "v4": -0.00380, "v5": -0.01099},
+      "bootstrap95": {"v3": [-0.03428,0.01145], "v4": [-0.02380,0.01431], "v5": [-0.03127,0.00648]},
+      "status": "WEAKNESS_CANDIDATE_NOT_CONFIRMED"
+    },
+    {
+      "tag": "MARKET_NORM_ENTROPY_0_80_0_85",
+      "n_per_trial": 204,
+      "mean_improvement": {"v3": -0.00585, "v4": -0.00257, "v5": -0.00428},
+      "bootstrap95": {"v3": [-0.02017,0.00718], "v4": [-0.01531,0.00906], "v5": [-0.01652,0.00666]},
+      "status": "WEAKNESS_CANDIDATE_NOT_CONFIRMED"
+    },
+    {
+      "tag": "MARKET_GAP_0_05_0_10",
+      "n_per_trial": 182,
+      "mean_improvement": {"v3": -0.00435, "v4": -0.00052, "v5": -0.00113},
+      "bootstrap95": {"v3": [-0.02300,0.01144], "v4": [-0.01517,0.01326], "v5": [-0.01450,0.01078]},
+      "status": "WEAKNESS_CANDIDATE_NOT_CONFIRMED"
+    }
+  ],
+  "forward_shadow_policy": {
+    "apply_tags_only": true,
+    "change_prediction": false,
+    "change_ticket_selection": false,
+    "change_stake": false,
+    "exclude_race_based_on_these_tags": false,
+    "purpose": "measure prospectively whether the same weakness pattern recurs"
+  },
+  "next_model_research_priority": [
+    "market-uncertainty representation / rank distribution under diffuse favorite structure",
+    "field-size interaction without subgroup-specific hand tuning",
+    "distance-regime representation around 1800-2199m",
+    "history-availability/missingness representation for non-newcomer races"
+  ],
+  "validation_opened": false,
+  "oos_opened": false
+}
