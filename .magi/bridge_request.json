@@ -1,11 +1,13 @@
 {
-  "request_id": "KEIBA-RAW-JVD-TIMING-GATE-V2-AUDIT-20260824",
-  "topic": "競馬MAGI Race-time Snapshot Gate v2最終監査。新しい機械証拠として、実際に使ったraw JVD 29,052行は全件RAレコードで、headerの第2の8桁date-like fieldのunique setがparsed race_date 69開催日のsetと完全一致し、第1の8桁date-like fieldは第2より全件1〜13日後だった。さらにparsed JVD rowにはfinal_finish/final_win_odds/final_popularity/payout/dead_heat/finishersが同居する。外部仕様書なしでheader field名を断定はしないが、このexact parsed JVD sourceはpost-race/final-state用途のデータであり、同じ行のcurrent jockey/斤量/bodyweight/abnormal/startersをEARLY/LATE snapshot-safeとして使わない、というGate v2判定が妥当か監査する。既存のオッズtimestamp付きfeatureとstrict historical featureはGREEN維持。新隣接モデルは禁止。unlockはpre-race source timestampを取得して feature_source_time<=prediction_snapshot_time を機械証明し、raw snapshot hashを実行前に固定すること。VALIDATION/OOSは閉鎖継続。",
-  "evidence_files": [
-    ".magi/keiba_raw_jvd_header_timing_diagnostic_v1.json",
+  "request_id":"KEIBA-SNAPSHOT-GATE-V2-CHECKER-AUDIT-20260824",
+  "topic":"競馬MAGI Race-time Snapshot Gate v2の実装監査。既存監査でcurrent JVD stateはsnapshot-safeでないため新隣接DEV trialは禁止済み。今回は解除条件をコード化した。契約は1 feature valueごとにrace_id/horse_no/snapshot_role/prediction_snapshot_time_jst/feature_name/value/feature_source_time_jst/source_kind/source_file_sha256/source_row_idを要求し、feature_source_time_jst<=prediction_snapshot_time_jst、重複frozen feature禁止、post-race feature禁止、current featureをJVD_FINAL_PARSED等final sourceから使うことを禁止する。checkerは合成PASS入力を0 violationでPASSし、破壊テストではsource-after-snapshot/current-feature-from-final-source/forbidden-post-race-featureの3違反を検出してexit 2でFAILした。監査目的は①Gate v2の解除条件を十分コード化できているか、②見逃し/過剰拒否の重大欠陥がないか、③このcheckerを今後のpre-race snapshot入力に適用する前提で進めてよいか、④VALIDATION/OOSを閉じたまま次に何を収集すべきか、を判定すること。モデル/Gate基準を結果都合で緩めない。",
+  "evidence_files":[
     ".magi/race_time_snapshot_gate_v2.json",
-    ".magi/keiba_feature_timing_bridge_evidence_v1.json"
+    ".magi/keiba_pre_race_snapshot_contract_v1.json",
+    "scripts/keiba_snapshot_gate_check_v1.py",
+    ".magi/keiba_snapshot_gate_checker_test_v1.json",
+    ".magi/keiba_prereg_anchor_registry_v1.json"
   ],
-  "budget_yen": 50,
-  "fx_yen_per_usd": 150
+  "budget_yen":50,
+  "fx_yen_per_usd":150
 }
