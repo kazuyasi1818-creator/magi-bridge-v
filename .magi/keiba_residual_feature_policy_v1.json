@@ -1,0 +1,34 @@
+{
+  "policy_id": "KEIBA-RESIDUAL-FEATURE-POLICY-V1",
+  "status": "DRAFT_GUARDRAIL_ONLY_NOT_EXECUTABLE",
+  "baseline_market_fields": ["market_p", "log_market_p", "pre_win_odds", "odds"],
+  "residual_feature_whitelist": [
+    "horse_prior_starts",
+    "days_since_last_start_rebuilt",
+    "same_surface_as_last",
+    "same_venue_as_last",
+    "abs_distance_change_m",
+    "same_class_code_as_last"
+  ],
+  "explicitly_held_out": [
+    "last_finish",
+    "last_final_odds",
+    "last_final_popularity",
+    "horse_market_win_resid_mean_all",
+    "horse_market_win_resid_mean_last5",
+    "horse_finish_vs_market_rank_mean_all",
+    "horse_finish_vs_market_rank_mean_last5"
+  ],
+  "rules": {
+    "current_market_is_baseline_only": true,
+    "unknown_residual_features_fail_closed": true,
+    "held_out_features_fail_closed": true,
+    "duplicate_features_fail_closed": true,
+    "empty_residual_set_fail_closed": true,
+    "feature_order_must_match_whitelist": true
+  },
+  "note": "This policy freezes architecture scope only. It is not permission to run a new DEV trial before Gate v4 real forward provenance PASS and a new externally anchored prereg.",
+  "validation_opened": false,
+  "oos_opened": false,
+  "real_money_bet": false
+}
