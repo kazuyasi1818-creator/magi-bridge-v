@@ -1,0 +1,22 @@
+{
+  "test_id": "KEIBA_GATE_V4_NEGATIVE_BOUNDARIES_V1",
+  "commit_sha_under_test": "13f674e13b4cbae039e09b8ddb45bb61a9806b68",
+  "collector_v3_sha256": "b133c47b0c5fc29cfa43dc45a06e47855ddd2e510fed83af7363a8846775b81a",
+  "builder_v3_sha256": "28631c5e8385ad79a1539d08d26a60a60c4fe5925546d09b6b64d1e83d99ad93",
+  "checker_v4_sha256": "6ef47c6a4189b18e07972650dfead805270b59ed1a45ee89df0d982784e20060",
+  "checks": {
+    "wh_weight_000_is_scratch_not_numeric": true,
+    "latest_complete_0b14_missing_we_does_not_carry_old_we": true,
+    "latest_av_still_emitted": true,
+    "gate_pass": true
+  },
+  "provenance_features": [
+    "scratch_exclusion_code"
+  ],
+  "gate_status": "PASS",
+  "gate_violation_count": 0,
+  "status": "PASS",
+  "real_capture_executed": false,
+  "validation_oos_opened": false,
+  "dev_v6_allowed": false
+}
