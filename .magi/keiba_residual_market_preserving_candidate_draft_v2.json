@@ -1,0 +1,61 @@
+{
+  "draft_id": "KEIBA-RESIDUAL-MARKET-PRESERVING-CANDIDATE-DRAFT-V2",
+  "status": "DRAFT_ONLY_NOT_EXECUTABLE",
+  "purpose": "Define the next horse-racing candidate architecture after diagnosing rank compression in the prior market recalibration layer, while minimizing degrees of freedom and preventing current-market leakage into the residual learner.",
+  "baseline": {
+    "name": "DIRECT_MARKET",
+    "definition": "race-normalized inverse purchasable pre-race win odds at the preregistered snapshot",
+    "market_fields_used_only_here": ["market_p", "log_market_p", "pre_win_odds", "odds"]
+  },
+  "residual_model": {
+    "feature_policy": "KEIBA-RESIDUAL-FEATURE-POLICY-V1",
+    "features": [
+      "horse_prior_starts",
+      "days_since_last_start_rebuilt",
+      "same_surface_as_last",
+      "same_venue_as_last",
+      "abs_distance_change_m",
+      "same_class_code_as_last"
+    ],
+    "current_market_feature_inside_residual_model": false,
+    "residual_score_rule": "produce horse-level residual score from strict-history/context features only; center residual scores within race before correction",
+    "candidate_probability_rule": "p_i proportional to p_market_i * exp(alpha_race * centered_residual_i), followed by race normalization"
+  },
+  "uncertainty_control": {
+    "enabled_in_architecture": true,
+    "rule": "alpha_race is bounded, nonnegative, and weakens as preregistered pre-race market uncertainty increases",
+    "numeric_function_fixed_now": false,
+    "reason_numeric_not_fixed": "No executable trial is authorized yet; numeric choices must be frozen in a new externally anchored prereg before execution, not selected from validation/OOS."
+  },
+  "required_invariants": [
+    "alpha=0 implies candidate probabilities exactly equal direct market probabilities",
+    "constant residual across all horses implies candidate probabilities exactly equal direct market probabilities",
+    "all candidate probabilities are positive and sum to one per race",
+    "current market probability/odds are not residual-model features",
+    "feature set and order pass KEIBA-RESIDUAL-FEATURE-POLICY-V1 lint",
+    "newcomer races remain excluded from prediction and OrePro operation"
+  ],
+  "primary_future_gate": [
+    "mean paired race winner-logloss improvement versus DIRECT_MARKET > 0",
+    "paired race bootstrap 95% CI lower bound > 0",
+    "binary log loss non-worse",
+    "Brier non-worse",
+    "improvement positive in every preregistered eval month",
+    "no systematic market-rank flattening beyond a preregistered diagnostic tolerance"
+  ],
+  "blocked_until": [
+    "Race-time Snapshot Gate v4 real Windows/JV-Link forward provenance PASS",
+    "new trial prereg externally anchored before execution",
+    "all source data hashes fixed before execution"
+  ],
+  "forbidden": [
+    "reuse final/closing odds as prediction-time current market",
+    "add held-out features after seeing trial outcomes",
+    "tune uncertainty thresholds on validation/OOS",
+    "promote from posthoc subgroup performance",
+    "open validation/OOS without explicit authorization"
+  ],
+  "validation_opened": false,
+  "oos_opened": false,
+  "real_money_bet": false
+}
