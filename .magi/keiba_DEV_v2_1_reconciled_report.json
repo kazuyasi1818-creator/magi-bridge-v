@@ -1,0 +1,34 @@
+{
+  "report_id": "KEIBA_DEV_V2_1_RECONCILED_REPORT",
+  "decision": "HOLD",
+  "validation_candidates": 0,
+  "validation_opened": false,
+  "oos_opened": false,
+  "reconciliation": {
+    "C-1": {
+      "status": "RESOLVED_WITH_DOCUMENTATION_RESERVATION",
+      "statement": "DEV v2 did not newly contaminate the T009R confirmatory candidate pool because the existing policy already makes all races with scheduled post <= 2026-08-23T19:26:00+09:00 ineligible and keeps confirmatory prospective-only. However, the exposure-ledger lock artifact was recorded at 19:48, 22 minutes after the eligibility threshold. The exact prospective race manifest is not fixed in the present evidence, so zero procedural risk must not be claimed. This reservation does not authorize opening VALIDATION or OOS."
+    },
+    "M-1": {
+      "status": "AUDIT_CLAIM_CORRECTED_IMPACT_UNQUANTIFIED",
+      "statement": "The earlier claim of zero EARLY/LATE valid-population mismatches was wrong. Machine audit finds one mismatch race, caused by one later-excluded horse lacking LATE odds; invalid winner rows are zero. The quantitative impact of that single mismatch on DEV model metrics is not established by the current evidence, so no zero-impact claim is made."
+    },
+    "M-2": {
+      "status": "BOUNDED_NOT_FULLY_RESOLVED",
+      "statement": "No horse_name maps to multiple horse_ids in either current dataset, so no observed same-name collision is present in this window. But history horse_id is 8 characters and target horse_id is 10 characters, so direct cross-file horse_id replacement is unsafe without an explicit crosswalk. The v2 implementation therefore still depends on horse_name matching; this is a documented limitation, not evidence of observed leakage."
+    },
+    "M-3": {
+      "status": "INPUT_SCOPE_VERIFIED_GLOBAL_ACCESS_NOT_PROVEN",
+      "statement": "The fixed split prereg defines DEV through 2026-03-31, VALIDATION from 2026-04-01, and OOS_LOCKED from 2026-07-01. Machine audit finds zero rows on or after 2026-04-01 in both DEV v2 input files. This verifies that the supplied v2 inputs do not contain VALIDATION/OOS rows. It does not by itself prove that no person or system ever accessed those datasets elsewhere, so the claim is limited to the supplied artifacts and execution inputs."
+    }
+  },
+  "unchanged": {
+    "model": true,
+    "gate": true,
+    "period_boundaries": true,
+    "roi_selection": false,
+    "new_machine_analysis": false,
+    "new_data": false
+  },
+  "next_action": "Keep DEV v2 closed as HOLD with zero VALIDATION candidates. Do not open VALIDATION. Treat any new feature/model/Gate change as a new DEV trial."
+}
