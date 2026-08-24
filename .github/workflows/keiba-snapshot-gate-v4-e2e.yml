@@ -1,0 +1,108 @@
+name: Keiba Snapshot Gate v4 official semantics E2E
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/keiba-snapshot-gate-v4-e2e.yml'
+      - '.magi/keiba_pre_race_snapshot_contract_v4.json'
+      - 'scripts/keiba_snapshot_gate_check_v4.py'
+      - 'scripts/keiba_build_snapshot_provenance_v3.py'
+      - 'scripts/keiba_jvlink_realtime_capture_v3.py'
+
+permissions:
+  contents: write
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Test WH no-previous semantics, WE initial timing, and withdrawn 0B14 state
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/kv4
+          mkdir -p /tmp/kv4/RAW_APPEND_ONLY/20260829 /tmp/kv4/out
+          printf 'WH official synthetic bytes' > /tmp/kv4/RAW_APPEND_ONLY/20260829/wh.jvraw
+          printf '0B14 old bytes' > /tmp/kv4/RAW_APPEND_ONLY/20260829/b14_old.jvraw
+          printf '0B14 latest initial bytes' > /tmp/kv4/RAW_APPEND_ONLY/20260829/b14_latest.jvraw
+
+          python3 - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          d=Path('/tmp/kv4/RAW_APPEND_ONLY/20260829')
+          def sha(p): return hashlib.sha256(Path(p).read_bytes()).hexdigest()
+          wh=d/'wh.jvraw'; old=d/'b14_old.jvraw'; latest=d/'b14_latest.jvraw'; race='2026082901010101'
+          (d/'WH.json').write_text(json.dumps({
+            'capture_id':'WH1','dataspec':'0B11','source_capture_time_jst':'2026-08-29T08:40:10+09:00','source_capture_time_utc':'2026-08-28T23:40:10+00:00',
+            'raw_file':str(wh),'raw_file_sha256':sha(wh),'record_count':1,'open_code':0,'read_error':None,
+            'records':[{'record_sequence':1,'record_id':'WH','race_id':race,'raw_announcement_code':'08290840','source_announcement_time_jst':'2026-08-29T08:40:00+09:00',
+              'horses':[{'horse_no':'01','body_weight_kg':480,'body_weight_status':'MEASURED','body_weight_change_kg':None,'body_weight_change_status':'NO_PREVIOUS_RACE','raw_change_code':'000'},
+                        {'horse_no':'02','body_weight_kg':500,'body_weight_status':'MEASURED','body_weight_change_kg':10,'body_weight_change_status':'MEASURED_CHANGE','raw_change_code':'010'}]}]
+          },ensure_ascii=False),encoding='utf-8')
+          # Old bulk poll had an AV scratch. It disappears from the later complete poll and must not carry forward.
+          (d/'OLD.json').write_text(json.dumps({
+            'capture_id':'OLD','dataspec':'0B14','source_capture_time_jst':'2026-08-29T08:20:10+09:00','source_capture_time_utc':'2026-08-28T23:20:10+00:00',
+            'raw_file':str(old),'raw_file_sha256':sha(old),'record_count':1,'open_code':0,'read_error':None,
+            'records':[{'record_sequence':1,'record_id':'AV','race_id':race,'horse_no':'01','raw_announcement_code':'08290820','scratch_exclusion_code':'1','source_announcement_time_jst':'2026-08-29T08:20:00+09:00'}]
+          },ensure_ascii=False),encoding='utf-8')
+          # Latest complete poll only has initial WE state with official announcement code 00000000.
+          (d/'LATEST.json').write_text(json.dumps({
+            'capture_id':'LATEST','dataspec':'0B14','source_capture_time_jst':'2026-08-29T08:50:10+09:00','source_capture_time_utc':'2026-08-28T23:50:10+00:00',
+            'raw_file':str(latest),'raw_file_sha256':sha(latest),'record_count':1,'open_code':0,'read_error':None,
+            'records':[{'record_sequence':1,'record_id':'WE','scope_key':'20260829010101','raw_announcement_code':'00000000','source_announcement_time_jst':None,
+              'current_weather_code':'1','current_track_condition_turf':'2','current_track_condition_dirt':'3'}]
+          },ensure_ascii=False),encoding='utf-8')
+          PY
+
+          cat > /tmp/kv4/plan.csv <<'CSV'
+          race_id,horse_no,snapshot_role,prediction_snapshot_time_jst
+          2026082901010101,1,EARLY,2026-08-29T09:00:00+09:00
+          2026082901010101,2,EARLY,2026-08-29T09:00:00+09:00
+          CSV
+
+          python3 -m py_compile scripts/keiba_snapshot_gate_check_v4.py scripts/keiba_build_snapshot_provenance_v3.py scripts/keiba_jvlink_realtime_capture_v3.py
+          python3 scripts/keiba_build_snapshot_provenance_v3.py --root /tmp/kv4 --snapshot-plan /tmp/kv4/plan.csv --out-csv /tmp/kv4/out/provenance.csv --out-source-manifest /tmp/kv4/out/source_manifest.json > /tmp/kv4/out/builder.json
+          python3 scripts/keiba_snapshot_gate_check_v4.py /tmp/kv4/out/provenance.csv --source-manifest /tmp/kv4/out/source_manifest.json --out /tmp/kv4/out/gate.json > /tmp/kv4/out/gate_stdout.json
+
+          python3 - <<'PY'
+          import csv,hashlib,json,os
+          from pathlib import Path
+          def sha(p): return hashlib.sha256(Path(p).read_bytes()).hexdigest()
+          rows=list(csv.DictReader(Path('/tmp/kv4/out/provenance.csv').open(encoding='utf-8')))
+          gate=json.loads(Path('/tmp/kv4/out/gate.json').read_text(encoding='utf-8'))
+          h1=[r for r in rows if r['horse_no']=='01']
+          h2=[r for r in rows if r['horse_no']=='02']
+          h1_features={r['feature_name'] for r in h1}; h2_features={r['feature_name'] for r in h2}
+          initial_we=[r for r in rows if r['feature_name'] in {'weather','track_condition_turf','track_condition_dirt'}]
+          checks={
+            'wh_000_not_numeric_change': 'body_weight_change_kg' not in h1_features,
+            'wh_valid_010_emits_plus10': any(r['feature_name']=='body_weight_change_kg' and r['feature_value']=='10' for r in h2),
+            'we_initial_state_included': len(initial_we)==6,
+            'we_initial_uses_local_acquisition': all(r['source_time_basis']=='LOCAL_ACQUISITION' and r['feature_source_time_jst']==r['source_capture_time_jst'] for r in initial_we),
+            'withdrawn_old_av_not_carried': all(r['feature_name']!='scratch_exclusion_code' for r in rows),
+            'gate_pass': gate['status']=='PASS' and gate['violation_count']==0 and gate['checker_id']=='KEIBA_SNAPSHOT_GATE_CHECK_V4'
+          }
+          out={
+            'test_id':'KEIBA_SNAPSHOT_GATE_V4_OFFICIAL_SEMANTIC_E2E_V1','commit_sha_under_test':os.environ.get('GITHUB_SHA'),
+            'contract_v4_sha256':sha('.magi/keiba_pre_race_snapshot_contract_v4.json'),
+            'collector_v3_sha256':sha('scripts/keiba_jvlink_realtime_capture_v3.py'),
+            'builder_v3_sha256':sha('scripts/keiba_build_snapshot_provenance_v3.py'),
+            'checker_v4_sha256':sha('scripts/keiba_snapshot_gate_check_v4.py'),
+            'row_count':len(rows),'checks':checks,'gate_status':gate['status'],'gate_violation_count':gate['violation_count'],
+            'status':'PASS' if all(checks.values()) else 'FAIL','real_capture_executed':False,'validation_oos_opened':False,'dev_v6_allowed':False
+          }
+          Path('.magi/keiba_snapshot_gate_v4_official_semantic_e2e_v1.json').write_text(json.dumps(out,ensure_ascii=False,indent=2),encoding='utf-8')
+          if not all(checks.values()): raise SystemExit(2)
+          PY
+      - name: Commit v4 E2E evidence
+        run: |
+          git config user.name 'magi-gate-v4-bot'
+          git config user.email 'magi-gate-v4-bot@users.noreply.github.com'
+          git add .magi/keiba_snapshot_gate_v4_official_semantic_e2e_v1.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Freeze Gate v4 official semantic E2E evidence'
+          for attempt in 1 2 3; do git pull --rebase origin main && git push origin HEAD:main && exit 0; sleep $((attempt*2)); done
+          exit 1
