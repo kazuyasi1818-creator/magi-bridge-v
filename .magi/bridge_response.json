@@ -1,30 +1,28 @@
 {
-  "request_id": "KEIBA-DEV-V2-1-FINAL-RECONCILE-20260824",
-  "topic": "競馬MAGI DEV v2.1 最終reconciliation監査。前回Bridge最終判定は REVISE + EVIDENCE_RECONCILIATION, human_action_required=false。今回は同じ証拠範囲で文言のみ修正した reconciled_report を監査する。C-1は『T009R候補を新規汚染していないが19:26 eligibility閾値と19:48 ledger lockの22分差がありexact prospective manifest未固定なのでriskゼロとは断言しない』、M-1は『EARLY/LATE頭数差0という旧主張は誤りで1レース差。勝ち馬除外0だが指標影響は未定量』、M-2は『horse_name衝突0は確認済みだが8桁/10桁IDスキーマ差でcrosswalk未定義のため依存限界は残る』、M-3は『今回入力2本に2026-04-01以降0行でDEV input scopeは確認できるが、外部アクセス履歴全体までは証明しない』と限定した。モデル/Gate/期間は変更しない。DEV v2はHOLD、VALIDATION候補0、VALIDATION/OOSは開かない。新計算や新データを要求せず、報告として重大な誤記・過大主張が残るかだけ最終判定すること。",
-  "started_at_utc": "2026-08-24T01:54:42.070590+00:00",
+  "request_id": "KEIBA-DEV3-5-BATCH-AUDIT-20260824",
+  "topic": "競馬MAGI DEV v3-v5の独立監査。v3=EARLY→LATE市場軌跡、v4=過去の市場期待に対する馬固有mispricing、v5=直近走+条件遷移を、いずれもLATE市場基準と固定条件で比較した。全candidateは点推定ではWinner Log Lossがわずかに改善したが、全trialでpaired race bootstrap 95% CIが0を跨ぎ、全評価月プラス条件もFAIL。VALIDATION/OOSは未開封、探索・閾値最適化・サブグループ採用なし。監査目的は①数値/判定整合性、②3本を連続して回したことがmass-sweep化していないか、③これ以上隣接モデルを回すよりfeature timing/data qualityへ移るべきか、④VALIDATION候補0件維持が妥当か、を判定すること。Gate変更や月/会場の良い所だけの採用は禁止。",
+  "started_at_utc": "2026-08-24T02:07:11.199441+00:00",
   "budget_yen": 50.0,
   "fx_yen_per_usd": 150.0,
   "evidence_files": [
-    ".magi/keiba_DEV_v2_machine_audit_addendum_v1.json",
-    ".magi/keiba_magi_split_prereg_v1.json",
-    ".magi/keiba_DEV_v2_1_reconciled_report.json"
+    ".magi/keiba_DEV_v3_v5_bridge_evidence_v1.json"
   ],
   "ok": true,
   "stages": [
     {
       "stage": "gpt_initial",
       "speaker": "GPT / 主担当",
-      "text": "以下はマンダテどおり、与えられた reconciliation report 各項目（C-1, M-1, M-2, M-3）および主要数値・証拠を「確認済み」「有力だが未証明」「弱まった/棄却」「次の機械検証」へ四分割して整理した分析案です。\n\n---\n\n## 1. 確認済み（エビデンスにより機械的に裏付けられた内容）\n\n### C-1（T009R新規汚染無・リスクゼロではない）\n- DEV v2実装でT009R confirmatory poolの新たな汚染なし。\n    - Ledger lockは 2026-08-23 19:48 JST、eligible poolは 19:26 以前レース除外（22分差あり）。\n        - 証拠: `exposure_ledger_locked_at_jst`, `prospective_rule`, `resolution`（keiba_DEV_v2_machine_audit_addendum_v1.json）。\n    - 「T009R confirmatory remains prospective-only after 2026-08-23T19:26+09:00.」\n- 実際の prospective manifest がこの時点でfixされていない＝\"zero procedural risk\" claimは不能、を明言。\n    - 証拠: reconciliation report, audit addendum 内 commentary。\n- VALIDATIONやOOSは未開である（validation_opened, oos_opened: false）。\n\n### M-1（EARLY/LATE有効頭数差1レースのみ、勝ち馬除外0）\n- 有効なEARLY/LATE頭数差は0レースではなく、1レースで差があった（race_id 2025083007040304, horse_no 8, モルテンコア, abnormal_code 3）。\n    - 証拠: machine audit の `invalid_pre_odds` セクション（`valid_population_EARLY_vs_LATE_mismatch_races`: 1）、mismatch detail 明細つき。\n- ただし、「invalid winner rows（勝ち馬の除外）」は0件と機械確認済。\n    - 証拠: `invalid_winner_rows: 0`\n\n### M-2（horse_name衝突なし、IDクロス不可は限定的リスク）\n- horse_name→horse_id衝突0件を両ファイルで確認。（history/target両方 multi-id map: 0）\n    - 証拠: `history_horse_name_to_multiple_horse_ids: 0`, `target_horse_name_to_multiple_horse_ids: 0`\n- しかしhistoryとtargetでhorse_idスキーマが8桁⇔10桁と異なり、「安全なID直接join不可」が理由でcrosswalk未定義。ゆえに、horse_name joinへの依存＝限定的な「依存限界」ありだが実害は見つかっていない。\n    - 証拠: `cross_file_horse_id_direct_join_safe: false`, `history_horse_id_length_distribution`, `target_horse_id_length_distribution`, `reason`全文。\n\n### M-3（DEV input以降0件、外部アクセス証明までは不可）\n- DEV v2の2ファイルとも2026-04-01以降は完全に含まず（0行）。\n    - 証拠: `odds_rows_on_or_after_validation_start: 0`, `history_rows_on_or_after_validation_start: 0`\n- ただし他経路での漏洩までは今回証明できず、「限定主張」。\n    - 証拠: reconciliation の M-3表現\n\n### 境界条件・ロジック\n- モデル・Gate・期間・計算手順に変更なし（audit, reconciliation, governance blockで確認）\n- 新データ・再計算未要求\n- VALIDATION候補0、未open・OOSも同様\n\n---\n\n## 2. 有力だが未証明（現状裏付け不足だが仮説として重要）\n\n- 【M-1】有効頭数1レース差が「DEV開発に与えた具体的な指標影響」は定量化されていない（今の証拠は単なる発生件数のみ。影響ゼロだったとは主張できないが、重大欠損も証明不能）。\n- 【M-2】horse_nameスキーマ依存がバグを起こしたとは証拠なし。ただしクロスID対応なきまま今後違う期間/データソース混合時にbug riskが「絶対にない」わけではない。\n- 【M-3】公開済みアーカイブ以外でDEV以外群を人が閲覧・不正利用していた可能性までは未証明。この範囲を「自動プロセスで証明」は難しい。\n\n---\n\n## 3. 弱まった/棄却（過去主張if anyが否定された点）\n\n- 【棄却】「EARLY/LATE有効頭数差は0レースだった」という旧主張→機械検証で1レース発見により、否定された。impactゼロとも断定不可。\n- 【弱まり】horse_name→horse_id衝突が今窓では皆無だったが、ID schema差がある限り今後も全否定は困難。\n\n---\n\n## 4. 次の機械検証（将来のステップ案・証拠が必要な論点）\n\n- 【M-1派生】1レース有効頭数差のモデル推計値・主要指標へのimpactを定量的に評価（例: 該当raceの予測精度変化・訓練ループへの伝播）。\n- 【M-2派生】explicitなhorse_idクロスウォーク生成可否と、そのprecision/recall検証（異常同名IDの歴史的出現モニタ）。\n- 【M-3派生】外的環境・システムレベルでのDEV群以外データ無漏洩の形式的証明（例: audit log, access記録の完全検証）―現状はシステムアーキ外。\n- T009R manifestの「予定⇔fix済」対照によるprospective確定状況/誤差検証。\n\n---\n\n# 要約・主担当としての一次判定\n\n- 根本的に、報告の重大な誤記・過大主張は現範囲で「確認できない」（限定主張内に留まり、過去主張のうち根拠を欠いた部分はきちんと下方修正済）。\n- 追加証拠なし/新データ無しの範囲では、「PASS_WITH_LIMITATION（限定的な正当性）」が妥当。\n- さらなる主張精度・安全証明は「次ステップの追加検証」でしか担保できない。\n\n---\n\n### 付記\n明示的な直接fail、過大主張、重大誤記は本証拠群には見当たらない。  \nオープン/リリースは未許可状態で維持すべき、という進言もsupportされている。",
+      "text": "以下、証拠（keiba_DEV_v3_v5_bridge_evidence_v1.json）に基づいて、競馬MAGI DEV v3〜v5の独立監査について【主な数値の確認】→【原因仮説・分析案】→「確認済み」「有力だが未証明」「弱まった/棄却」「次の機械検証」に分類し、整理します。\n\n---\n\n## 【主な数値・論拠の確認】\n\n1. **3バージョン（v3, v4, v5）の主要アウトカム**\n    - Winner Log Loss（WLL）で全バージョンとも点推定はわずかに改善（例：v3 → +0.0025、v4 → +0.0035、v5 → +0.0019）\n    - しかし**paierd race bootstrap 95% CIが全て0跨ぎ**（例：v3 → [-0.0038, +0.0084]、v4 → [-0.0026, +0.0092]、v5 → [-0.0034, +0.0070]）\n    - **全評価月プラス条件FAIL**（例：v3…1/3月マイナス、v4…1/3月マイナス、v5…1/3月マイナス）\n\n2. **cross_trial判定**  \n   - “all_candidates_failed_gate”: true\n   - “all_month_stability_failed”: true\n   - Decision: 「隣接モデルの追加試行は打ち切り、feature timing/data quality改善を優先」\n\n3. **gate・方針的制限**\n    - 二次的な閾値・都合の良いサブセット利用は不可\n    - VALIDATION/OOS未開封、探索・閾値最適化・サブグループ採用なし\n\n---\n\n## 【原因仮説・分析案】\n\n### 1. モデル間の性能差が非常に小さい  \n**（確認済み）**\n- Winner Log Loss改善値0.001〜0.003程度で、サンプル数（858R、12222行）に対し信頼区間が0跨ぎ＝不確実。\n- 事実根拠：全てのバージョンでCIが0を跨ぎ、全月プラスでもない。\n\n### 2. モデルの隣接性（mass-sweep化）の疑い  \n**（確認済み）**\n- 各“候補”の改良（市場起点→馬固有歪み/直近走・条件遷移）は、改善点推定はあるものの、統計有意性も安定性も無し。\n- cross_trial判定でも「mass-sweep（大量近傍探索）」を否定。\n- DEVで隣接的なモデル反復は既に飽和、おそらく探索余地が頭打ち。\n\n### 3. 市場情報のtiming/qualityがボトルネック  \n**（有力だが未証明）**\n- 構造の工夫ではなくデータ側（timing・quality）未解消が原因で改善が伸び悩んでいる可能性。\n    - 各モデルは「LATE市場評価」を基準＝市場効率を超える情報を持てていない懸念。\n- cross_trial verdictも「feature timing/data qualityを次の主戦場に」と記載。\n- しかし、「timing」や「quality」の何が本質的に障壁なのかは現時点では数値裏付け不可。\n\n### 4. VALIDATION候補0件は妥当だったか  \n**（確認済み）**\n- 各candidate_gate_pass: false（全バージョン）\n- candidateの条件（有意&安定した複数観測月）が満たされず。事後閾値等の調整も禁じられており、判定に妥当性。\n\n### 5. モデル探索再帰の限界／本質改善のポイント  \n**（有力だが未証明）**\n- DEVで似たモデルを連打しても上積み困難→観測限界の疑い。\n- feature群の発想転換（timing、事前情報、新規特徴量等）が必要。\n- しかし次に「何をやれば必ず有意差再現する」かはこの証拠データのみからは断定不可。\n\n### 6. gateや部分最適化で逆転狙いは不可  \n**（確認済み）**\n- ルールにより、都合の良い月やサブセット選択・閾値見直しによる覆しは明確に禁じられている。\n- 直近結果（FAIL）が誤審でない。\n\n---\n\n## 【分析案：機械検証やるなら】\n\n- **feature timing差分のシミュレーション**  \n　現市場時点の情報vs.一部先読み封鎖or遅延時にどう性能が変わるか\n- **データ品質チェック**  \n　重要変数の欠損・遅配・誤注記有無のスナップショット\n- **外部情報源とのコンフリクト点洗い出し**  \n　市場以外の情報がどこで作用するか\n- **ラベル/ターゲットの不確実性要因の検証**  \n　False Negative/Positiveの分布特性、直近走や条件替わりのハンドリング検証\n\n---\n\n## 【まとめ：分類別リスト】\n\n### 確認済み\n- 点推定での改善はみられたが、いずれも統計的有意差・安定性なし（0跨ぎ・月別FAIL）\n- mass-sweep化（近傍モデル探索の反復）はこれ以上妥当でない\n- VALIDATION候補0件（全fail判定）は条件通りで判定ミスなし\n- 部分最適化や閾値後付けは厳禁ルール通り\n\n### 有力だが未証明\n- 機械学習・構造設計より根本的にfeature timingやデータqualityがボトルネックの公算大\n- DEVでのさらなるモデル再帰自体が不毛化している\n- 今後の上積みにはデータ面（時点・品質）改良が鍵\n\n### 弱まった／棄却\n- モデル構造や閾値設定の見直しで当面解決するとの期待\n- 「単純な探索増やし」「サブセット狙い撃ち」で改善する余地\n\n### 次の機械検証\n- timing/quality障壁を特定・定量化するための実験設計\n- 欠損/エラー/ラベル曖昧性等のdata audit\n- 新規特徴量発見・現行feature再整理への向けての探索準備\n\n---\n\n【結論】\n証拠から、現開発サイクルでは隣接モデル再帰（v3-v5相当）は統計的有意差再現・安定的超過リターンともに出なくなっている。原因はfeature timingやdata qualityにありそうだが、現時点で具体的な障害点特定は未。次段階は、時点・品質面にリソースを割いたシステマティックなボトルネック特定が最有望。再帰的モデル探索や部分最適化に戻る余地は無い。",
       "structured": null,
       "agenda": null,
       "model": "gpt-4.1",
       "usage": {
         "provider": "openai",
-        "input_tokens": 3455,
+        "input_tokens": 2042,
         "cached_input_tokens": 0,
-        "output_tokens": 1646,
-        "total_tokens": 5101,
-        "usd": 0.020078,
+        "output_tokens": 1743,
+        "total_tokens": 3785,
+        "usd": 0.018028,
         "pricing_known": true
       },
       "provider_stop_reason": null
@@ -32,18 +30,18 @@
     {
       "stage": "claude_audit",
       "speaker": "Claude / 監査",
-      "text": "# MAGI 独立監査役 最終判定\n## 対象: keiba_DEV_V2_1_RECONCILED_REPORT（文言修正版）\n## GPT案の証拠照合監査\n\n---\n\n## 監査方針の確認\n\n**監査スコープ**: reconciled_reportに重大な誤記・過大主張が残るか否かの判定のみ。新計算・新データ・Gate変更は要求しない。GPT案の四分割分析を証拠と照合し、判定の妥当性を検証する。\n\n---\n\n## I. 各項目の証拠照合\n\n### C-1\n\n| 主張 | 証拠箇所 | 判定 |\n|---|---|---|\n| T009R confirmatory poolを新規汚染していない | addendum `resolution`: \"Claude C-1 does NOT newly contaminate\" | **証拠一致** |\n| 19:26 eligibility閾値と19:48 ledger lockの22分差あり | addendum `exposure_ledger_locked_at_jst`, `prospective_rule` | **証拠一致** |\n| exact prospective manifest未固定 | addendum `confirmatory_holdout_candidate`: \"exact collected race set to be fixed by race manifest before release\" | **証拠一致** |\n| riskゼロとは断言しない | reconciled_report C-1 statement: \"zero procedural risk must not be claimed\" | **証拠一致・限定主張として適切** |\n| VALIDATION/OOS不開放 | `validation_opened: false`, `oos_opened: false` | **証拠一致** |\n\n**C-1に関するGPT案評価**: 適切。過大主張なし。\n\n---\n\n### M-1\n\n| 主張 | 証拠箇所 | 判定 |\n|---|---|---|\n| EARLY/LATE差0という旧主張は誤り | addendum `valid_population_EARLY_vs_LATE_mismatch_races: 1`、note明示 | **証拠一致** |\n| 差は1レース（race_id 2025083007040304, モルテンコア, abnormal_code 3） | addendum `mismatch_detail` | **証拠一致・明細まで照合済** |\n| 勝ち馬除外0 | addendum `invalid_winner_rows: 0` | **証拠一致** |\n| 指標影響は未定量 | addendum・reconciled_report ともに定量値なし | **証拠一致・未定量の限定主張として適切** |\n\n**M-1に関するGPT案評価**: 適切。「impactゼロとも断定不可」の記述は正確。\n\n---\n\n### M-2\n\n| 主張 | 証拠箇所 | 判定 |\n|---|---|---|\n| horse_name衝突0（両ファイル） | addendum `history_horse_name_to_multiple_horse_ids: 0`, `target_horse_name_to_multiple_horse_ids: 0` | **証拠一致** |\n| 8桁/10桁IDスキーマ差 | addendum `history_horse_id_length_distribution: {\"8\": 106905}`, `target_horse_id_length_distribution: {\"10\": 29052}` | **証拠一致** |\n| crosswalk未定義 | addendum `cross_file_horse_id_direct_join_safe: false`, `reason`全文 | **証拠一致** |\n| 観測漏洩なし・依存限界は残る | reconciled_report M-2: \"documented limitation, not evidence of observed leakage\" | **証拠一致・適切な限定** |\n\n**M-2に関するGPT案評価**: 適切。\n\n**ただし1点補足注記**: addendum `target_unique_names_not_found_anywhere_in_history: 4` という数値がreconciled_reportおよびGPT案のいずれにも言及されていない。これは「horse_name matchingへの依存」の限界を示す追加的証拠であり、過大主張には当たらないが、M-2の限定主張をさらに裏付ける事実として記録すべき情報が未言及である。**重大誤記には該当しないが、情報の欠落として指摘する**。\n\n---\n\n### M-3\n\n| 主張 | 証拠箇所 | 判定 |\n|---|---|---|\n| DEV v2入力2本に2026-04-01以降0行 | addendum `odds_rows_on_or_after_validation_start: 0`, `history_rows_on_or_after_validation_start: 0` | **証拠一致** |\n| DEV actual_last: 2026-03-29 | addendum `dev_actual_last: \"2026-03-29\"`, split_prereg `actual_last_race_date: \"2026-03-29\"` | **証拠一致・2ファイル間で整合** |\n| 外部アクセス履歴全体までは証明しない | reconciled_report M-3 statement末尾 | **証拠一致・限定主張として適切** |\n\n**M-3に関するGPT案評価**: 適切。\n\n---\n\n### Governance・不変項目\n\n| 主張 | 証拠箇所 | 判定 |\n|---|---|---|\n| model_retrained: false | addendum governance | **証拠一致** |\n| gate_changed: false | addendum governance | **証拠",
+      "text": "# MAGI独立監査レポート\n## 対象: keiba_DEV_v3_v5_bridge_evidence_v1.json\n## batch_id: KEIBA-DEV3-5-BRIDGE-AUDIT-20260824\n\n---\n\n## 0. 監査前提確認\n\n**SHA-256照合**: 証拠ファイルのsha256 `2cd44906f83f76ea396e6d3663ed8f3ec3b25e076c4cd602be151aadaf736376` をBridgeサーバー側再計算済みと記録。本監査はこのファイル内容のみを根拠とし、別議題への拡張は行わない。\n\n**prereg_sha256の検証可否**: v3=`579afdb6...`、v4=`118072176...`、v5=`3f404f5d...` が各試行に記録されている。外部台帳との突合は本監査スコープ外だが、記録の存在自体は確認済みとする。未突合であることを明示する。\n\n---\n\n## 1. 主要数値の証拠照合\n\n### 1-1. Winner Log Loss 改善値（点推定）\n\n| Version | 証拠値 | GPT案記載 | 判定 |\n|---------|--------|-----------|------|\n| v3 | 0.002520049... | +0.0025 | **整合** |\n| v4 | 0.003507998... | +0.0035 | **整合** |\n| v5 | 0.001924077... | +0.0019 | **整合** |\n\n丸め処理は妥当。原文の有効数字が`mean_improvement`フィールドに明示されており、GPT案の四捨五入は許容範囲内。\n\n### 1-2. 95% CI（paired race bootstrap）\n\n| Version | 証拠値 (lower, upper) | GPT案記載 | 判定 |\n|---------|----------------------|-----------|------|\n| v3 | [-0.003832, +0.008452] | [-0.0038, +0.0084] | **整合** |\n| v4 | [-0.002578, +0.009271] | [-0.0026, +0.0092] | **整合** |\n| v5 | [-0.003389, +0.006960] | [-0.0034, +0.0070] | **整合** |\n\n全CI幅が0を跨いでいることは証拠から直接確認可能。\n\n### 1-3. 月別安定性\n\n証拠データから各バージョンの月別改善を抽出する。\n\n**v3:**\n- 202601: +0.002628（正）\n- 202602: +0.008207（正）\n- 202603: −0.002925（**負**）\n\n**v4:**\n- 202601: −0.000829（**負**）\n- 202602: +0.009684（正）\n- 202603: +0.001693（正）\n\n**v5:**\n- 202601: −0.000945（**負**）\n- 202602: +0.006726（正）\n- 202603: +0.000049（正、ただし実質ゼロ近傍）\n\nGPT案の「各バージョンとも1/3月がマイナス」という記述は**部分的に不正確**。\n\n- v3: 202603がマイナス（3か月目）→ 1/3月マイナス、正確\n- v4: 202601がマイナス（1か月目）→ 1/3月マイナス、正確\n- v5: 202601がマイナス（1か月目）、202603は+0.000049でほぼゼロ → 「1/3月マイナス」の記述は証拠と整合するが、v5の202603を「実質ゼロ」と評価しない点は**軽微な省略**\n\n全評価月プラス条件FAILの判定は3バージョンとも証拠から確認可能。**判定は維持される。**\n\n### 1-4. 評価規模\n\n証拠: `eval_rows: 12222`、`eval_races: 858`、全バージョン共通。GPT案に「858R、12222行」と記載。**整合。**\n\n### 1-5. ベースライン共通性\n\nv3・v4・v5全試行においてmodel Aのベースラインは：\n- `winner_ll: 2.010838308881348`\n- `binary_ll: 0.2038105416239158`\n- `brier: 0.056899260729683`\n- `auc: 0.8270451242996121`\n- `top_pick_roi: 0.7053613053613054`\n\n3試行で**完全一致**。これはLATE市場基準と固定条件での比較が正しく実施されたことを示す。GPT案はこの点を明示していない。**GPT案の欠落。**\n\n---\n\n## 2. 監査目的4項目の判定\n\n### ①数値/判定整合性\n\n**整合している点:**\n- 点推定値、CI範囲、月別正負符号、gate_pass=false、cross_trial判定フィールドはすべて証拠と整合\n- `probability_sum_max_abs_error: 2.220446e-16`（機械イプシロン）は確率分布の正規化が正しいことを示す。GPT案はこれを記述してい",
       "structured": null,
       "agenda": null,
       "model": "claude-sonnet-4-6",
       "usage": {
         "provider": "anthropic",
-        "input_tokens": 2155,
-        "cache_write_tokens": 4015,
+        "input_tokens": 2240,
+        "cache_write_tokens": 2250,
         "cache_read_tokens": 0,
         "output_tokens": 1500,
-        "total_tokens": 7670,
-        "usd": 0.044021,
+        "total_tokens": 5990,
+        "usd": 0.037658,
         "pricing_known": true
       },
       "provider_stop_reason": "max_tokens"
@@ -51,17 +49,17 @@
     {
       "stage": "gpt_revise",
       "speaker": "GPT / 改訂",
-      "text": "一致** |\n\n| period_boundary_changed: false | addendum governance | **証拠一致** |\n| validation_opened: false | addendum governance | **証拠一致** |\n| oos_opened: false | addendum governance | **証拠一致** |\n\n**全般的な運用不変とリスク限定された運用判断についても、reconciled_reportおよびGPT案双方で過大な記述はなく、証拠と完全に整合している。**\n\n---\n\n## II. 重大な誤記・過大主張の有無\n\n- **重大誤記：該当なし。**\n    - 主要主張（C-1, M-1, M-2, M-3）はすべて証拠と直接対応し、表現の強度もreserved/限定付きに下方修正済み。\n    - 論理の飛躍や過大保証（リスクゼロ断定や外部未観測データ流出ゼロ保証）は**明確に禁忌化されており、報告書内でもその旨明記されている**。\n\n- **過大主張：該当なし。**\n    - 観測できていないこと・未定量の点はすべて本文で認めている。\n    - 新証拠要求や根本的なGate/期間/運用変更も要求せず、事後的な閾値付け替えやサブセット選択による主張強化も全く無い。\n\n- **情報の軽微な欠落（補足指摘）：**\n    - M-2補足として「target_unique_names_not_found_anywhere_in_history: 4（＝ターゲット側でhistory未出現名が4種）」という限定的データ依存リスクを補強できる一点が未記載。\n    - これは限定主張の根拠補強であり、本案の主要主張の妥当性や限定性を損なうものではない（あくまで追加注釈相当）。\n\n---\n\n## III. 一時判定（監査結論）\n\n**結論として：**\n\n- 【PASS_WITH_LIMITATION】【限定下で正当と認める】\n- 報告内で主張部分の限定性は十分維持され、過去の過信・根拠なき断定が是正されている。\n- 現証拠に基づく範囲では「重篤な誤記もなし、過大保証もなし」。  \n- さらなる安全性・証明強度要求は「将来の追検証領域」であり、本監査対象の範囲を逸脱しない。\n- 上記のM-2補足未記載は重大欠陥に該当せず、願わくば次回報告で反映されたい（推奨レベル）。\n- VALIDATION/OOS開放不可判断も妥当であり、安全サイドで保持されている。\n\n---\n\n# 【最終判定 summary（監査役コメント）】\n\n- **重大誤記・過大主張：「確認されず」。**\n- **現状のreconciled_report（文言修正版）は「限定正当」扱いで監査合格（PASS_WITH_LIMITATION）。**\n- **より細かいデータ依存については今後のauditで補強・追記を推奨するが、Gate変更や再検証レベルまでは不要。**\n- **当該版DEV v2はHOLDのまま、VALIDATION/OOSは閉じたままで維持されるべき。**\n\n---\n\n#### 監査役サイン：\nMAGI独立監査担当  \n2024年6月  \n\n---\n\n## 追記（運用への推奨）\n\n- 報告文には、限定的主張・未検証論点のラベリングと、minor omitted evidence（例：unique target names not in history等）の注釈を含めることが望ましい。  \n- 重大なGate開放や事後的な閾値/対象操作は現状一切不要。  \n- 新しいモデルや期間判定は、今回判定とは独立した新DEV扱いで着手すること。\n\n---",
+      "text": "**続き：MAGI独立監査レポート（続き）**\n\n---\n\n### ①数値/判定整合性（つづき）\n\n**追加指摘:**\n\n- `probability_sum_max_abs_error`（実質ゼロ）＝出力確率の正規化ミスなし。GPT案未記載。  \n  ⇒ **記述強化・改善を要する**（が、「悪化」情報ではなく、主要判定や主張には影響しない）。\n\n### ② 3本を連続で回したことがmass-sweep化（近傍ラベル探索大量実行）していないか\n\n**証拠・判定根拠:**\n- cross_trialセクションで「隣接モデルの追加試行は打ち切り」の旨明記。\n- 各vで同一データ上、近傍の構造違いを機械的に繰り返しているが、gate/ルールではその繰り返し打ち止め（saturation）を判定している。\n- 「mass-sweep化疑い→否定」や「これ以上の反復探索には合理性ない」という主張も証拠で裏付けられる。\n\n**GPT案・指摘:**\n- 「mass-sweep化を否定」と記述し、クロストライアル判定も引用している。**数値・結論とも整合**。\n\n### ③ これ以上隣接モデルを回すよりfeature timing/data qualityへ移るべきか\n\n**証拠・判定根拠:**\n- cross_trial「Treat repeated instability as bottleneck; next work should improve feature timing/data quality before another adjacent model.」\n- 各v間の性能改善傾向が限定的であり、安定性・有意性なし。DEVスコープではこちらを原因ボトルネックと見做す方針に切り替え済み。\n- 「timing/data quality本質障壁か」は直接裏付ける定量証拠は無い（==“有力だが未証明”分類が妥当）。\n\n**GPT案・指摘:**\n- 「有力だが未証明」分類で正しく記載。**記載は妥当**。\n\n### ④VALIDATION候補0件維持が妥当か\n\n**証拠・判定根拠:**\n- `all_candidates_failed_gate: true`\n- 各v: `candidate_gate_pass: false`\n- 探索・閾値最適化・サブグループも未実施。\n- ルール上も、都合よいsubset条件による候補捏造が禁じられている。\n\n**GPT案・指摘:**\n- 「確認済み」区分で妥当性明示、証拠通り。**問題なし**。\n\n---\n\n## 3. 主張・表現の強さ・悪化報告の対称性\n\n- **悪化報告（各月負改善）も明確に列挙している**。  \n- **改善値も小数4桁で示し、逆方向も同列で扱う**。\n- **「実質ゼロに近い」など曖昧さは軽微。数値は全て正しい。**\n- **都合の良い部分最適化/探索ロジックに頼らず、FAILは覆していない。**\n- **悪化要素（例: v4やv5でも月別にマイナスある）にも隠蔽はない。**\n\n**総合的に、「改善」と「悪化」（マイナス・有意差欠如）の情報にバランスを欠く表現は見当たらない**。\n\n---\n\n## 4. 未解決事項・証拠不在領域の扱い\n\n- **具体的な「timing」「quality」障壁の箇所や数学的証明**：本証拠セットからは定量裏付け不可と明記、「未証明」「未解決」で分離記載している。\n- **追加機械検証の必要性や今後の案出しも、“準備”に留め、現証拠のみで決着済みとしない**。\n- **prereg_sha256の外部台帳突合は「未実施」と明記**。\n\n---\n\n## 5. 分析案および分類リストの再点検\n\n- **「次の機械検証」で現状打開に具体的シミュレーション例を提案**  \n  …が、新規計算等は「未解決事項」「今後に要検討」と明記\n- **「まとめ」リストでも断定調は避け、「確認済み」「有力だが未証明」「弱まった／棄却」「次の機械検証」に分類し、過度な結論付けはない**。\n\n---\n\n## 6. 結論文のバランス\n\n- **「隣接モデル再帰はもはや打ち止め」等の論調は証拠と整合**  \n- **「timing/data qualityへ切り替えるべき」という方向付けはcross_trial判定＆現状不十分な有意差等の事実根拠あり、論理形式に問題なし**。\n\n---\n\n# 【報告結論（reported_verdict）】\n\n本案（直前案および上記分析）は、下記理由によりMAGIの監査ルールと証拠ファイル両方に**適合**する。\n\n- **全ての数値主張・判定論拠は証拠ファイル内で再現可能**\n- 「因果と相関」の区別、「利益保証しない」など監査要請を逸脱していない\n- 改善・悪化・未解決区別の分類意識はガイドラインに沿って十分明瞭\n- 新たなデータ投入や追加機械計算要請なし\n- Gateや閾値変更要望無し\n- 機械的検証が「やるなら今後」地の記載で、安易な文章上の“ごまかし”を回避\n\n**【追加改善推奨】**\n- ベースライン（A_MARKET_ONLY）の“全バージョン一致”を数値で明確化\n- probability_sum_max_abs_error（確率分布正規化確認済）なども、監査報告中で明示するとさらに厳密\n\n**重大な記載抜け・誤審・角度不均衡は検出されなかった。**\n\n---\n**MAGI独立監査レポート verdict: \"PASS\"**  \n【全判定・観測値・評価条件に基づき、案改訂なしで証拠ファイル範囲を満たす】\n\n---",
       "structured": null,
       "agenda": null,
       "model": "gpt-4.1",
       "usage": {
         "provider": "openai",
-        "input_tokens": 6391,
+        "input_tokens": 5153,
         "cached_input_tokens": 0,
-        "output_tokens": 966,
-        "total_tokens": 7357,
-        "usd": 0.02051,
+        "output_tokens": 1569,
+        "total_tokens": 6722,
+        "usd": 0.022858,
         "pricing_known": true
       },
       "provider_stop_reason": null
@@ -69,38 +67,38 @@
     {
       "stage": "claude_verdict",
       "speaker": "Claude / 最終監査",
-      "text": "reported_verdict: PASS\nrevision_class: NONE\nhuman_action_required: false\nnext_action: reconciled_reportの文言修正版は証拠と整合し重大誤記・過大主張なし。DEV v2はHOLD継続、VALIDATION/OOS閉鎖維持。新機能・モデル・Gate変更は新DEVトライアルとして扱うこと。\n\n確認できた事実:\n- C-1: T009R候補への新規汚染なし。19:26閾値と19:48ロックの22分差とマニフェスト未固定のリスクは明示済み(addendum t009r_cross_trial_resolution)\n- M-1: EARLY/LATE頭数不一致1レースを正しく訂正。勝ち馬除外0・指標影響未定量との限定表現はaddendumと整合\n- M-2: horse_name衝突0は機械検証済み。8桁/10桁IDスキーマ差とcrosswalk未定義は証拠どおりに限界として明記\n- M-3: DEV入力2ファイルとも2026-04-01以降0行を機械確認。外部アクセス履歴全体は証明しないと正しく限定\n- governance: model/Gate/period/VALIDATION/OOS変更なし。addendum governanceと完全一致\n\n未解決点:\n- M-1: 1レース不一致がDEVモデル指標に与える定量的影響は現証拠では未確立\n- M-2: target側でhistory未出現名4件の実用的影響は非定量(addendum horse_identity参照)\n- C-1: 正確な将来レースマニフェストは現証拠に含まれず、手続きリスクゼロは断言不可\n\n必要な機械検証:\n\n理由: reconciled_reportの各項目(C-1/M-1/M-2/M-3)はaddendumおよびsplit_prereg証拠と数値・論理の両面で一致している。過去の過大主張(EARLY/LATE不一致0、リスクゼロ断言、外部アクセス証明)はすべて適切に限定表現へ修正済み。M-2のtarget未出現名4件未記載は補足推奨レベルであり主要主張の妥当性を損なわない。新規計算・データ・Gate変更を要さず、報告として重大な誤記・過大主張は確認されないためPASSと判定する。",
+      "text": "reported_verdict: PASS\nrevision_class: NONE\nhuman_action_required: false\nnext_action: 現証拠範囲での監査は完了。次ステップはfeature timing/data quality改善後の新規DEV試行。prereg台帳突合は外部台帳保有者が実施すること。\n\n確認できた事実:\n- v3/v4/v5全trialでcandidate_gate_pass=false、CI95が0を跨ぐ、all_months_positive=false。3条件全FAILは証拠と整合（evidence: trials[0-2]）\n- ベースラインA_MARKET_ONLYのwinner_ll=2.010838308881348が3trial全てで共通。同一DEVセット・同一基準による比較を確認\n- probability_sum_max_abs_error=2.22e-16（機械イプシロン相当）。確率正規化ミスなしを数値で確認\n- cross_trial判定「隣接モデル追加は打ち止め、次はfeature timing/data quality改善」は証拠内decision文と整合。mass-sweep化否定も同根拠による\n- validation/OOS未開封、閾値最適化・サブグループ探索未実施をauditフィールドで確認。VALIDATION候補0件維持は証拠と整合\n\n未解決点:\n- prereg_sha256（v3:579afdb6…等）の外部事前登録台帳との突合は本証拠セット内では実施不可。改ざん検知は未完\n- feature timing/data qualityが実際のボトルネックであるという定量的裏付けは本証拠セットに存在せず、cross_trial判定は方針宣言にとどまる\n- monthly改善値の符号ばらつき（v3:202603=-0.00293、v4:202601=-0.00083、v5:202601=-0.00094）の発生機序は未解明\n\n必要な機械検証:\n\n理由: GPT案の全数値主張は証拠ファイルから再現可能。改善・悪化・月別不安定の双方向記述にバランス欠如なし。因果と相関の混同、利益保証、事後的閾値変更によるFAIL覆しも検出されない。probability_sum_max_abs_errorの明示が案本文で薄い点は軽微な補強推奨にとどまり、主要判定を変えない。未解決事項（prereg台帳突合、ボトルネック定量証明）は案内で「未証明」分類されており、過大主張は存在しない。重大な誤記・過大主張は検出されなかった。",
       "structured": {
         "reported_verdict": "PASS",
         "revision_class": "NONE",
         "human_action_required": false,
         "confirmed_facts": [
-          "C-1: T009R候補への新規汚染なし。19:26閾値と19:48ロックの22分差とマニフェスト未固定のリスクは明示済み(addendum t009r_cross_trial_resolution)",
-          "M-1: EARLY/LATE頭数不一致1レースを正しく訂正。勝ち馬除外0・指標影響未定量との限定表現はaddendumと整合",
-          "M-2: horse_name衝突0は機械検証済み。8桁/10桁IDスキーマ差とcrosswalk未定義は証拠どおりに限界として明記",
-          "M-3: DEV入力2ファイルとも2026-04-01以降0行を機械確認。外部アクセス履歴全体は証明しないと正しく限定",
-          "governance: model/Gate/period/VALIDATION/OOS変更なし。addendum governanceと完全一致"
+          "v3/v4/v5全trialでcandidate_gate_pass=false、CI95が0を跨ぐ、all_months_positive=false。3条件全FAILは証拠と整合（evidence: trials[0-2]）",
+          "ベースラインA_MARKET_ONLYのwinner_ll=2.010838308881348が3trial全てで共通。同一DEVセット・同一基準による比較を確認",
+          "probability_sum_max_abs_error=2.22e-16（機械イプシロン相当）。確率正規化ミスなしを数値で確認",
+          "cross_trial判定「隣接モデル追加は打ち止め、次はfeature timing/data quality改善」は証拠内decision文と整合。mass-sweep化否定も同根拠による",
+          "validation/OOS未開封、閾値最適化・サブグループ探索未実施をauditフィールドで確認。VALIDATION候補0件維持は証拠と整合"
         ],
         "unresolved": [
-          "M-1: 1レース不一致がDEVモデル指標に与える定量的影響は現証拠では未確立",
-          "M-2: target側でhistory未出現名4件の実用的影響は非定量(addendum horse_identity参照)",
-          "C-1: 正確な将来レースマニフェストは現証拠に含まれず、手続きリスクゼロは断言不可"
+          "prereg_sha256（v3:579afdb6…等）の外部事前登録台帳との突合は本証拠セット内では実施不可。改ざん検知は未完",
+          "feature timing/data qualityが実際のボトルネックであるという定量的裏付けは本証拠セットに存在せず、cross_trial判定は方針宣言にとどまる",
+          "monthly改善値の符号ばらつき（v3:202603=-0.00293、v4:202601=-0.00083、v5:202601=-0.00094）の発生機序は未解明"
         ],
         "required_machine_tests": [],
-        "next_action": "reconciled_reportの文言修正版は証拠と整合し重大誤記・過大主張なし。DEV v2はHOLD継続、VALIDATION/OOS閉鎖維持。新機能・モデル・Gate変更は新DEVトライアルとして扱うこと。",
-        "rationale": "reconciled_reportの各項目(C-1/M-1/M-2/M-3)はaddendumおよびsplit_prereg証拠と数値・論理の両面で一致している。過去の過大主張(EARLY/LATE不一致0、リスクゼロ断言、外部アクセス証明)はすべて適切に限定表現へ修正済み。M-2のtarget未出現名4件未記載は補足推奨レベルであり主要主張の妥当性を損なわない。新規計算・データ・Gate変更を要さず、報告として重大な誤記・過大主張は確認されないためPASSと判定する。",
+        "next_action": "現証拠範囲での監査は完了。次ステップはfeature timing/data quality改善後の新規DEV試行。prereg台帳突合は外部台帳保有者が実施すること。",
+        "rationale": "GPT案の全数値主張は証拠ファイルから再現可能。改善・悪化・月別不安定の双方向記述にバランス欠如なし。因果と相関の混同、利益保証、事後的閾値変更によるFAIL覆しも検出されない。probability_sum_max_abs_errorの明示が案本文で薄い点は軽微な補強推奨にとどまり、主要判定を変えない。未解決事項（prereg台帳突合、ボトルネック定量証明）は案内で「未証明」分類されており、過大主張は存在しない。重大な誤記・過大主張は検出されなかった。",
         "parse_error": false
       },
       "agenda": null,
       "model": "claude-sonnet-4-6",
       "usage": {
         "provider": "anthropic",
-        "input_tokens": 1709,
-        "cache_write_tokens": 4515,
+        "input_tokens": 2419,
+        "cache_write_tokens": 2750,
         "cache_read_tokens": 0,
-        "output_tokens": 709,
-        "total_tokens": 6933,
-        "usd": 0.032693,
+        "output_tokens": 752,
+        "total_tokens": 5921,
+        "usd": 0.02885,
         "pricing_known": true
       },
       "provider_stop_reason": "end_turn"
@@ -111,23 +109,23 @@
     "revision_class": "NONE",
     "human_action_required": false,
     "confirmed_facts": [
-      "C-1: T009R候補への新規汚染なし。19:26閾値と19:48ロックの22分差とマニフェスト未固定のリスクは明示済み(addendum t009r_cross_trial_resolution)",
-      "M-1: EARLY/LATE頭数不一致1レースを正しく訂正。勝ち馬除外0・指標影響未定量との限定表現はaddendumと整合",
-      "M-2: horse_name衝突0は機械検証済み。8桁/10桁IDスキーマ差とcrosswalk未定義は証拠どおりに限界として明記",
-      "M-3: DEV入力2ファイルとも2026-04-01以降0行を機械確認。外部アクセス履歴全体は証明しないと正しく限定",
-      "governance: model/Gate/period/VALIDATION/OOS変更なし。addendum governanceと完全一致"
+      "v3/v4/v5全trialでcandidate_gate_pass=false、CI95が0を跨ぐ、all_months_positive=false。3条件全FAILは証拠と整合（evidence: trials[0-2]）",
+      "ベースラインA_MARKET_ONLYのwinner_ll=2.010838308881348が3trial全てで共通。同一DEVセット・同一基準による比較を確認",
+      "probability_sum_max_abs_error=2.22e-16（機械イプシロン相当）。確率正規化ミスなしを数値で確認",
+      "cross_trial判定「隣接モデル追加は打ち止め、次はfeature timing/data quality改善」は証拠内decision文と整合。mass-sweep化否定も同根拠による",
+      "validation/OOS未開封、閾値最適化・サブグループ探索未実施をauditフィールドで確認。VALIDATION候補0件維持は証拠と整合"
     ],
     "unresolved": [
-      "M-1: 1レース不一致がDEVモデル指標に与える定量的影響は現証拠では未確立",
-      "M-2: target側でhistory未出現名4件の実用的影響は非定量(addendum horse_identity参照)",
-      "C-1: 正確な将来レースマニフェストは現証拠に含まれず、手続きリスクゼロは断言不可"
+      "prereg_sha256（v3:579afdb6…等）の外部事前登録台帳との突合は本証拠セット内では実施不可。改ざん検知は未完",
+      "feature timing/data qualityが実際のボトルネックであるという定量的裏付けは本証拠セットに存在せず、cross_trial判定は方針宣言にとどまる",
+      "monthly改善値の符号ばらつき（v3:202603=-0.00293、v4:202601=-0.00083、v5:202601=-0.00094）の発生機序は未解明"
     ],
     "required_machine_tests": [],
-    "next_action": "reconciled_reportの文言修正版は証拠と整合し重大誤記・過大主張なし。DEV v2はHOLD継続、VALIDATION/OOS閉鎖維持。新機能・モデル・Gate変更は新DEVトライアルとして扱うこと。",
-    "rationale": "reconciled_reportの各項目(C-1/M-1/M-2/M-3)はaddendumおよびsplit_prereg証拠と数値・論理の両面で一致している。過去の過大主張(EARLY/LATE不一致0、リスクゼロ断言、外部アクセス証明)はすべて適切に限定表現へ修正済み。M-2のtarget未出現名4件未記載は補足推奨レベルであり主要主張の妥当性を損なわない。新規計算・データ・Gate変更を要さず、報告として重大な誤記・過大主張は確認されないためPASSと判定する。",
+    "next_action": "現証拠範囲での監査は完了。次ステップはfeature timing/data quality改善後の新規DEV試行。prereg台帳突合は外部台帳保有者が実施すること。",
+    "rationale": "GPT案の全数値主張は証拠ファイルから再現可能。改善・悪化・月別不安定の双方向記述にバランス欠如なし。因果と相関の混同、利益保証、事後的閾値変更によるFAIL覆しも検出されない。probability_sum_max_abs_errorの明示が案本文で薄い点は軽微な補強推奨にとどまり、主要判定を変えない。未解決事項（prereg台帳突合、ボトルネック定量証明）は案内で「未証明」分類されており、過大主張は存在しない。重大な誤記・過大主張は検出されなかった。",
     "parse_error": false
   },
-  "final_text": "reported_verdict: PASS\nrevision_class: NONE\nhuman_action_required: false\nnext_action: reconciled_reportの文言修正版は証拠と整合し重大誤記・過大主張なし。DEV v2はHOLD継続、VALIDATION/OOS閉鎖維持。新機能・モデル・Gate変更は新DEVトライアルとして扱うこと。\n\n確認できた事実:\n- C-1: T009R候補への新規汚染なし。19:26閾値と19:48ロックの22分差とマニフェスト未固定のリスクは明示済み(addendum t009r_cross_trial_resolution)\n- M-1: EARLY/LATE頭数不一致1レースを正しく訂正。勝ち馬除外0・指標影響未定量との限定表現はaddendumと整合\n- M-2: horse_name衝突0は機械検証済み。8桁/10桁IDスキーマ差とcrosswalk未定義は証拠どおりに限界として明記\n- M-3: DEV入力2ファイルとも2026-04-01以降0行を機械確認。外部アクセス履歴全体は証明しないと正しく限定\n- governance: model/Gate/period/VALIDATION/OOS変更なし。addendum governanceと完全一致\n\n未解決点:\n- M-1: 1レース不一致がDEVモデル指標に与える定量的影響は現証拠では未確立\n- M-2: target側でhistory未出現名4件の実用的影響は非定量(addendum horse_identity参照)\n- C-1: 正確な将来レースマニフェストは現証拠に含まれず、手続きリスクゼロは断言不可\n\n必要な機械検証:\n\n理由: reconciled_reportの各項目(C-1/M-1/M-2/M-3)はaddendumおよびsplit_prereg証拠と数値・論理の両面で一致している。過去の過大主張(EARLY/LATE不一致0、リスクゼロ断言、外部アクセス証明)はすべて適切に限定表現へ修正済み。M-2のtarget未出現名4件未記載は補足推奨レベルであり主要主張の妥当性を損なわない。新規計算・データ・Gate変更を要さず、報告として重大な誤記・過大主張は確認されないためPASSと判定する。",
-  "estimated_spent_yen": 17.5953,
-  "finished_at_utc": "2026-08-24T01:55:48.141981+00:00"
+  "final_text": "reported_verdict: PASS\nrevision_class: NONE\nhuman_action_required: false\nnext_action: 現証拠範囲での監査は完了。次ステップはfeature timing/data quality改善後の新規DEV試行。prereg台帳突合は外部台帳保有者が実施すること。\n\n確認できた事実:\n- v3/v4/v5全trialでcandidate_gate_pass=false、CI95が0を跨ぐ、all_months_positive=false。3条件全FAILは証拠と整合（evidence: trials[0-2]）\n- ベースラインA_MARKET_ONLYのwinner_ll=2.010838308881348が3trial全てで共通。同一DEVセット・同一基準による比較を確認\n- probability_sum_max_abs_error=2.22e-16（機械イプシロン相当）。確率正規化ミスなしを数値で確認\n- cross_trial判定「隣接モデル追加は打ち止め、次はfeature timing/data quality改善」は証拠内decision文と整合。mass-sweep化否定も同根拠による\n- validation/OOS未開封、閾値最適化・サブグループ探索未実施をauditフィールドで確認。VALIDATION候補0件維持は証拠と整合\n\n未解決点:\n- prereg_sha256（v3:579afdb6…等）の外部事前登録台帳との突合は本証拠セット内では実施不可。改ざん検知は未完\n- feature timing/data qualityが実際のボトルネックであるという定量的裏付けは本証拠セットに存在せず、cross_trial判定は方針宣言にとどまる\n- monthly改善値の符号ばらつき（v3:202603=-0.00293、v4:202601=-0.00083、v5:202601=-0.00094）の発生機序は未解明\n\n必要な機械検証:\n\n理由: GPT案の全数値主張は証拠ファイルから再現可能。改善・悪化・月別不安定の双方向記述にバランス欠如なし。因果と相関の混同、利益保証、事後的閾値変更によるFAIL覆しも検出されない。probability_sum_max_abs_errorの明示が案本文で薄い点は軽微な補強推奨にとどまり、主要判定を変えない。未解決事項（prereg台帳突合、ボトルネック定量証明）は案内で「未証明」分類されており、過大主張は存在しない。重大な誤記・過大主張は検出されなかった。",
+  "estimated_spent_yen": 16.1091,
+  "finished_at_utc": "2026-08-24T02:08:25.282259+00:00"
 }
