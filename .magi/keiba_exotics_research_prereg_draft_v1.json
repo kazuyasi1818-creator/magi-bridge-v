@@ -1,0 +1,97 @@
+{
+  "prereg_id": "KEIBA-EXOTICS-DEV-DRAFT-001",
+  "status": "DRAFT_NOT_EXECUTABLE",
+  "created_before_execution": true,
+  "supersedes_draft": "KEIBA-TRIFECTA-DEV-DRAFT-001",
+  "purpose": "将来の買い目研究を3連単だけに限定せず、3連単・3連複・馬単・馬連を同一の着順確率分布から一貫して生成し、券種ごとの期待値を比較できるようにする。",
+  "supported_bet_types": {
+    "TRIFECTA_3REN_TAN": {
+      "ordered": true,
+      "positions": 3,
+      "probability_rule": "P(i>j>k)=P(i first)*P(j second|i removed)*P(k third|i,j removed)"
+    },
+    "TRIO_3REN_PUKU": {
+      "ordered": false,
+      "positions": 3,
+      "probability_rule": "同じ3頭の6通りの3連単順序確率を合算"
+    },
+    "EXACTA_UMA_TAN": {
+      "ordered": true,
+      "positions": 2,
+      "probability_rule": "P(i>j)=P(i first)*P(j second|i removed)"
+    },
+    "QUINELLA_UMA_REN": {
+      "ordered": false,
+      "positions": 2,
+      "probability_rule": "P(i>j)+P(j>i)"
+    }
+  },
+  "core_design": {
+    "single_shared_ranking_distribution": true,
+    "reason": "券種ごとに別モデルを作らず、同一の馬能力/着順確率から全券種を導出して確率矛盾と過学習を抑える。",
+    "candidate_model": "MAGI_SEQUENTIAL_PLACKETT_LUCE",
+    "control_model": "MARKET_HARVILLE_BASELINE"
+  },
+  "hard_dependencies": [
+    "Race-time Snapshot Gate v4 の実Windows/JV-Link forward capture provenance PASS",
+    "使用する全特徴量が prediction_snapshot_time 以前に取得可能と機械証明されること",
+    "ROI評価では各券種ごとに購入可能時点のオッズまたはオッズ相当情報、払戻、取消/返還をtimestamp付きで固定すること"
+  ],
+  "current_restrictions": {
+    "execute_now": false,
+    "open_validation": false,
+    "open_oos": false,
+    "place_bets": false,
+    "use_post_race_final_state_as_feature": false,
+    "mass_parameter_sweep": false
+  },
+  "phase_1_probability_quality": {
+    "primary_metric": "ordered_top3_negative_log_likelihood",
+    "secondary_metrics": [
+      "ordered_top2_negative_log_likelihood",
+      "exact_trifecta_top1_hit_rate",
+      "trio_topN_coverage_at_fixed_N",
+      "exacta_topN_coverage_at_fixed_N",
+      "quinella_topN_coverage_at_fixed_N",
+      "rank1_win_probability_logloss",
+      "month_stability",
+      "venue_stability"
+    ],
+    "roi_used_for_selection": false
+  },
+  "phase_1_gate": {
+    "mean_primary_improvement_gt_0": true,
+    "race_level_paired_bootstrap_ci_lower_gt_0": true,
+    "all_eval_months_primary_improvement_positive": true,
+    "rank1_win_logloss_non_worse": true,
+    "no_posthoc_subgroup_promotion": true
+  },
+  "bootstrap": {
+    "resampling_unit": "race",
+    "paired_control_candidate": true,
+    "replicates": 10000,
+    "seed": 20260824
+  },
+  "phase_2_ticket_selection": {
+    "allowed_only_after_phase_1_pass": true,
+    "bet_types": ["TRIFECTA_3REN_TAN","TRIO_3REN_PUKU","EXACTA_UMA_TAN","QUINELLA_UMA_REN"],
+    "selection_rule": "各買い目について model_probability と購入可能オッズから期待値を計算し、事前固定されたEV・リスクGateを通る買い目だけ候補化する。",
+    "no_bet_allowed": true,
+    "important": "4券種を毎レース必ず買うのではなく、期待値がなければ見送る。",
+    "requires_timestamped_market_odds_by_bet_type": true,
+    "forbidden": [
+      "結果を見て券種を後付けで選ぶ",
+      "結果を見て買い目点数を増減する",
+      "人気帯・オッズ帯を後付け採用する",
+      "単発高配当的中を収益性の証拠にする",
+      "同一レースの相関した買い目を独立リスクとして扱う"
+    ]
+  },
+  "future_risk_layer": {
+    "race_level_total_stake_cap_required": true,
+    "correlated_ticket_exposure_required": true,
+    "bet_type_allocation_to_be_preregistered": true,
+    "kelly_or_fractional_kelly_not_enabled_yet": true
+  },
+  "lineage_note": "本ファイルは設計予約のみ。Gate v4実capture未通過のため実行不可。実行時は新しいtrial_id、固定データ期間、モデル、買い目数、EV閾値、資金配分、各券種の時点オッズソースをhash付きPREREG_LOCKEDとして別途発行する。"
+}
