@@ -1,0 +1,23 @@
+{
+  "test_id": "KEIBA_REALTIME_PROVENANCE_PIPELINE_E2E_V1",
+  "commit_sha_under_test": "42669f01d7f6fa77d37e7ac3cbe66e03e7edd292",
+  "builder_sha256": "378b6d8cfa59c89ad89aae6511587c87c0224ff37e590198221428ade1bd8e4a",
+  "checker_sha256": "3e4bcc4b8bd045ac8f79f53ae90a5570c18eecd6594c606522840c1621f8bdeb",
+  "provenance_row_count": 3,
+  "features": [
+    "body_weight_change_kg",
+    "body_weight_kg",
+    "weather"
+  ],
+  "expected_features": [
+    "body_weight_change_kg",
+    "body_weight_kg",
+    "weather"
+  ],
+  "gate_status": "PASS",
+  "gate_violation_count": 0,
+  "source_files_verified": 2,
+  "status": "PASS",
+  "validation_oos_opened": false,
+  "meaning": "Synthetic E2E only; real Windows/JV-Link forward capture remains required."
+}
