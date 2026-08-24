@@ -53,7 +53,7 @@ def main() -> int:
             c = json.loads(clocks[-1].read_text(encoding='utf-8-sig'))
             keys = [
                 'recorded_at_local', 'recorded_at_utc', 'timezone_id', 'utc_offset', 'date_key',
-                'gate_contract', 'provenance_builder', 'gate_checker'
+                'gate_contract', 'provenance_builder', 'gate_checker', 'verifier', 'handoff_maker'
             ]
             clock_summary = {k: c.get(k) for k in keys}
             clock_summary['clock_file_sha256'] = sha256_file(clocks[-1])
@@ -66,8 +66,11 @@ def main() -> int:
         try:
             v = json.loads(vr[-1].read_text(encoding='utf-8-sig'))
             keys = [
-                'verifier_id', 'date', 'status', 'capture_count', 'record_count_by_dataspec',
-                'total_records', 'violation_count', 'violations', 'validation_oos_opened'
+                'verifier_id', 'date', 'status', 'run_started_utc',
+                'capture_count_current_run', 'capture_count_by_dataspec',
+                'record_count_by_dataspec', 'total_records_current_run',
+                'violation_count', 'violations', 'gate_v5_passed',
+                'validation_oos_opened', 'dev_new_trial_allowed'
             ]
             verifier_summary = {k: v.get(k) for k in keys}
             verifier_summary['verifier_file_sha256'] = sha256_file(vr[-1])
@@ -78,6 +81,8 @@ def main() -> int:
         clock_summary.get('gate_contract') == 'KEIBA_PRE_RACE_SNAPSHOT_CONTRACT_V5',
         clock_summary.get('provenance_builder') == 'keiba_build_snapshot_provenance_v4.py',
         clock_summary.get('gate_checker') == 'keiba_snapshot_gate_check_v5.py',
+        clock_summary.get('verifier') == 'keiba_verify_first_capture_v2.py',
+        clock_summary.get('handoff_maker') == 'keiba_make_capture_handoff_v2.py',
     ])
 
     out = {
@@ -94,7 +99,7 @@ def main() -> int:
         'model_executed': False,
         'validation_oos_opened': False,
         'dev_v6_allowed': False,
-        'next_action': 'Provide this handoff JSON for audit. Keep RAW_APPEND_ONLY locally. Gate v5 is not passed until the real capture evidence is reviewed.'
+        'next_action': 'Provide this handoff JSON for audit. Keep RAW_APPEND_ONLY locally. Gate v5 is not passed until real snapshot provenance is built and reviewed.'
     }
     p = Path(args.out)
     p.parent.mkdir(parents=True, exist_ok=True)
