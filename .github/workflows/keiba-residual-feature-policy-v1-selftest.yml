@@ -1,0 +1,21 @@
+name: keiba-residual-feature-policy-v1-selftest
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.magi/keiba_residual_feature_policy_v1.json'
+      - 'scripts/keiba_residual_feature_policy_check_v1.py'
+      - 'tests/keiba_residual_feature_policy_v1_selftest.py'
+      - '.github/workflows/keiba-residual-feature-policy-v1-selftest.yml'
+
+jobs:
+  selftest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run residual feature policy tests
+        run: python tests/keiba_residual_feature_policy_v1_selftest.py
