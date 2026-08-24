@@ -1,0 +1,62 @@
+{
+  "draft_id":"KEIBA-RESIDUAL-MARKET-PRESERVING-CANDIDATE-DRAFT-V5",
+  "status":"DRAFT_ONLY_NOT_EXECUTABLE",
+  "supersedes":"KEIBA-RESIDUAL-MARKET-PRESERVING-CANDIDATE-DRAFT-V4",
+  "baseline":"DIRECT_MARKET: race-normalized inverse purchasable pre-race win odds at the preregistered snapshot",
+  "feature_policy":"KEIBA-RESIDUAL-FEATURE-POLICY-V2",
+  "residual_learner":{
+    "objective":"mean over races of winner negative log likelihood under market-offset conditional softmax + 0.5*lambda_l2*||beta||^2",
+    "race_weighting":"EQUAL_PER_RACE; never weight a race by horse count",
+    "linear_predictor":"beta dot standardized six-feature vector; NO INTERCEPT",
+    "bounded_residual":"tanh(linear_predictor)",
+    "zero_prior_start":"raw residual fixed to 0; excluded from coefficient-gradient rows but retained in the race softmax denominator/evaluation population",
+    "market_offset":"log DIRECT_MARKET probability is fixed offset, never a fitted coefficient",
+    "uncertainty_input":"normalized_entropy only",
+    "alpha_rule":"alpha_eff = 1 - normalized_entropy",
+    "candidate_probability":"normalize within race[p_market_i * exp(alpha_eff * residual_i)]",
+    "initial_beta":"all zeros so initial candidate equals DIRECT_MARKET exactly"
+  },
+  "preprocessing":{
+    "features":["horse_prior_starts","days_since_last_start_rebuilt","same_surface_as_last","same_venue_as_last","abs_distance_change_m","same_class_code_as_last"],
+    "fit_population":"TRAIN split history-eligible rows only (horse_prior_starts>0 and all required history fields present)",
+    "mean":"training-only arithmetic mean per feature",
+    "scale":"training-only population standard deviation per feature (ddof=0)",
+    "zero_or_nonfinite_scale":"FAIL_CLOSED",
+    "eval_transform":"reuse frozen training mean/std; never refit on DEV-eval/VALIDATION/OOS",
+    "zero_prior_rows":"do not impute standardized history values because their residual is fixed 0"
+  },
+  "optimizer":{
+    "family":"deterministic L-BFGS-B with analytic gradient",
+    "initial_beta":"zeros",
+    "maxiter":2000,
+    "gtol":1e-8,
+    "ftol":1e-12,
+    "random_initialization":false,
+    "restart_or_multistart":false,
+    "convergence_failure":"FAIL_CLOSED; no alternate optimizer chosen after observing outcomes"
+  },
+  "remaining_performance_parameter":{
+    "lambda_l2":"MUST_BE_ONE_SINGLE_VALUE_FIXED_IN_EXTERNALLY_ANCHORED_PREREG_BEFORE_EXECUTION",
+    "grid_search_allowed":false,
+    "post_result_retuning_allowed":false
+  },
+  "required_invariants":[
+    "beta=0 implies candidate probabilities exactly equal DIRECT_MARKET",
+    "uniform market implies normalized_entropy=1, alpha_eff=0, and candidate equals market regardless of beta",
+    "all probabilities positive and sum to one per race",
+    "analytic gradient agrees with finite differences before any real trial",
+    "each race contributes equal primary-loss weight",
+    "zero-prior horses stay in denominator and have residual exactly 0",
+    "no current market field enters the residual feature vector",
+    "newcomer races excluded"
+  ],
+  "blocked_until":[
+    "Race-time Snapshot Gate v5 real Windows/JV-Link forward provenance PASS",
+    "new externally anchored trial prereg",
+    "all source hashes and train/eval periods fixed",
+    "single lambda_l2 fixed before execution"
+  ],
+  "validation_opened":false,
+  "oos_opened":false,
+  "real_money_bet":false
+}
