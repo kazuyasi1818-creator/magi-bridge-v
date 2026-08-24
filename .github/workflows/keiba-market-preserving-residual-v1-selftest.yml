@@ -1,0 +1,53 @@
+name: Keiba Market-Preserving Residual v1 Selftest
+
+on:
+  push:
+    paths:
+      - 'scripts/keiba_market_preserving_residual_v1.py'
+      - 'tests/keiba_market_preserving_residual_v1_selftest.py'
+      - '.magi/keiba_residual_market_preserving_architecture_draft_v1.json'
+      - '.github/workflows/keiba-market-preserving-residual-v1-selftest.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  selftest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run synthetic invariants
+        run: |
+          python3 tests/keiba_market_preserving_residual_v1_selftest.py | tee /tmp/residual_v1_proof.json
+          python3 - <<'PY'
+          import json
+          p=json.load(open('/tmp/residual_v1_proof.json',encoding='utf-8'))
+          assert p['status']=='PASS'
+          assert all(p['checks'].values())
+          print('KEIBA_MARKET_PRESERVING_RESIDUAL_V1_PASS')
+          PY
+      - name: Bind hashes and persist proof
+        run: |
+          python3 - <<'PY'
+          import hashlib,json,subprocess
+          paths=[
+            'scripts/keiba_market_preserving_residual_v1.py',
+            'tests/keiba_market_preserving_residual_v1_selftest.py',
+            '.magi/keiba_residual_market_preserving_architecture_draft_v1.json',
+          ]
+          p=json.load(open('/tmp/residual_v1_proof.json',encoding='utf-8'))
+          p['commit_sha_under_test']=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          p['sha256']={x:hashlib.sha256(open(x,'rb').read()).hexdigest() for x in paths}
+          open('.magi/keiba_market_preserving_residual_v1_synthetic.json','w',encoding='utf-8').write(json.dumps(p,ensure_ascii=False,indent=2))
+          PY
+          git config user.name 'magi-keiba-bot'
+          git config user.email 'magi-keiba-bot@users.noreply.github.com'
+          git add .magi/keiba_market_preserving_residual_v1_synthetic.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Freeze market-preserving residual v1 synthetic proof'
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main
