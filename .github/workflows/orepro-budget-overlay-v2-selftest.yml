@@ -1,0 +1,60 @@
+name: OrePro Budget Overlay v2 Selftest
+
+on:
+  push:
+    paths:
+      - 'scripts/orepro_competition_overlay_v1.py'
+      - 'scripts/orepro_freeze_prediction_v2.py'
+      - 'scripts/orepro_entry_sheet_v2.py'
+      - '.magi/orepro_budget_overlay_synthetic_fixture_v1.json'
+      - '.github/workflows/orepro-budget-overlay-v2-selftest.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  selftest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run no-real-money synthetic overlay
+        run: |
+          python3 scripts/orepro_competition_overlay_v1.py .magi/orepro_budget_overlay_synthetic_fixture_v1.json --out /tmp/overlay.json
+          python3 scripts/orepro_freeze_prediction_v2.py /tmp/overlay.json --out /tmp/frozen.json
+          python3 scripts/orepro_entry_sheet_v2.py /tmp/frozen.json --out /tmp/entry.txt
+      - name: Verify separation and caps
+        run: |
+          python3 - <<'PY'
+          import json
+          p=json.load(open('/tmp/overlay.json',encoding='utf-8'))
+          assert p['totals']['magi_pure_total_stake_yen']==3000
+          assert p['totals']['orepro_registered_total_stake_yen']==10000
+          assert p['totals']['forced_scale_up_total_yen']==7000
+          assert all(t['orepro_registered_stake_yen']>=t['magi_pure_stake_yen'] for t in p['tickets'])
+          assert all(t['orepro_registered_stake_yen']%100==0 for t in p['tickets'])
+          f=json.load(open('/tmp/frozen.json',encoding='utf-8'))
+          assert len(f['freeze_hash_sha256'])==64
+          proof={
+            'test_id':'OREPRO-BUDGET-OVERLAY-V2-SYNTHETIC',
+            'status':'PASS',
+            'magi_pure_total_stake_yen':3000,
+            'orepro_registered_total_stake_yen':10000,
+            'forced_scale_up_total_yen':7000,
+            'freeze_hash_sha256':f['freeze_hash_sha256'],
+            'real_money_bet':False,
+            'validation_opened':False,
+            'oos_opened':False
+          }
+          open('/tmp/proof.json','w',encoding='utf-8').write(json.dumps(proof,ensure_ascii=False,indent=2))
+          PY
+      - name: Persist proof
+        run: |
+          cp /tmp/proof.json .magi/orepro_budget_overlay_v2_synthetic_proof.json
+          git config user.name 'magi-orepro-bot'
+          git config user.email 'magi-orepro-bot@users.noreply.github.com'
+          git add .magi/orepro_budget_overlay_v2_synthetic_proof.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Freeze OrePro budget overlay v2 synthetic proof'
+          git pull --rebase origin main
+          git push origin HEAD:main
