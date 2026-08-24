@@ -1,0 +1,11 @@
+{
+  "registry_id":"KEIBA_PREREG_ANCHOR_REGISTRY_V1",
+  "policy":"A future trial becomes EXECUTABLE only after its prereg SHA-256 is committed here in a GitHub commit that predates execution. A post-execution entry never upgrades historical evidence.",
+  "entries":[
+    {"trial_id":"KEIBA-DEV3-001","prereg_sha256":"579afdb6a371d86c8849c49b9d362ad4ca0f8ef90146ad05d0dcc82714070018","anchor_class":"POSTHOC_ARCHIVE_ONLY","externally_preregistered":false,"note":"Local artifact ordering is consistent with prereg before execution, but no pre-execution external anchor is proven."},
+    {"trial_id":"KEIBA-DEV4-001","prereg_sha256":"118072176abc250096ed1022e515bca010e205713779bec25687fbe2d05b8a0a","anchor_class":"POSTHOC_ARCHIVE_ONLY","externally_preregistered":false,"note":"Local artifact ordering is consistent with prereg before execution, but no pre-execution external anchor is proven."},
+    {"trial_id":"KEIBA-DEV5-001","prereg_sha256":"3f404f5d3a2d37cdfcf01c95fb598f28ad5ccfd0766b029eef4d73673f7b2087","anchor_class":"POSTHOC_ARCHIVE_ONLY","externally_preregistered":false,"note":"Local artifact ordering is consistent with prereg before execution, but no pre-execution external anchor is proven."}
+  ],
+  "future_sequence":["write prereg","hash prereg","commit hash to this registry","verify commit exists and is earlier than execution","only then mark EXECUTABLE"],
+  "next_trial_status":"BLOCKED_BY_RACE_TIME_SNAPSHOT_GATE_V2"
+}
