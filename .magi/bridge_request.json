@@ -1,9 +1,10 @@
 {
-  "request_id": "KEIBA-FEATURE-TIMING-PROVENANCE-AUDIT-20260824",
-  "topic": "競馬MAGI feature timing/data provenance監査。DEV v3-v5は全candidate Gate FAILでBridge PASS、VALIDATION候補0件。ここから隣接モデルを増やさず、現在レース特徴量がEARLY/LATE予測時点で本当に取得可能だったかを監査する。証拠ではオッズにsnapshot_time_jst/effective_minutes_before_postあり。一方JVD current-rowの騎手・斤量・馬体重・abnormal_code・登録/出走頭数は高カバレッジだが、取得/更新/as-of timestamp列がなく、同一行にfinal_finish/final_odds/final_popularity/payoutも共存。current featuresをconfirmatory-safeと扱わない判断、source_time<=snapshot_timeの機械Gate、追加の隣接DEV trial停止が妥当か判定する。またDEV v3-v5 preregはローカルmtime順序ではprereg→script→auditだが、外部pre-execution anchorは未証明である点を正しく残す。新データやGate変更を要求せず、現証拠の判定と次のunlock条件を監査すること。",
+  "request_id": "KEIBA-RAW-JVD-TIMING-GATE-V2-AUDIT-20260824",
+  "topic": "競馬MAGI Race-time Snapshot Gate v2最終監査。新しい機械証拠として、実際に使ったraw JVD 29,052行は全件RAレコードで、headerの第2の8桁date-like fieldのunique setがparsed race_date 69開催日のsetと完全一致し、第1の8桁date-like fieldは第2より全件1〜13日後だった。さらにparsed JVD rowにはfinal_finish/final_win_odds/final_popularity/payout/dead_heat/finishersが同居する。外部仕様書なしでheader field名を断定はしないが、このexact parsed JVD sourceはpost-race/final-state用途のデータであり、同じ行のcurrent jockey/斤量/bodyweight/abnormal/startersをEARLY/LATE snapshot-safeとして使わない、というGate v2判定が妥当か監査する。既存のオッズtimestamp付きfeatureとstrict historical featureはGREEN維持。新隣接モデルは禁止。unlockはpre-race source timestampを取得して feature_source_time<=prediction_snapshot_time を機械証明し、raw snapshot hashを実行前に固定すること。VALIDATION/OOSは閉鎖継続。",
   "evidence_files": [
-    ".magi/keiba_feature_timing_bridge_evidence_v1.json",
-    ".magi/keiba_DEV3_5_prereg_anchor_audit_v1.json"
+    ".magi/keiba_raw_jvd_header_timing_diagnostic_v1.json",
+    ".magi/race_time_snapshot_gate_v2.json",
+    ".magi/keiba_feature_timing_bridge_evidence_v1.json"
   ],
   "budget_yen": 50,
   "fx_yen_per_usd": 150
