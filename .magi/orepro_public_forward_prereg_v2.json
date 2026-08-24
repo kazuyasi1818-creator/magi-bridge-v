@@ -1,0 +1,74 @@
+{
+  "prereg_id": "OREPRO-PUBLIC-FORWARD-V2",
+  "status": "PREREGISTERED_NOT_YET_EXECUTED",
+  "supersedes": "OREPRO-PUBLIC-FORWARD-V1",
+  "created_before_week1_execution": true,
+  "purpose": "俺プロの公式競技成績と競馬MAGI本来の推奨成績を分離したまま、2026-08-29/30から実เงินจริงゼロの公開forward testを開始する。",
+  "week1_budget": {
+    "official_virtual_budget_yen": 50000,
+    "target_races": 5,
+    "official_target_stake_per_race_yen": 10000,
+    "official_max_stake_per_race_yen": 10000,
+    "stake_unit_yen": 100,
+    "real_money_bet": false
+  },
+  "three_ledger_policy": {
+    "OREPRO_OFFICIAL": "俺プロへ実際に登録した仮想投票と俺プロ固有ボーナスを含む公式競技成績。",
+    "OREPRO_NORMALIZED": "俺プロへ実際に登録した仮想投票額は同じだが、勝負レース2倍等の俺プロ固有ボーナスを除いた通常払戻ベースの成績。",
+    "MAGI_PURE": "ランキング条件による強制増額を除き、MAGIが発走前に本来推奨した買い目・金額だけを通常払戻で評価する研究成績。"
+  },
+  "competition_overlay": {
+    "purpose": "段位内ランキング参加条件を狙うための仮想投票額調整。MAGI_PUREとは完全分離する。",
+    "target_full_stake": true,
+    "target_yen_per_selected_race": 10000,
+    "may_scale_up_magi_recommended_stakes": true,
+    "may_create_post_result_tickets": false,
+    "may_use_result_or_payout_information": false,
+    "ticket_universe_must_be_frozen_pre_race": true,
+    "scale_rule": "事前にqualifiedとなったticket universeの重みを保ちつつ100円単位で10,000円へ拡大する。新しい買い目を事後追加しない。",
+    "cap_rule": "事前固定されたsingle-ticket / bet-type / correlation-group capを超えない。10,000円へ到達不能なら事前順位のreserve raceへ機械的に繰上げ、それでも不足ならランキング規定未達として記録する。"
+  },
+  "magi_pure_budget": {
+    "race_budget_cap_yen": 10000,
+    "force_full_spend": false,
+    "no_bet_allowed": true,
+    "allocation": "qualified ticketsへrisk-adjusted edge比率で配分し100円単位へ切下げ。弱い場合は未使用予算を残す。",
+    "ranking_overlay_not_counted": true
+  },
+  "prediction_model_policy_week1": {
+    "public_baseline": "A_MARKET_ONLY / leakage-safe pre-race market baseline",
+    "reason": "DEV v3-v5 challengerは平均改善が小さく全て95%CIが0を跨ぎ、全月正のGateも失敗したため、最良DEV trialを後付け採用しない。",
+    "v3_v4_v5": "SHADOW_ONLY; 公開forwardで並行記録して将来判断の新規証拠にするが、初週の主成績として都合良く選ばない。",
+    "profitability_claim": false
+  },
+  "selection_policy": {
+    "selector": "OREPRO-WEEK1-CANDIDATE-SELECTION-V2",
+    "max_selected_races": 5,
+    "reserve_order_frozen_before_outcome_use": true,
+    "activation": "各レース自身の発走前データ品質とticket eligibilityだけで機械判定し、過去に終了した初週レースの結果で繰上げ/除外しない。"
+  },
+  "supported_bet_types": ["EXACTA_UMA_TAN","QUINELLA_UMA_REN","TRIFECTA_3REN_TAN","TRIO_3REN_PUKU"],
+  "freeze": {
+    "required_before_orepro_submission": true,
+    "hash_sha256_required": true,
+    "orepro_official_stakes_frozen_pre_race": true,
+    "magi_pure_stakes_frozen_pre_race": true,
+    "battle_race_flag_frozen_pre_race": true,
+    "post_result_editing": false
+  },
+  "feature_restriction": {
+    "gate_v4_real_windows_jvlink_forward_capture": "NOT_YET_PASSED",
+    "timestamp_sensitive_current_features": "BLOCKED_UNTIL_PASS",
+    "allowed_scope_until_pass": "leakage-safe pre-race odds + strict-history only"
+  },
+  "forbidden": [
+    "結果を見て対象レース・買い目・金額・勝負レースflagを変更",
+    "OREPRO_OFFICIALの増額分をMAGI_PUREへ混入",
+    "DEV v3-v5のうち結果の良いモデルだけを初週後に主モデル扱い",
+    "Gate未通過current-state featureの使用",
+    "VALIDATION/OOSの無断開封"
+  ],
+  "real_money_bet": false,
+  "validation_opened": false,
+  "oos_opened": false
+}
