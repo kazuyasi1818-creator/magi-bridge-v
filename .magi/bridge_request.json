@@ -1,10 +1,10 @@
 {
-  "request_id":"KEIBA-SNAPSHOT-GATE-V2-COLLECTOR-AUDIT-20260824",
-  "topic":"競馬MAGI Race-time Snapshot Gate v2と前走時刻証明パイプラインの統合監査。v1 checker監査待ちの間に重大な抜けを自己発見したためv2へsupersedeした。v2はfeature_source_timeだけでなくsource_capture_timeもprediction snapshot以前を必須化し、OFFICIAL_ANNOUNCEMENTとLOCAL_ACQUISITIONを分離、未知featureをfail-closed、feature→source_kind allowlist、実source fileをmanifestから再hashしてrowのsource SHAを照合する。合成PASS=0違反、破壊bundleはannouncement/capture時刻逆転、duplicate、final source、post-race feature、source不適合、unverified SHA、未知feature等10種類を検出してFAIL。さらにJRA-VAN SDK 5.0.0(2026-08-04)では64bit JV-LinkとPython3.14公式サンプルがあり、pywin32 Dispatch('JVDTLab.JVLink')、JVGets、JVWatchEventが公式開発ガイドに示されるため、収集設計を旧x86前提から公式64bit Python優先へ修正した。0B11 WH馬体重と0B14 WE/AV/JC/TC/CC速報をforward captureし、raw SHA+発表時刻+取得時刻を固定する。監査目的は①v2 checkerに重大な見逃し/過剰拒否が残るか、②source timeとcapture timeの二重Gateが妥当か、③公式0B11/0B14収集設計がGate解除経路として妥当か、④実データ取得前に直すべき点、⑤VALIDATION/OOSを閉鎖しDEV v6をまだ禁止する判断の妥当性。結果都合のGate緩和は禁止。",
+  "request_id":"KEIBA-SNAPSHOT-GATE-V2-REAUDIT-FROZEN-20260824",
+  "topic":"競馬MAGI Race-time Snapshot Gate v2の再監査。前回Claude最終判定はREVISE/EVIDENCE_RECONCILIATION、人間操作不要。指摘されたcontract SHA不一致をGitHub Actions上で現行main checkoutの実バイトから再計算し、同じcheckout上のcanonical checker本体を実行して再凍結した。retest証拠ではcontract_sha256=5fefae5a413c46eaa98cfe7edf2cd51384fbf666b481d86ad928a8daa3facc98、checker_sha256=3e4bcc4b8bd045ac8f79f53ae90a5570c18eecd6594c606522840c1621f8bdeb。PASS fixtureはexit0/status PASS/0 violations/source files 2件再hash確認、destructive fixtureはexit2/status FAIL/12 violations/10 violation types。旧test_v2の不一致は証拠としてsupersededし、今回のGitHub Actions frozen retestを正とする。Gate基準・モデル・期間は変更していない。JRA-VAN realtime collectorは0B11/0B14 forward capture、official announcement timeとlocal acquisition timeの両方を保存し、raw SHAを固定する設計。監査目的は①前回SHA不一致が解消したか、②現行contractとcanonical checkerの機械証明が成立したか、③実capture前に残る懸念は実環境corner-caseだけか、④この段階をCLOSED/PASSとして次を実JRA-VAN forward capture plumbing testへ進めてよいか。VALIDATION/OOSは閉鎖、DEV v6は実capture Gate PASSまで禁止を維持する。",
   "evidence_files":[
+    ".magi/keiba_snapshot_gate_v2_retest_frozen_github_v1.json",
     ".magi/keiba_pre_race_snapshot_contract_v2.json",
     ".magi/keiba_snapshot_gate_checker_code_v2.md",
-    ".magi/keiba_snapshot_gate_checker_test_v2.json",
     ".magi/keiba_jvlink_realtime_source_map_v1.json",
     ".magi/keiba_realtime_capture_collector_spec_v1.json"
   ],
