@@ -1,0 +1,52 @@
+{
+  "draft_id": "KEIBA-RESIDUAL-MARKET-PRESERVING-CANDIDATE-DRAFT-V4",
+  "status": "DRAFT_ONLY_NOT_EXECUTABLE",
+  "supersedes": "KEIBA-RESIDUAL-MARKET-PRESERVING-CANDIDATE-DRAFT-V3",
+  "baseline": "DIRECT_MARKET: race-normalized inverse purchasable pre-race win odds at the preregistered snapshot",
+  "residual_feature_policy": "KEIBA-RESIDUAL-FEATURE-POLICY-V2",
+  "residual_features": [
+    "horse_prior_starts",
+    "days_since_last_start_rebuilt",
+    "same_surface_as_last",
+    "same_venue_as_last",
+    "abs_distance_change_m",
+    "same_class_code_as_last"
+  ],
+  "zero_prior_start_rule": "horse_prior_starts=0 => raw residual=0; no fabricated last-start context; keep horse in race probability population",
+  "candidate_probability_rule": "p_i proportional to p_market_i * exp(alpha_eff_race * clipped_centered_residual_i), then normalize within race",
+  "uncertainty_control": {
+    "single_input": "normalized_entropy",
+    "definition": "-sum_i(p_market_i * log(p_market_i)) / log(field_size)",
+    "direction": "higher normalized_entropy must not increase alpha_eff_race",
+    "top1_market_probability_allowed_as_parallel_control": false,
+    "top1_top2_probability_gap_allowed_as_parallel_control": false,
+    "selection_basis": "KEIBA-MARKET-UNCERTAINTY-METRIC-DIAG-V1; market-structure only, no outcome/ROI selection",
+    "numeric_function_and_parameters": "TO_BE_FROZEN_IN_EXTERNAL_PREREG_BEFORE EXECUTION; no within-trial sweep"
+  },
+  "future_primary_gate": [
+    "mean paired race winner-logloss improvement versus DIRECT_MARKET > 0",
+    "paired race bootstrap 95% CI lower bound > 0",
+    "binary log loss non-worse",
+    "Brier non-worse",
+    "improvement positive in every preregistered eval month",
+    "market-rank flattening diagnostic within preregistered tolerance"
+  ],
+  "blocked_until": [
+    "Race-time Snapshot Gate v5 real Windows/JV-Link forward provenance PASS",
+    "new externally anchored trial prereg",
+    "all source hashes fixed",
+    "residual learner class, residual clipping, alpha base and entropy shrink rule fixed before execution"
+  ],
+  "forbidden": [
+    "newcomer race prediction",
+    "current market as residual learner feature",
+    "final/closing odds as current prediction-time market",
+    "fabricated history for zero-prior horses",
+    "parallel entropy/top1/gap model variants in the same first trial",
+    "parameter sweep after outcomes are visible",
+    "VALIDATION/OOS access without explicit authorization"
+  ],
+  "validation_opened": false,
+  "oos_opened": false,
+  "real_money_bet": false
+}
