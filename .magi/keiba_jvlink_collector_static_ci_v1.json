@@ -1,0 +1,17 @@
+{
+  "test_id": "KEIBA_JVLINK_COLLECTOR_STATIC_CI_V1",
+  "commit_sha_under_test": "744f497d9191875cd529b35a5d112e2d2a100e30",
+  "collector_sha256": "f00bdbf31507554aa30cdb754279fe1ae6f1cd37495c650eb910ff1f94542f5c",
+  "verifier_sha256": "56c1da053ebe0a46ced050f0d801896737ac74b7a465c28ecb51b60f23049eb8",
+  "python_compile": "PASS",
+  "collector_non_com_selftest": {
+    "status": "READY_FOR_SYNTHETIC_TESTS",
+    "python": "3.12.3 (main, Jun 19 2026, 12:46:00) [GCC 13.3.0]",
+    "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+    "note": "COM/JV-Link not exercised by parser self-test."
+  },
+  "windows_com_jvlink_exercised": false,
+  "meaning": "Static/syntax evidence only. Real Windows JV-Link capture remains required.",
+  "validation_oos_opened": false,
+  "status": "PASS"
+}
