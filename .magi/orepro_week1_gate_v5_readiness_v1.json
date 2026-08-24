@@ -1,0 +1,57 @@
+{
+  "readiness_id":"OREPRO-WEEK1-GATE-V5-READINESS-V1",
+  "status":"PIPELINE_IMPLEMENTED_CI_UNCONFIRMED_REAL_RACES_PENDING",
+  "week_dates":["2026-08-29","2026-08-30"],
+  "venues":["新潟","中京","札幌"],
+  "newcomer_races":"EXCLUDED",
+  "max_selected_races":5,
+  "official_virtual_week_budget_yen":50000,
+  "real_money_bet":false,
+  "current_components":{
+    "public_forward_prereg":"OREPRO-PUBLIC-FORWARD-V3",
+    "candidate_selection_prereg":"OREPRO-WEEK1-CANDIDATE-SELECTION-V4",
+    "candidate_selector":"scripts/orepro_candidate_selector_v4.py",
+    "week_manifest":"OREPRO-WEEK1-20260829-30-V3",
+    "prediction_card":"OREPRO-PREDICTION-CARD-V3",
+    "feature_gate":"KEIBA_PRE_RACE_SNAPSHOT_CONTRACT_V5",
+    "strict_freeze":"scripts/orepro_freeze_prediction_v4.py",
+    "entry_sheet":"scripts/orepro_entry_sheet_v3.py",
+    "week_bundle_validator":"scripts/orepro_week1_bundle_validate_v1.py",
+    "probability_engine":"scripts/keiba_generate_exotic_probabilities_v1.py",
+    "magi_budget_allocator":"scripts/keiba_exotics_budget_allocator_v1.py",
+    "competition_overlay":"scripts/orepro_competition_overlay_v1.py"
+  },
+  "implemented_invariants":[
+    "four supported exotic bet types only",
+    "MAGI_PURE stake remains separate from OrePro registered stake",
+    "official registered target is at most 10000 yen per race",
+    "week official cap is 50000 yen",
+    "at most one battle race per week",
+    "duplicate race_id rejected",
+    "Gate v4 or older prediction cards rejected",
+    "unregistered and result/final-state fields rejected before freeze",
+    "source SHA256 required",
+    "entry sheet recomputes frozen-card SHA and rejects tampering",
+    "week1 bundle restricted to Aug 29/30, Niigata/Chukyo/Sapporo, A_MARKET_ONLY",
+    "VALIDATION/OOS remain closed"
+  ],
+  "synthetic_e2e_test":"tests/orepro_week1_gate_v5_e2e_selftest.py",
+  "synthetic_e2e_workflow":".github/workflows/orepro-week1-gate-v5-e2e-selftest.yml",
+  "ci_status":"NOT_INDEPENDENTLY_CONFIRMED_FROM_AVAILABLE_CONNECTOR",
+  "ci_note":"Combined status exposes only unrelated Vercel build-rate-limit failure; do not claim GitHub Actions PASS without direct run evidence.",
+  "hard_blockers":[
+    "REAL_JRA_WEEK1_ENTRIES_NOT_YET_AVAILABLE/SELECTED",
+    "REAL_WINDOWS_JVLINK_GATE_V5_FORWARD_CAPTURE_NOT_PASSED",
+    "REAL_PRE_RACE_ODDS_AND_TICKET_UNIVERSE_NOT_YET_FROZEN"
+  ],
+  "forbidden_until_applicable_gate_closes":[
+    "timestamp-sensitive current features without reviewed Gate v5 handoff",
+    "post-result race/ticket/stake/battle changes",
+    "VALIDATION access",
+    "OOS access",
+    "real-money execution",
+    "profitability or predictive-superiority claim from synthetic tests"
+  ],
+  "validation_opened":false,
+  "oos_opened":false
+}
