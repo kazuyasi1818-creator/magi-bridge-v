@@ -1,0 +1,21 @@
+{
+  "evidence_id":"KEIBA_JVDATA_SEMANTIC_SPEC_EVIDENCE_V2",
+  "supersedes":"KEIBA_JVDATA_SEMANTIC_SPEC_EVIDENCE_V1",
+  "status":"CORRECTED_BEFORE_REAL_CAPTURE",
+  "source":"JRA-VAN JV-Data specification Ver.4.9.01 and JRA-VAN developer support examples",
+  "source_urls":["https://jra-van.jp/dlb/sdv/sdk/JV-Data4901.pdf","https://developer.jra-van.jp/t/topic/141"],
+  "verified_on":"2026-08-24",
+  "correction":"V1 incorrectly described WH body-weight change code 000 as zero kg change. Official specification says 000 means no previous race. Numeric zero must not be inferred from code 000.",
+  "facts":[
+    {"record":"WH","format":101,"record_length":847,"announcement_position":28,"announcement_bytes":8,"body_weight_entry_start":36,"entry_count":18,"entry_bytes":45,"weight_offset_within_entry":39,"weight_bytes":3,"weight_semantics":{"002-998":"valid kg","999":"current weighing unavailable","000":"scratch"},"change_sign_offset":42,"change_value_offset":43,"change_semantics":{"001-998":"valid absolute kg difference with sign field","999":"unmeasurable","000":"no previous race","blank":"first start; also blank on scratch"}},
+    {"record":"WE","format":102,"record_length":42,"announcement_position":26,"announcement_bytes":8,"change_id_position":34,"current_weather_position":35,"current_turf_position":36,"current_dirt_position":37,"initial_state_behavior":"Initial weather/track state may be delivered with announcement code 00000000 and change-id 1. Since that record has no usable official announcement timestamp, a prediction snapshot may use it only if the complete 0B14 capture itself was acquired by the snapshot; source_time_basis becomes LOCAL_ACQUISITION and source time equals capture time."},
+    {"record":"AV","format":103,"record_length":78,"data_division_position":3,"data_division_semantics":{"1":"scratch","2":"exclusion"},"announcement_position":28,"horse_no_position":36,"reason_position":74,"reason_bytes":3},
+    {"record":"JC","format":104,"record_length":161,"announcement_position":28,"horse_no_position":36,"new_weight_position":74,"new_jockey_code_position":77,"new_jockey_name_position":82},
+    {"record":"TC","format":105,"record_length":45,"announcement_position":28,"new_post_time_position":36,"old_post_time_position":40},
+    {"record":"CC","format":106,"record_length":50,"announcement_position":28,"new_distance_position":36,"new_track_code_position":40,"old_distance_position":42,"old_track_code_position":46,"reason_position":48}
+  ],
+  "bulk_state_note":"Realtime meeting-change information can be withdrawn after provision. For 0B14 bulk polling, reconstruct prediction state only from the latest complete capture acquired by the prediction snapshot; do not carry forward an event absent from that later complete capture.",
+  "model_or_outcome_data_used":false,
+  "real_capture_executed":false,
+  "validation_oos_opened":false
+}
