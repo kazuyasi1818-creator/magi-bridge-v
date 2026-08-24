@@ -1,0 +1,135 @@
+name: Keiba Gate v4 negative boundary tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/keiba-gate-v4-negative-boundaries.yml'
+      - 'scripts/keiba_jvlink_realtime_capture_v3.py'
+      - 'scripts/keiba_build_snapshot_provenance_v3.py'
+      - 'scripts/keiba_snapshot_gate_check_v4.py'
+
+permissions:
+  contents: write
+
+jobs:
+  boundary-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Test WH weight-side scratch and WE not-present fail-closed
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/kv4neg
+          mkdir -p /tmp/kv4neg/RAW_APPEND_ONLY/20260829 /tmp/kv4neg/out
+
+          python3 - <<'PY'
+          import hashlib, json, sys
+          from pathlib import Path
+          sys.path.insert(0, str(Path('scripts').resolve()))
+          import keiba_jvlink_realtime_capture_v3 as v3
+
+          def put(buf,pos1,n,value,enc='ascii'):
+              b=str(value).encode(enc)[:n].ljust(n,b' ')
+              buf[pos1-1:pos1-1+n]=b
+          def common(buf,rid,race_no='01',announce='08290900'):
+              put(buf,1,2,rid); put(buf,3,1,'1'); put(buf,4,8,'20260829')
+              put(buf,12,4,'2026'); put(buf,16,4,'0829'); put(buf,20,2,'01'); put(buf,22,2,'01'); put(buf,24,2,'01')
+              if rid=='WE': put(buf,26,8,announce)
+              else: put(buf,26,2,race_no); put(buf,28,8,announce)
+
+          # Raw fixed-width WH: weight-side 000 means scratch; must never become numeric body_weight_kg.
+          wh=bytearray(b' '*847); common(wh,'WH')
+          put(wh,36,2,'03'); put(wh,74,3,'000'); put(wh,77,1,' '); put(wh,78,3,'')
+          wh_o=v3.parse_record_v3(bytes(wh))
+          h=wh_o['horses'][0]
+          assert h.get('body_weight_kg') is None
+          assert h.get('body_weight_status') == 'SCRATCH'
+
+          d=Path('/tmp/kv4neg/RAW_APPEND_ONLY/20260829')
+          old=d/'b14_old.jvraw'; latest=d/'b14_latest.jvraw'
+          old.write_bytes(b'old complete 0B14 with WE')
+          latest.write_bytes(b'latest complete 0B14 without WE')
+          def sha(p): return hashlib.sha256(Path(p).read_bytes()).hexdigest()
+          race='2026082901010101'
+
+          # Older complete 0B14 has WE, but it must not carry forward once a later complete poll lacks WE.
+          (d/'OLD.json').write_text(json.dumps({
+            'capture_id':'OLD','dataspec':'0B14','source_capture_time_jst':'2026-08-29T08:40:10+09:00','source_capture_time_utc':'2026-08-28T23:40:10+00:00',
+            'raw_file':str(old),'raw_file_sha256':sha(old),'record_count':1,'open_code':0,'read_error':None,
+            'records':[{'record_sequence':1,'record_id':'WE','scope_key':'20260829010101','raw_announcement_code':'00000000','source_announcement_time_jst':None,
+              'current_weather_code':'1','current_track_condition_turf':'2','current_track_condition_dirt':'3'}]
+          },ensure_ascii=False),encoding='utf-8')
+
+          # Newer complete 0B14 contains AV only. WE is absent and therefore weather/track must be omitted, not inherited.
+          (d/'LATEST.json').write_text(json.dumps({
+            'capture_id':'LATEST','dataspec':'0B14','source_capture_time_jst':'2026-08-29T08:50:10+09:00','source_capture_time_utc':'2026-08-28T23:50:10+00:00',
+            'raw_file':str(latest),'raw_file_sha256':sha(latest),'record_count':1,'open_code':0,'read_error':None,
+            'records':[{'record_sequence':1,'record_id':'AV','race_id':race,'horse_no':'01','raw_announcement_code':'08290850','source_announcement_time_jst':'2026-08-29T08:50:00+09:00','scratch_exclusion_code':'2'}]
+          },ensure_ascii=False),encoding='utf-8')
+          PY
+
+          cat > /tmp/kv4neg/plan.csv <<'CSV'
+          race_id,horse_no,snapshot_role,prediction_snapshot_time_jst
+          2026082901010101,1,EARLY,2026-08-29T09:00:00+09:00
+          CSV
+
+          python3 scripts/keiba_build_snapshot_provenance_v3.py --root /tmp/kv4neg --snapshot-plan /tmp/kv4neg/plan.csv --out-csv /tmp/kv4neg/out/provenance.csv --out-source-manifest /tmp/kv4neg/out/source_manifest.json > /tmp/kv4neg/out/builder.json
+          python3 scripts/keiba_snapshot_gate_check_v4.py /tmp/kv4neg/out/provenance.csv --source-manifest /tmp/kv4neg/out/source_manifest.json --out /tmp/kv4neg/out/gate.json > /tmp/kv4neg/out/gate_stdout.json
+
+          python3 - <<'PY'
+          import csv, hashlib, json, os, sys
+          from pathlib import Path
+          sys.path.insert(0, str(Path('scripts').resolve()))
+          import keiba_jvlink_realtime_capture_v3 as v3
+
+          def put(buf,pos1,n,value,enc='ascii'):
+              b=str(value).encode(enc)[:n].ljust(n,b' '); buf[pos1-1:pos1-1+n]=b
+          def common(buf,rid,race_no='01',announce='08290900'):
+              put(buf,1,2,rid); put(buf,3,1,'1'); put(buf,4,8,'20260829'); put(buf,12,4,'2026'); put(buf,16,4,'0829'); put(buf,20,2,'01'); put(buf,22,2,'01'); put(buf,24,2,'01')
+              if rid=='WE': put(buf,26,8,announce)
+              else: put(buf,26,2,race_no); put(buf,28,8,announce)
+
+          wh=bytearray(b' '*847); common(wh,'WH'); put(wh,36,2,'03'); put(wh,74,3,'000')
+          h=v3.parse_record_v3(bytes(wh))['horses'][0]
+          rows=list(csv.DictReader(Path('/tmp/kv4neg/out/provenance.csv').open(encoding='utf-8')))
+          gate=json.loads(Path('/tmp/kv4neg/out/gate.json').read_text(encoding='utf-8'))
+          features={r['feature_name'] for r in rows}
+          checks={
+            'wh_weight_000_is_scratch_not_numeric': h.get('body_weight_kg') is None and h.get('body_weight_status')=='SCRATCH',
+            'latest_complete_0b14_missing_we_does_not_carry_old_we': not ({'weather','track_condition_turf','track_condition_dirt'} & features),
+            'latest_av_still_emitted': 'scratch_exclusion_code' in features,
+            'gate_pass': gate.get('status')=='PASS' and gate.get('violation_count')==0,
+          }
+          def sha(p): return hashlib.sha256(Path(p).read_bytes()).hexdigest()
+          out={
+            'test_id':'KEIBA_GATE_V4_NEGATIVE_BOUNDARIES_V1',
+            'commit_sha_under_test':os.environ.get('GITHUB_SHA'),
+            'collector_v3_sha256':sha('scripts/keiba_jvlink_realtime_capture_v3.py'),
+            'builder_v3_sha256':sha('scripts/keiba_build_snapshot_provenance_v3.py'),
+            'checker_v4_sha256':sha('scripts/keiba_snapshot_gate_check_v4.py'),
+            'checks':checks,
+            'provenance_features':sorted(features),
+            'gate_status':gate.get('status'),
+            'gate_violation_count':gate.get('violation_count'),
+            'status':'PASS' if all(checks.values()) else 'FAIL',
+            'real_capture_executed':False,
+            'validation_oos_opened':False,
+            'dev_v6_allowed':False
+          }
+          Path('.magi/keiba_gate_v4_negative_boundaries_v1.json').write_text(json.dumps(out,ensure_ascii=False,indent=2),encoding='utf-8')
+          if not all(checks.values()): raise SystemExit(2)
+          PY
+
+      - name: Commit boundary evidence
+        run: |
+          git config user.name 'magi-gate-v4-bot'
+          git config user.email 'magi-gate-v4-bot@users.noreply.github.com'
+          git add .magi/keiba_gate_v4_negative_boundaries_v1.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Freeze Gate v4 negative boundary evidence'
+          for attempt in 1 2 3; do git pull --rebase origin main && git push origin HEAD:main && exit 0; sleep $((attempt*2)); done
+          exit 1
