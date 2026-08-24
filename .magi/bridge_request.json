@@ -1,0 +1,10 @@
+{
+  "request_id": "KEIBA-DEV-V2-1-REAUDIT-20260824",
+  "topic": "競馬MAGI DEV v2.1再監査。前回Claude監査のC-1/M-1/M-2/M-3を再判定する。既存モデル/Gate/期間は変更しない。機械監査addendumでは strict date違反0、horse_name多重horse_id衝突0、history horse_idは8桁・targetは10桁で単純ID置換不可、無効pre-odds 83セル/40レース/勝ち馬除外0、EARLY-LATE有効頭数差1レース、今回入力に2026-04-01以降0行。競馬MAGI splitはDEV<=2026-03-31、VALIDATION=2026-04-01..06-30、OOS_LOCKED=2026-07-01..08-16。T009R confirmatoryは既存方針として2026-08-23T19:26+09:00以前の全レースを不適格とし prospective-only。結論としてDEV v2 HOLD/VALIDATION候補0件は維持し、VALIDATIONを開かない。監査役はC-1/M-1/M-2/M-3の残存度、機械監査の矛盾、次に監査だけで直せる点と新trialが必要な点を判定すること。",
+  "evidence_files": [
+    ".magi/keiba_DEV_v2_machine_audit_addendum_v1.json",
+    ".magi/keiba_magi_split_prereg_v1.json"
+  ],
+  "budget_yen": 50,
+  "fx_yen_per_usd": 150
+}
