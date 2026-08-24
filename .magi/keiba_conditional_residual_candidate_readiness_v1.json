@@ -1,0 +1,49 @@
+{
+  "readiness_id":"KEIBA-CONDITIONAL-RESIDUAL-CANDIDATE-READINESS-V1",
+  "status":"DESIGN_PREREG_READY_EXECUTION_BLOCKED",
+  "candidate":"KEIBA-RESIDUAL-MARKET-PRESERVING-CANDIDATE-DRAFT-V6",
+  "completed_design_components":{
+    "feature_policy":"KEIBA-RESIDUAL-FEATURE-POLICY-V2; six fixed non-market features",
+    "feature_redundancy":"813 non-newcomer DEV races / 11,515 rows; max |Spearman|=0.3161, max VIF=1.0993; keep all six",
+    "zero_history":"horse_prior_starts=0 => no fabricated last-start features, raw residual=0, retain horse in race denominator",
+    "uncertainty_metric":"normalized_entropy only",
+    "uncertainty_rule":"alpha_eff = 1 - normalized_entropy",
+    "residual_bound":"tanh(beta dot z); no residual_clip hyperparameter",
+    "market_offset":"DIRECT_MARKET fixed offset; no market coefficient in residual learner",
+    "intercept":"none",
+    "primary_training_loss":"equal-weight race winner conditional NLL",
+    "coefficient_prior":"fixed iid Normal(0,1) in train-standardized units; no tunable lambda",
+    "standardization":"train history-eligible rows only, mean/population-std, frozen transform",
+    "optimizer":"deterministic L-BFGS-B, beta0=zeros, analytic gradient, no restarts/alternate optimizer"
+  },
+  "independent_local_synthetic_checks":{
+    "objective_gradient":"PASS; max finite-difference error 6.929275903067023e-11",
+    "aggregate_gradient_and_equal_race_weighting":"PASS; max finite-difference error 9.922941635043259e-11",
+    "fixed_prior_aggregate":"PASS; max finite-difference error 1.4383883667479225e-10",
+    "history_availability_gate":"PASS",
+    "trainer_repeat_reproducibility":"PASS; exact beta repeat difference 0",
+    "trainer_reversed_input_reproducibility":"PASS; exact beta difference 0"
+  },
+  "github_actions":{
+    "workflow":".github/workflows/keiba-conditional-residual-v1-selftest.yml",
+    "status":"NOT_INDEPENDENTLY_CONFIRMED_FROM_CONNECTOR",
+    "note":"Do not claim Actions PASS from local checks; current connector status visibility has shown unrelated Vercel build-rate-limit only."
+  },
+  "hard_execution_blockers":[
+    "REAL_WINDOWS_JVLINK_FORWARD_CAPTURE_AND_GATE_V5_PASS",
+    "EXTERNALLY_ANCHORED_TRIAL_PREREG_BEFORE_ANY_REAL_DEV FIT",
+    "FREEZE_EXACT_TRAIN_EVAL_PERIODS_SOURCE_HASHES_CODE_HASHES_AND_STOPPING_RULES"
+  ],
+  "explicitly_not_done":[
+    "no new real DEV candidate fit",
+    "no real predictive performance test of this architecture",
+    "no VALIDATION access",
+    "no OOS access",
+    "no ROI-based selection",
+    "no real-money bet"
+  ],
+  "interpretation":"Software/math design integrity is ready for preregistration once Gate v5 real provenance is available. This is not evidence of predictive edge or profitability.",
+  "validation_opened":false,
+  "oos_opened":false,
+  "real_money_bet":false
+}
