@@ -1,0 +1,101 @@
+{
+  "trial_family_id":"KEIBA-DEV6-CONDITIONAL-MARKET-RESIDUAL",
+  "trial_id":"KEIBA-DEV6-001",
+  "status":"DRAFT_WAITING_GATE_V5_AND_EXTERNAL_ANCHOR_NOT_EXECUTABLE",
+  "purpose":"Test one pre-specified market-preserving residual architecture against DIRECT_MARKET without rebuilding absolute market probability or selecting variants by ROI.",
+  "architecture":"KEIBA-RESIDUAL-MARKET-PRESERVING-CANDIDATE-DRAFT-V6",
+  "snapshot_policy":"KEIBA-CONDITIONAL-RESIDUAL-SNAPSHOT-POLICY-V1",
+  "feature_policy":"KEIBA-RESIDUAL-FEATURE-POLICY-V2",
+  "data_scope":{
+    "stage":"DEV_ONLY",
+    "train_start":"2025-08-23",
+    "train_end":"2025-12-31",
+    "eval_start":"2026-01-01",
+    "eval_end":"2026-03-31",
+    "known_actual_eval_first":"2026-01-04",
+    "known_actual_eval_last":"2026-03-29",
+    "primary_snapshot":"EARLY",
+    "sensitivity_snapshot":"LATE",
+    "primary_note":"Use the historical EARLY snapshot as actually observed (mostly effective 11 minutes before post); do not relabel it exact 10m.",
+    "sensitivity_note":"Use historical LATE as actually observed (mostly 6 minutes before post); do not relabel it exact 5m.",
+    "validation_opened":false,
+    "oos_opened":false
+  },
+  "frozen_known_sources":{
+    "keiba_DEV_odds_outcome_join_v1.csv":"1d4db6f07c704f161a81627402d7094764334e67c5bdac58379e9878f4bd5206",
+    "keiba_DEV_history_store_2024_20260331_v1.csv":"60a1e2529b47aae2ea29721ac586cc23cbe185f8928f96b304c495766dc7a898"
+  },
+  "must_be_frozen_before_lock":{
+    "newcomer_race_identification_source_and_hash":"TO_BE_FIXED; must be prediction-independent and available without using target race outcome",
+    "exact_code_sha256":"TO_BE_FIXED_AFTER_FINAL_CODE_FREEZE",
+    "environment_versions":"Python/numpy/scipy versions TO_BE_FIXED",
+    "Gate_v5_real_handoff_hash":"TO_BE_FIXED_AFTER_REAL_FORWARD_CAPTURE_PASS"
+  },
+  "population":{
+    "exclude_entire_newcomer_races":true,
+    "primary":"All non-newcomer PRIMARY/EARLY race-card horses with valid positive purchasable pre-race win odds in the preregistered universe; do not retrospectively define population by final abnormal status.",
+    "zero_prior_starter":"keep in probability population with raw residual=0 and no fabricated last-start context",
+    "prior_history_expected_but_required_context_missing":"FAIL_CLOSED"
+  },
+  "models":{
+    "A_DIRECT_MARKET":{"role":"reference","spec":"race-normalized inverse primary EARLY purchasable pre-race win odds"},
+    "C_CONDITIONAL_RESIDUAL":{"role":"sole_candidate","spec":"fixed six-feature conditional market-offset residual learner from candidate draft V6"}
+  },
+  "training":{
+    "fit_on":"TRAIN period primary EARLY only",
+    "feature_standardization":"train history-eligible rows only; mean/population std; frozen transform",
+    "objective":"(sum race winner NLL + 0.5*||beta||^2)/R",
+    "coefficient_prior":"iid Normal(0,1) standardized units",
+    "optimizer":"deterministic L-BFGS-B; beta0=zeros; maxiter=2000; gtol=1e-8; ftol=1e-12; maxls=50; maxcor=10",
+    "hyperparameter_sweep":false,
+    "feature_subset_sweep":false,
+    "alternate_optimizer_after_result":false
+  },
+  "sensitivity_rule":{
+    "LATE_refit":false,
+    "apply_same_frozen_beta_and_training_standardizer_to_LATE":true,
+    "LATE_may_promote_candidate":false,
+    "LATE_may_rescue_failed_primary":false
+  },
+  "primary_metric":"paired race winner log-loss improvement A minus C on primary EARLY",
+  "secondary_metrics":["binary_log_loss","Brier","ECE_10bin","AUC","market-rank probability-shift diagnostic","top-pick ROI diagnostic_only"],
+  "candidate_gate":[
+    "mean paired race winner-logloss improvement > 0",
+    "paired race bootstrap 95% CI lower bound > 0",
+    "C binary log loss <= A binary log loss",
+    "C Brier <= A Brier",
+    "C improvement > 0 in every preregistered eval month"
+  ],
+  "bootstrap":{"unit":"race","replicates":10000,"seed":20260824,"method":"percentile"},
+  "stopping_fail_closed":[
+    "Gate v5 real forward provenance not PASS",
+    "external prereg anchor/hash missing",
+    "source/code/environment hash mismatch",
+    "newcomer-identification source unresolved",
+    "duplicate race_id",
+    "invalid/missing primary market probability",
+    "history availability policy violation",
+    "feature policy lint failure",
+    "optimizer nonconvergence or nonfinite output"
+  ],
+  "prohibitions":[
+    "no parameter or feature sweep",
+    "no LATE rescue or model refit",
+    "no ROI/odds-band/venue/month selection",
+    "no post-result threshold change",
+    "no final/closing odds as prediction-time market",
+    "no VALIDATION/OOS access",
+    "no real-money betting claim from DEV"
+  ],
+  "synthetic_prerequisites_already_checked":[
+    "objective analytic gradient",
+    "equal-race aggregate objective",
+    "fixed unit-normal prior objective",
+    "zero-history availability gate",
+    "deterministic trainer repeat/order reproducibility"
+  ],
+  "execute_now":false,
+  "validation_opened":false,
+  "oos_opened":false,
+  "real_money_bet":false
+}
