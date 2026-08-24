@@ -1,0 +1,57 @@
+{
+  "diagnostic_id": "KEIBA-RESIDUAL-FEATURE-REDUNDANCY-DIAG-V2",
+  "status": "DEV_DIAGNOSTIC_ONLY_NOT_EXECUTABLE",
+  "scope": "2026-01-01 through 2026-03-29 DEV evaluation, non-newcomer races only; no VALIDATION/OOS access",
+  "eval_races": 813,
+  "eval_rows": 11515,
+  "input_sha256": {
+    "keiba_DEV_odds_outcome_join_v1.csv": "1d4db6f07c704f161a81627402d7094764334e67c5bdac58379e9878f4bd5206",
+    "keiba_DEV_history_store_2024_20260331_v1.csv": "60a1e2529b47aae2ea29721ac586cc23cbe185f8928f96b304c495766dc7a898",
+    "v5_eval_contrib.csv": "53047db23d4ce95321720a6a0937efd9f5ae7428aa808075f2a588f7789977d1"
+  },
+  "features": [
+    "horse_prior_starts",
+    "days_since_last_start_rebuilt",
+    "same_surface_as_last",
+    "same_venue_as_last",
+    "abs_distance_change_m",
+    "same_class_code_as_last"
+  ],
+  "redundancy": {
+    "max_abs_spearman": 0.3161221380,
+    "max_pair": ["horse_prior_starts", "same_class_code_as_last"],
+    "second_abs_spearman": 0.2372506741,
+    "second_pair": ["same_venue_as_last", "abs_distance_change_m"],
+    "correlation_condition_number": 1.4445347359,
+    "vif": {
+      "horse_prior_starts": 1.0798776337,
+      "days_since_last_start_rebuilt": 1.0503853396,
+      "same_surface_as_last": 1.0430894391,
+      "same_venue_as_last": 1.0424386187,
+      "abs_distance_change_m": 1.0695968094,
+      "same_class_code_as_last": 1.0992376271
+    },
+    "decision": "KEEP_ALL_SIX_FOR_ARCHITECTURE_SCOPE; no feature is removed for multicollinearity. Prior outcome-fitted coefficient magnitude is not used as a feature-selection rule."
+  },
+  "history_availability": {
+    "rows_with_zero_prior_starts": 366,
+    "row_share_zero_prior_starts": 0.0317846287,
+    "races_with_at_least_one_zero_prior_starter": 170,
+    "race_share_with_at_least_one_zero_prior_starter": 0.2091020910,
+    "races_with_zero_prior_share_gt_0_30": 16,
+    "max_zero_prior_share": 0.5625,
+    "median_zero_prior_share_when_present": 0.1143790850,
+    "last_start_dependent_feature_missing_rate": 0.0317846287,
+    "finding": "All five last-start-dependent fields are structurally unavailable when horse_prior_starts=0."
+  },
+  "design_decision": {
+    "newcomer_races": "remain excluded",
+    "zero_prior_starter_inside_non_newcomer_race": "do not fabricate historical context; residual correction for that horse is fixed to zero so DIRECT_MARKET remains its own baseline before race normalization",
+    "residual_fit_rows": "future executable prereg should fit residual coefficients only where required history context exists, while evaluation population remains complete",
+    "why": "structural data-availability rule fixed before any new DEV trial, not a performance-selected subgroup rule"
+  },
+  "gate_dependency": "Race-time Snapshot Gate v5 real Windows/JV-Link forward provenance PASS remains required before a new executable DEV trial",
+  "validation_opened": false,
+  "oos_opened": false,
+  "real_money_bet": false
+}
