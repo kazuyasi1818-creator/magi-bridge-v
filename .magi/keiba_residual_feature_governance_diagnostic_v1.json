@@ -1,0 +1,67 @@
+{
+  "diagnostic_id": "KEIBA-RESIDUAL-FEATURE-GOVERNANCE-DIAG-V1",
+  "scope": "DEV diagnostic only; non-newcomer eval; no validation/OOS opened",
+  "eval_races": 813,
+  "principle": "First residual candidate minimizes direct market-proxy reuse and correlated feature pairs. Outcome-informed observations are diagnosis-only and do not promote a model.",
+  "v4_pair_redundancy": {
+    "horse_market_win_resid_all_vs_last5": {
+      "contribution_corr": -0.904135,
+      "individual_mean_abs_sum": 0.041168,
+      "combined_mean_abs": 0.020122
+    },
+    "finish_vs_market_rank_all_vs_last5": {
+      "contribution_corr": -0.932557,
+      "individual_mean_abs_sum": 0.283383,
+      "combined_mean_abs": 0.041415
+    }
+  },
+  "v5_contribution_spearman_with_current_market_rank": {
+    "last_final_odds": -0.653652,
+    "last_final_popularity": 0.639182,
+    "last_finish": -0.575361,
+    "horse_prior_starts": 0.026558,
+    "days_since_last_start_rebuilt": 0.069246,
+    "same_surface_as_last": 0.114575,
+    "same_venue_as_last": 0.087365,
+    "abs_distance_change_m": 0.158416,
+    "same_class_code_as_last": 0.033031
+  },
+  "initial_residual_v1_whitelist": [
+    "horse_prior_starts",
+    "days_since_last_start_rebuilt",
+    "same_surface_as_last",
+    "same_venue_as_last",
+    "abs_distance_change_m",
+    "same_class_code_as_last"
+  ],
+  "held_out_from_initial_residual_v1": {
+    "log_market_p": "market baseline only; forbidden inside residual learner",
+    "last_final_odds": "strong current-market-rank proxy in DEV diagnostic",
+    "last_final_popularity": "strong current-market-rank proxy and redundant with last odds",
+    "last_finish": "strong current-market-rank proxy; reserve for separate prereg family",
+    "horse_market_win_resid_mean_all": "historical-market-derived and highly redundant with last5 counterpart",
+    "horse_market_win_resid_mean_last5": "historical-market-derived and highly redundant with all-history counterpart",
+    "horse_finish_vs_market_rank_mean_all": "historical-market-rank-derived and near-canceling with last5 counterpart",
+    "horse_finish_vs_market_rank_mean_last5": "historical-market-rank-derived and near-canceling with all-history counterpart"
+  },
+  "policy_lint_logic_check": {
+    "status": "PASS",
+    "good_whitelist_passes": true,
+    "current_market_leak_rejected": true,
+    "held_out_feature_rejected": true,
+    "unknown_feature_rejected": true,
+    "duplicate_feature_rejected": true,
+    "reordered_set_rejected": true,
+    "empty_set_rejected": true,
+    "github_actions_run_confirmed": false,
+    "note": "GitHub combined status currently exposes only unrelated Vercel build-rate-limit failure; Python Actions result is not yet independently visible, so CI PASS is not claimed."
+  },
+  "decision": {
+    "feature_policy": "KEIBA-RESIDUAL-FEATURE-POLICY-V1",
+    "do_not_run_new_dev_trial_now": true,
+    "reason": "Gate v4 real forward provenance and a new externally anchored prereg remain prerequisites."
+  },
+  "real_money_bet": false,
+  "validation_opened": false,
+  "oos_opened": false
+}
