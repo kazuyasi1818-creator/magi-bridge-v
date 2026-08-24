@@ -1,0 +1,83 @@
+{
+  "prereg_id": "OREPRO-PUBLIC-FORWARD-V1",
+  "status": "PREREG_DRAFT_NOT_YET_EXECUTED",
+  "created_at_jst": "2026-08-24T12:54:00+09:00",
+  "earliest_activation": "next JRA weekend after prereg freeze",
+  "purpose": "俺プロを実เงินจริงゼロの公開forward testとして使い、競馬MAGIの事前予想・買い目・仮想予算・公開成績を後付け変更なしで記録する。俺プロのプロ予想家ルートへの挑戦と、MAGIの予測/買い目品質検証を分離しながら同時に進める。",
+  "official_rule_snapshot": {
+    "max_virtual_stake_per_race_yen": 10000,
+    "prediction_change_deadline": "発走2分前まで",
+    "battle_race_per_week": 1,
+    "battle_race_payout_multiplier": 2,
+    "battle_multiplier_scope": "俺プロ公式の月間/段位等の集計用。MAGI純粋成績には適用しない",
+    "ranking_requirement_five_dan_or_below": {
+      "races_per_week": 5,
+      "total_virtual_stake_yen": 50000
+    },
+    "ranking_requirement_six_dan_or_above": {
+      "races_per_week": 10,
+      "total_virtual_stake_yen": 100000
+    },
+    "season_requirement": {
+      "races": 60,
+      "total_virtual_stake_yen": 600000
+    }
+  },
+  "supported_bet_types": [
+    "EXACTA_UMA_TAN",
+    "QUINELLA_UMA_REN",
+    "TRIFECTA_3REN_TAN",
+    "TRIO_3REN_PUKU"
+  ],
+  "prediction_freeze": {
+    "required_before_submission": true,
+    "fields": [
+      "race_id",
+      "prediction_frozen_at_jst",
+      "model_version",
+      "feature_gate_version",
+      "race_budget_B_yen",
+      "ticket_list",
+      "ticket_stake_yen",
+      "model_probability_if_available",
+      "purchase_available_odds_if_available",
+      "expected_value_if_available",
+      "battle_race_flag",
+      "ranking_included_flag",
+      "prediction_note"
+    ],
+    "post_result_editing": false
+  },
+  "two_score_ledgers": {
+    "OREPRO_OFFICIAL": "俺プロ表示ルールに従う。勝負レース2倍や俺プロ固有上限/除外を含む。",
+    "MAGI_PURE": "実際に登録した仮想投票金額と通常払戻のみで計算。勝負レース2倍等の俺プロ固有ボーナスは除外する。"
+  },
+  "race_budget_policy": {
+    "B_max_yen": 10000,
+    "unit_yen": 100,
+    "B_is_upper_bound": true,
+    "force_full_spend_for_MagiPure": false,
+    "ranking_target_conflict_rule": "ランキング規定を満たすためにEV/Gateをレース後や途中で緩めない。規定投票額を満たせない週は、MAGI純粋ルールを壊すより規定未達を受け入れる。",
+    "race_selection_rule": "事前に候補レースを選び、使用可能な発走前情報だけで確率/買い目を凍結する。結果を見て対象レースを入替えない。"
+  },
+  "current_feature_restriction": {
+    "race_time_snapshot_gate_v4_real_forward_capture_passed": false,
+    "timestamp_sensitive_current_features_allowed": false,
+    "allowed_until_unlock": "既にleakage-safeと確認できている発走前オッズ・strict history系のみ。後知恵の最終JVD状態を特徴量に使わない。"
+  },
+  "metrics": {
+    "primary_public": ["weekly_return_rate", "season_return_rate"],
+    "research": ["MAGI_PURE_return_rate", "hit_rate", "race_hit_rate", "bet_type_return_rate", "average_stake_per_race", "max_drawdown_virtual", "ticket_count", "no_bet_or_not_entered_count"],
+    "diagnostic": ["official_minus_pure_return_difference", "battle_race_contribution", "odds_snapshot_age", "rule_violation_count"]
+  },
+  "forbidden": [
+    "結果を見て予想・買い目・金額・勝負レースflagを変更",
+    "成績が悪いレースだけMAGI純粋台帳から削除",
+    "ランキング達成のために事後的にEV閾値を下げる",
+    "俺プロ勝負レース2倍をMAGIの予測力として計上",
+    "Gate未通過のcurrent-state featureを使用",
+    "俺プロ成績を理由にVALIDATION/OOSを無断開封"
+  ],
+  "first_week_goal": "プロ予想家資格を即達成することではなく、公開forward予想を事前固定し、俺プロ公式成績とMAGI純粋成績を完全に分離して1週間を再現可能に完走すること。",
+  "real_money_bet": false
+}
