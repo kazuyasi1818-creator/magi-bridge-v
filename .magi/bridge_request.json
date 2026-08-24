@@ -1,6 +1,6 @@
 {
-  "request_id":"KEIBA-MAGI-WHOLE-DIRECTION-AUDIT-20260824",
-  "topic":"競馬MAGIの2026-08-24時点の全体方向性を独立監査する。新しい予測アイデア・特徴量・モデル・買い方は提案禁止。確認対象は①Gate v5と旧Gate v4記述の整合、②8/29-30公開ForwardをCouncil/DEVが汚染しないか、③DEV3-5全候補Gate失敗後に時刻証明/データ品質を優先する判断、④Council v0.1をShadow限定・disagreement診断限定・T-10 provenance不足時SKIPとした隔離が十分か、⑤現在の優先順位 Gate v5実capture→公開Forward→条件付きCouncil Shadow が妥当か。問題・必須修正・STOP条件だけ指摘し、楽観的に補完しないこと。特にorepro_weekly_operating_protocol_v1.mdがGate v4と書いたままなのにOREPRO-PUBLIC-FORWARD-V3はGate v5 supersede済みである点を、単なる古い文書か実運用リスクか判定すること。",
+  "request_id":"KEIBA-MAGI-WHOLE-DIRECTION-REAUDIT-20260824",
+  "topic":"競馬MAGI全体方向性の再監査。前回Claude最終判定REVISEの必須修正だった orepro_weekly_operating_protocol_v1.md のGate v4残存記述を、結果・モデル・選定式・閾値を変更せずGate v5 (`KEIBA_PRE_RACE_SNAPSHOT_CONTRACT_V5`) 基準へ文書整合修正した。①前回のGate v4/v5文書矛盾が解消したか、②8/29-30公開ForwardへのCouncil/DEV逆流防止、③DEV3-5失敗後にtiming/data-qualityを優先する判断、④Gate v5実capture→公開Forward→条件付きCouncil Shadowの優先順位にSTOP級問題が残るかだけ判定せよ。新しい特徴量・モデル・買い方・研究枝は提案禁止。CI独立確認が現時点未確認である事実はそのまま明記し、方向性PASSと実capture PASSを混同しないこと。",
   "evidence_files":[
     ".magi/keiba_magi_direction_audit_packet_20260824_v1.json",
     ".magi/keiba_gate_v5_preflight_readiness_v1.json",
