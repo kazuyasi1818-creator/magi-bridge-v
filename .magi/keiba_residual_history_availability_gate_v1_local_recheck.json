@@ -1,0 +1,19 @@
+{
+  "test_id": "KEIBA-RESIDUAL-HISTORY-AVAILABILITY-GATE-V1-LOCAL-RECHECK",
+  "status": "PASS",
+  "checks": {
+    "zero_prior_missing_history_passes": true,
+    "prior_with_complete_history_passes": true,
+    "zero_prior_fabricated_history_rejected": true,
+    "prior_missing_history_rejected": true,
+    "zero_prior_residual_forced_zero": true,
+    "all_effective_residual_zero_preserves_market": true
+  },
+  "scope": "synthetic logic recheck only; no new DEV model fit; no VALIDATION/OOS access",
+  "related_policy": "KEIBA-RESIDUAL-FEATURE-POLICY-V2",
+  "related_diagnostic": "KEIBA-RESIDUAL-FEATURE-REDUNDANCY-DIAG-V2",
+  "github_actions_status": "NOT_CLAIMED",
+  "real_money_bet": false,
+  "validation_opened": false,
+  "oos_opened": false
+}
