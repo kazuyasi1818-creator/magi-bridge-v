@@ -1,0 +1,27 @@
+{
+  "snapshot_id": "OREPRO-WEEK1-PUBLIC-SCHEDULE-20260824-V1",
+  "verified_at_jst": "2026-08-24T12:58:00+09:00",
+  "race_dates": ["2026-08-29", "2026-08-30"],
+  "venues": ["新潟", "中京", "札幌"],
+  "official_publication_timing": {
+    "latest_racecard_guidance": "通常木曜日16時頃に出馬表で最新情報を確認",
+    "target_first_check_jst": "2026-08-27T16:30:00+09:00"
+  },
+  "known_featured_races": [
+    {"date":"2026-08-29","venue":"新潟","race_no":8,"race_name":"BSN賞","post_time_planned":"15:45"},
+    {"date":"2026-08-29","venue":"中京","race_no":7,"race_name":"長篠ステークス","post_time_planned":"15:35"},
+    {"date":"2026-08-29","venue":"札幌","race_no":11,"race_name":"札幌日刊スポーツ杯","post_time_planned":"15:25"},
+    {"date":"2026-08-30","venue":"新潟","race_no":8,"race_name":"新潟記念","post_time_planned":"15:45"},
+    {"date":"2026-08-30","venue":"中京","race_no":7,"race_name":"中京2歳ステークス","post_time_planned":"15:35"},
+    {"date":"2026-08-30","venue":"札幌","race_no":11,"race_name":"日高ステークス","post_time_planned":"15:25"}
+  ],
+  "selection_warning": "featured status is informational only and gives zero selection bonus under OREPRO-WEEK1-CANDIDATE-SELECTION-V1",
+  "sources": [
+    "JRA homepage current-week schedule",
+    "JRA 2026-08-30 race-program page",
+    "JRA 2026 graded-race list"
+  ],
+  "outcomes_used": false,
+  "final_odds_used": false,
+  "real_money_bet": false
+}
