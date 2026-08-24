@@ -51,32 +51,22 @@
     "forbidden": ["結果を見て券種を後付けで選ぶ","結果を見て買い目点数を増減する","人気帯・オッズ帯を後付け採用する","単発高配当的中を収益性の証拠にする","同一レースの相関した買い目を独立リスクとして扱う"]
   },
   "race_stake_allocation_draft": {
-    "race_budget_cap_yen": 1000,
+    "race_budget_policy": "USER_DECIDES_EACH_RACE",
+    "race_budget_cap_yen": null,
     "minimum_unit_yen": 100,
     "must_spend_full_budget": false,
     "no_bet_allowed": true,
+    "pre_bet_dialogue_required": true,
+    "dialogue_rule": "実際に買う前に、そのレースの推奨買い目・推定期待値・リスクを提示し、ユーザーと当該レースの総予算を相談して確定する。",
     "candidate_ticket_gate": "EVと確率品質・流動性・相関リスクの事前固定条件を満たす買い目だけを配分対象にする",
-    "allocation_principle": "通過した買い目をrisk_adjusted_edgeで順位付けし、100円単位で配分する。期待値が弱ければ1000円を使い切らない。",
-    "initial_caps_for_research_only": {
-      "max_single_ticket_yen": 400,
-      "max_single_bet_type_yen": 600,
-      "max_correlated_cluster_yen": 700
-    },
-    "example_only_not_locked": {
-      "race_budget_yen": 1000,
-      "tickets": [
-        {"bet_type": "QUINELLA_UMA_REN", "stake_yen": 300},
-        {"bet_type": "EXACTA_UMA_TAN", "stake_yen": 200},
-        {"bet_type": "TRIO_3REN_PUKU", "stake_yen": 300},
-        {"bet_type": "TRIFECTA_3REN_TAN", "stake_yen": 200}
-      ],
-      "note": "これは配分イメージのみ。実際は券種均等ではなく、そのレースで最も期待値の高い買い目へ寄せる。条件を満たす買い目が少なければ未使用資金を残す。"
-    },
+    "allocation_principle": "ユーザーが当該レースで確定した総予算の範囲内で、通過買い目をrisk_adjusted_edge順に100円単位で配分する。期待値が弱ければ予算を使い切らない。",
+    "single_ticket_and_bet_type_caps": "総予算確定後に、事前固定された比率上限を適用する。固定円額では持たない。",
     "methods_to_compare_before_lock": ["equal_among_qualified_tickets","edge_proportional_with_caps","fractional_kelly_with_race_cap"],
     "selection_of_method": "DEV内で事前に比較規則を固定し、VALIDATION/OOS結果を見て選ばない"
   },
   "future_risk_layer": {
     "race_level_total_stake_cap_required": true,
+    "race_level_total_stake_set_by_user_each_time": true,
     "correlated_ticket_exposure_required": true,
     "bet_type_allocation_to_be_preregistered": true,
     "fractional_kelly_candidate_for_research": true
