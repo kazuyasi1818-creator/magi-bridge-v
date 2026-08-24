@@ -1,0 +1,41 @@
+{
+  "map_id": "KEIBA_JVLINK_REALTIME_SOURCE_MAP_V1",
+  "status": "OFFICIAL_UNLOCK_PATH_IDENTIFIED__NO_REAL_CAPTURE_YET",
+  "source": "JRA-VAN Data Lab JV-Data specification / developer community",
+  "official_spec_version_file": "JV-Data4901.pdf",
+  "dataspecs": {
+    "0B11": {
+      "name": "速報馬体重",
+      "record": "WH / format 101",
+      "timing": "around 1 hour before post; added/updated when bodyweight is announced",
+      "timestamp_field": "発表月日時分",
+      "features": ["body_weight_kg", "body_weight_change_kg"]
+    },
+    "0B14_or_0B16": {
+      "name": "速報開催情報 一括/指定",
+      "update_behavior": "added/updated/deleted whenever event information occurs or changes",
+      "records": {
+        "WE": {"format":102,"timestamp_field":"発表月日時分","features":["weather","track_condition_turf","track_condition_dirt"]},
+        "AV": {"format":103,"timestamp_field":"発表月日時分","features":["scratch_or_exclusion_state","reason_code"]},
+        "JC": {"format":104,"timestamp_field":"発表月日時分","features":["current_jockey_code_after_change","current_jockey_name_after_change","current_carried_weight_x10_after_change"]},
+        "TC": {"format":105,"timestamp_field":"発表月日時分","features":["post_time_after_change"]},
+        "CC": {"format":106,"timestamp_field":"発表月日時分","features":["distance_after_change","track_code_after_change"]}
+      }
+    }
+  },
+  "retrieval": {
+    "bulk_change_info": "JVRTOpen dataspec 0B14 with key YYYYMMDD, then repeat JVRead",
+    "event_mode": "JVWatchEvent can push jockey/weather/course/avoid/time/weight events; use event parameter as key for JVRTOpen when per-event retrieval is desired",
+    "platform_constraint": "JV-Link is Windows ActiveX COM; local Windows execution is required"
+  },
+  "gate_implication": {
+    "important": "The previous final-state JVD file remains forbidden for current-race features. These official realtime feeds are a separate source class and may unlock current features only after a real capture is hashed and their announcement/source time is proven <= the prediction snapshot.",
+    "historical_limitation": "0B11/0B14 availability is short-lived (about one week in the spec). This does not retroactively repair historical DEV provenance; forward capture is required.",
+    "validation_oos_opened": false
+  },
+  "official_urls": [
+    "https://jra-van.jp/dlb/sdv/sdk/JV-Data4901.pdf",
+    "https://jra-van.jp/dlb/ddata.html",
+    "https://developer.jra-van.jp/t/topic/254"
+  ]
+}
