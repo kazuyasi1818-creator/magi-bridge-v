@@ -1,0 +1,28 @@
+{
+  "test_id": "KEIBA_SNAPSHOT_GATE_V3_SEMANTIC_E2E_V1",
+  "commit_sha_under_test": "fd4c542c1f51799acc6d3e3a237679ff3e138f08",
+  "contract_sha256": "656e96ef58d4915fce539578c04a681407f50261f3881d4e99234e0807c33182",
+  "collector_v2_sha256": "1b05137a33c4542ae8e5ebb934775e98bb65a463402ffc512d87c987990d42a7",
+  "builder_v2_sha256": "cc5f32cedbb39c39c79ae70497121149c541459c338a517c58e8e8ac79d49828",
+  "checker_v3_sha256": "57029062dfcfe928d47ba3f192d03013ec7ce25cbec7cc96ce485461ca9c1987",
+  "features": [
+    "body_weight_change_kg",
+    "body_weight_kg",
+    "track_condition_dirt",
+    "track_condition_turf",
+    "weather"
+  ],
+  "expected_features": [
+    "body_weight_change_kg",
+    "body_weight_kg",
+    "track_condition_dirt",
+    "track_condition_turf",
+    "weather"
+  ],
+  "withdrawn_old_av_not_carried_forward": true,
+  "wh_000_semantics_zero_change_proven": true,
+  "gate_status": "PASS",
+  "gate_violation_count": 0,
+  "status": "PASS",
+  "validation_oos_opened": false
+}
