@@ -1,12 +1,11 @@
 {
-  "request_id":"KEIBA-SNAPSHOT-GATE-V2-REAUDIT-FROZEN-20260824",
-  "topic":"競馬MAGI Race-time Snapshot Gate v2の再監査。前回Claude最終判定はREVISE/EVIDENCE_RECONCILIATION、人間操作不要。指摘されたcontract SHA不一致をGitHub Actions上で現行main checkoutの実バイトから再計算し、同じcheckout上のcanonical checker本体を実行して再凍結した。retest証拠ではcontract_sha256=5fefae5a413c46eaa98cfe7edf2cd51384fbf666b481d86ad928a8daa3facc98、checker_sha256=3e4bcc4b8bd045ac8f79f53ae90a5570c18eecd6594c606522840c1621f8bdeb。PASS fixtureはexit0/status PASS/0 violations/source files 2件再hash確認、destructive fixtureはexit2/status FAIL/12 violations/10 violation types。旧test_v2の不一致は証拠としてsupersededし、今回のGitHub Actions frozen retestを正とする。Gate基準・モデル・期間は変更していない。JRA-VAN realtime collectorは0B11/0B14 forward capture、official announcement timeとlocal acquisition timeの両方を保存し、raw SHAを固定する設計。監査目的は①前回SHA不一致が解消したか、②現行contractとcanonical checkerの機械証明が成立したか、③実capture前に残る懸念は実環境corner-caseだけか、④この段階をCLOSED/PASSとして次を実JRA-VAN forward capture plumbing testへ進めてよいか。VALIDATION/OOSは閉鎖、DEV v6は実capture Gate PASSまで禁止を維持する。",
+  "request_id":"KEIBA-SNAPSHOT-GATE-V3-SEMANTIC-AUDIT-20260824",
+  "topic":"競馬MAGI Race-time Snapshot Gate v3の独立監査。v2はSHA reconciliation後PASS済み。その後、モデル/アウトカム/VALIDATIONを一切見ず、公式JV-Data仕様を精査してpre-real-capture semantic bugsを発見したためv3へsupersedeした。修正点は①AVデータ区分pos3はhistorical abnormal_codeではなく1=出走取消/2=競走除外なのでscratch_exclusion_codeへ分離、②WH増減差000は欠損ではなく0kg、③WEは芝/ダート馬場状態を別featureとして保持、④CC format106の変更後距離/トラックコードを正式にparse、⑤0B14一括情報は提供後に取消される場合があるため、snapshot以前の最新complete 0B14 pollだけから状態を構築し、古いイベントを持ち越さない。公式仕様位置と意味はsemantic_spec_evidenceに固定。GitHub Actions semantic E2Eは、古い0B14にAV取消があるが最新0B14から消えたケースでscratch_exclusion_codeを持ち越さず、WH 000を0kgとして保持し、weather/turf/dirtを分離し、Gate v3 PASS/0 violationsを確認。v3 contract/checker/collector/builderのSHAもE2Eに固定。監査目的は①修正が公式仕様証拠と整合するか、②v2→v3変更がGate緩和やresult-driven変更ではないか、③latest-complete-0B14 semanticsが正しいfail-safeか、④semantic E2Eで主要回帰が機械確認できているか、⑤次を実Windows/JV-Link forward captureへ進めてよいか。VALIDATION/OOSは閉鎖、DEV v6は禁止継続。",
   "evidence_files":[
-    ".magi/keiba_snapshot_gate_v2_retest_frozen_github_v1.json",
-    ".magi/keiba_pre_race_snapshot_contract_v2.json",
-    ".magi/keiba_snapshot_gate_checker_code_v2.md",
-    ".magi/keiba_jvlink_realtime_source_map_v1.json",
-    ".magi/keiba_realtime_capture_collector_spec_v1.json"
+    ".magi/keiba_jvdata_semantic_spec_evidence_v1.json",
+    ".magi/keiba_pre_race_snapshot_contract_v3.json",
+    ".magi/keiba_snapshot_gate_v3_semantic_e2e_v1.json",
+    ".magi/bridge_responses/KEIBA-SNAPSHOT-GATE-V2-REAUDIT-FROZEN-20260824.json"
   ],
   "budget_yen":50,
   "fx_yen_per_usd":150
