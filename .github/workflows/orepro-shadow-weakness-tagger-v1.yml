@@ -1,0 +1,47 @@
+name: OrePro Shadow Weakness Tagger v1
+
+on:
+  push:
+    paths:
+      - 'scripts/orepro_shadow_weakness_tagger_v1.py'
+      - 'tests/orepro_shadow_weakness_tagger_v1_selftest.py'
+      - '.github/workflows/orepro-shadow-weakness-tagger-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  selftest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run synthetic guard test
+        run: |
+          python3 tests/orepro_shadow_weakness_tagger_v1_selftest.py | tee /tmp/proof.json
+          python3 - <<'PY'
+          import json
+          p=json.load(open('/tmp/proof.json',encoding='utf-8'))
+          assert p['status']=='PASS'
+          assert all(p['checks'].values())
+          print('OREPRO_SHADOW_TAGGER_V1_PASS')
+          PY
+      - name: Bind hashes and persist proof
+        run: |
+          python3 - <<'PY'
+          import hashlib,json,subprocess
+          p=json.load(open('/tmp/proof.json',encoding='utf-8'))
+          paths=['scripts/orepro_shadow_weakness_tagger_v1.py','tests/orepro_shadow_weakness_tagger_v1_selftest.py']
+          p['commit_sha_under_test']=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          p['sha256']={x:hashlib.sha256(open(x,'rb').read()).hexdigest() for x in paths}
+          open('.magi/orepro_shadow_weakness_tagger_v1_synthetic_proof.json','w',encoding='utf-8').write(json.dumps(p,ensure_ascii=False,indent=2))
+          PY
+          git config user.name 'magi-orepro-bot'
+          git config user.email 'magi-orepro-bot@users.noreply.github.com'
+          git add .magi/orepro_shadow_weakness_tagger_v1_synthetic_proof.json
+          git commit -m 'Freeze OrePro shadow weakness tagger v1 proof' || exit 0
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main
