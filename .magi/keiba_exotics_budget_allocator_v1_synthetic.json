@@ -1,0 +1,28 @@
+{
+  "test_id": "KEIBA_EXOTICS_BUDGET_ALLOCATOR_V1_SYNTHETIC",
+  "commit_sha_under_test": "b325b9d02829e1b43e1d054605a8252c2ef2a3ad",
+  "allocator_sha256": "ecdd28d7d1bf93966634c17a88debd4c20f910ee6b3160b5abcead16fb3491fb",
+  "checks": {
+    "budget_1000_invariants": true,
+    "budget_10000_invariants": true,
+    "same_logic_scales_to_10x_budget": true,
+    "deploy_fraction_can_leave_budget_unused": true,
+    "no_edge_means_no_bet": true,
+    "full_budget_not_forced": true,
+    "real_bet_placement_false": true,
+    "validation_oos_closed": true
+  },
+  "budget_1000_summary": {
+    "spent_yen": 1000,
+    "unspent_yen": 0,
+    "allocations": 6
+  },
+  "budget_10000_summary": {
+    "spent_yen": 10000,
+    "unspent_yen": 0,
+    "allocations": 6
+  },
+  "status": "PASS",
+  "real_bet_placement": false,
+  "validation_oos_opened": false
+}
