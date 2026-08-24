@@ -1,0 +1,52 @@
+{
+  "prereg_id": "OREPRO-WEEK1-CANDIDATE-SELECTION-V1",
+  "status": "PREREGISTERED_SELECTION_RULE_NOT_YET_RUN",
+  "created_before_week1_race_selection": true,
+  "race_dates_jst": ["2026-08-29", "2026-08-30"],
+  "official_jra_venues": ["新潟", "中京", "札幌"],
+  "selection_target": {
+    "max_races": 5,
+    "force_exactly_five": false,
+    "reason": "初週は公開forward手順の再現性を優先し、データ品質Gateを緩めてランキング規定だけを追わない"
+  },
+  "eligibility_gate": {
+    "safe_pre_race_odds_available": true,
+    "strict_history_coverage_min": 0.80,
+    "safe_feature_coverage_min": 0.95,
+    "field_size_min": 8,
+    "field_size_max": 18,
+    "first_time_starter_share_max": 0.30,
+    "post_race_or_final_state_feature_allowed": false,
+    "timestamp_sensitive_current_feature_allowed_before_real_gate_v4_pass": false
+  },
+  "data_quality_score": {
+    "formula": "0.50*strict_history_coverage + 0.30*safe_feature_coverage + 0.20*(1-first_time_starter_share)",
+    "higher_is_better": true,
+    "outcome_or_payout_inputs_forbidden": true,
+    "final_odds_inputs_forbidden": true,
+    "tie_break": ["data_quality_score_desc", "race_id_asc"]
+  },
+  "race_type_policy": {
+    "graded_stakes_bonus": 0,
+    "venue_bonus": 0,
+    "popularity_bonus": 0,
+    "note": "重賞・競馬場・話題性で候補順位を上げない。初週の選定はデータ品質で固定する。"
+  },
+  "battle_race_policy": {
+    "use_is_optional": true,
+    "if_used": "選定済みレースの中で、予想凍結時点の事前定義confidence scoreが最大の1レースのみ。結果・払戻・最終オッズを見て変更しない。",
+    "magi_pure_bonus_multiplier": 1
+  },
+  "baseline_policy": {
+    "week1_public_prediction_role": "FORWARD_BASELINE_NOT_PROVEN_EDGE",
+    "ticket_infrastructure": "4券種統一着順確率 + timestamped purchase-available odds + variable budget allocator",
+    "profitability_claim_allowed": false
+  },
+  "forbidden": [
+    "結果後に5レースを入替える",
+    "的中したレースだけ台帳へ残す",
+    "重賞だからという理由だけで選ぶ",
+    "初週成績を見て選定式の係数や閾値を同週内で変更する",
+    "Gate v4未通過current-state featureを使用する"
+  ]
+}
