@@ -1,0 +1,131 @@
+name: MAGI Bridge queue
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.magi/bridge_request.json'
+
+permissions:
+  contents: write
+
+jobs:
+  bridge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run MAGI Bridge session
+        env:
+          BRIDGE_URL: https://magi-bridge-v4.vercel.app/api/step
+        run: |
+          python3 - <<'PY'
+          import json, os, urllib.request, urllib.error, hashlib, datetime
+
+          req_path = '.magi/bridge_request.json'
+          out_path = '.magi/bridge_response.json'
+          req = json.load(open(req_path, encoding='utf-8'))
+          topic = str(req.get('topic','')).strip()
+          if not topic:
+              raise SystemExit('bridge_request.json: topic is required')
+
+          evidence = []
+          for path in req.get('evidence_files', []):
+              with open(path, encoding='utf-8-sig') as f:
+                  content = f.read()
+              evidence.append({
+                  'name': os.path.basename(path),
+                  'content': content,
+                  'client_sha256': hashlib.sha256(content.encode('utf-8')).hexdigest(),
+                  'size': len(content.encode('utf-8')),
+              })
+
+          fx = float(req.get('fx_yen_per_usd', 150.0))
+          budget = float(req.get('budget_yen', 50.0))
+          spent = 0.0
+          stages = []
+
+          def post(stage, previous='', audit=''):
+              global spent
+              remaining = max(0.01, budget - spent)
+              body = {
+                  'topic': topic,
+                  'stage': stage,
+                  'previous': previous,
+                  'audit': audit,
+                  'evidence': evidence,
+                  'budget_remaining_yen': remaining,
+                  'budget_fx_yen_per_usd': fx,
+              }
+              data = json.dumps(body, ensure_ascii=False).encode('utf-8')
+              request = urllib.request.Request(
+                  os.environ['BRIDGE_URL'], data=data,
+                  headers={'content-type':'application/json'}, method='POST')
+              try:
+                  with urllib.request.urlopen(request, timeout=180) as r:
+                      raw = r.read().decode('utf-8')
+              except urllib.error.HTTPError as e:
+                  raw = e.read().decode('utf-8', errors='replace')
+                  raise RuntimeError(f'Bridge HTTP {e.code}: {raw[:2000]}')
+              obj = json.loads(raw)
+              if not obj.get('ok'):
+                  raise RuntimeError(f'Bridge failed: {raw[:2000]}')
+              usd = ((obj.get('usage') or {}).get('usd'))
+              if isinstance(usd, (int,float)):
+                  spent += float(usd) * fx
+              stages.append({
+                  'stage': stage,
+                  'speaker': obj.get('speaker'),
+                  'text': obj.get('text'),
+                  'structured': obj.get('structured'),
+                  'agenda': obj.get('agenda'),
+                  'model': obj.get('model'),
+                  'usage': obj.get('usage'),
+                  'provider_stop_reason': obj.get('provider_stop_reason'),
+              })
+              return obj
+
+          result = {
+              'request_id': req.get('request_id'),
+              'topic': topic,
+              'started_at_utc': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+              'budget_yen': budget,
+              'fx_yen_per_usd': fx,
+              'evidence_files': req.get('evidence_files', []),
+          }
+          try:
+              a = post('gpt_initial')
+              b = post('claude_audit', previous=a['text'])
+              c = post('gpt_revise', previous=a['text'], audit=b['text'])
+              d = post('claude_verdict', previous=c['text'])
+              result.update({
+                  'ok': True,
+                  'stages': stages,
+                  'final_structured': d.get('structured'),
+                  'final_text': d.get('text'),
+                  'estimated_spent_yen': round(spent, 4),
+              })
+          except Exception as e:
+              result.update({
+                  'ok': False,
+                  'error': str(e),
+                  'stages': stages,
+                  'estimated_spent_yen': round(spent, 4),
+              })
+          result['finished_at_utc'] = datetime.datetime.now(datetime.timezone.utc).isoformat()
+          with open(out_path, 'w', encoding='utf-8') as f:
+              json.dump(result, f, ensure_ascii=False, indent=2)
+          PY
+
+      - name: Commit Bridge response
+        run: |
+          git config user.name 'magi-bridge-bot'
+          git config user.email 'magi-bridge-bot@users.noreply.github.com'
+          git add .magi/bridge_response.json
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Store MAGI Bridge response'
+          git push
