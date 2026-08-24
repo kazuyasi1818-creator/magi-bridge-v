@@ -1,0 +1,110 @@
+name: Keiba exotic budget allocator v1 tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/keiba-exotics-budget-allocator-v1.yml'
+      - 'scripts/keiba_exotics_budget_allocator_v1.py'
+
+permissions:
+  contents: write
+
+jobs:
+  synthetic-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run variable-budget synthetic allocation tests
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/exotics_alloc
+          mkdir -p /tmp/exotics_alloc
+          cat > /tmp/exotics_alloc/tickets.csv <<'CSV'
+          ticket_id,bet_type,model_probability,decimal_odds,correlation_group
+          Q1,QUINELLA_UMA_REN,0.20,6.00,PAIR_A
+          E1,EXACTA_UMA_TAN,0.12,10.00,PAIR_A
+          T1,TRIO_3REN_PUKU,0.08,16.00,TRIPLE_A
+          F1,TRIFECTA_3REN_TAN,0.04,32.00,TRIPLE_A
+          Q2,QUINELLA_UMA_REN,0.18,6.20,PAIR_B
+          E2,EXACTA_UMA_TAN,0.10,11.50,PAIR_B
+          BAD1,TRIFECTA_3REN_TAN,0.02,20.00,TRIPLE_BAD
+          CSV
+
+          python3 -m py_compile scripts/keiba_exotics_budget_allocator_v1.py
+          python3 scripts/keiba_exotics_budget_allocator_v1.py /tmp/exotics_alloc/tickets.csv --budget 1000 --method edge_proportional_with_caps --min-ev 0.05 --out /tmp/exotics_alloc/b1000.json >/dev/null
+          python3 scripts/keiba_exotics_budget_allocator_v1.py /tmp/exotics_alloc/tickets.csv --budget 10000 --method edge_proportional_with_caps --min-ev 0.05 --out /tmp/exotics_alloc/b10000.json >/dev/null
+          python3 scripts/keiba_exotics_budget_allocator_v1.py /tmp/exotics_alloc/tickets.csv --budget 10000 --method equal_among_qualified_tickets --min-ev 0.05 --deploy-fraction 0.50 --out /tmp/exotics_alloc/equal50.json >/dev/null
+
+          cat > /tmp/exotics_alloc/noedge.csv <<'CSV'
+          ticket_id,bet_type,model_probability,decimal_odds,correlation_group
+          N1,QUINELLA_UMA_REN,0.10,5.00,NONE
+          N2,EXACTA_UMA_TAN,0.05,10.00,NONE
+          CSV
+          python3 scripts/keiba_exotics_budget_allocator_v1.py /tmp/exotics_alloc/noedge.csv --budget 10000 --method edge_proportional_with_caps --min-ev 0.05 --out /tmp/exotics_alloc/nobet.json >/dev/null
+
+          python3 - <<'PY'
+          import hashlib,json,os
+          from pathlib import Path
+
+          root=Path('/tmp/exotics_alloc')
+          b1=json.loads((root/'b1000.json').read_text())
+          b10=json.loads((root/'b10000.json').read_text())
+          eq=json.loads((root/'equal50.json').read_text())
+          nb=json.loads((root/'nobet.json').read_text())
+
+          def invariant(r):
+              budget=r['race_budget_yen']; unit=r['unit_yen']; caps=r['caps']
+              alloc=r['allocations']
+              by_type={}
+              by_corr={}
+              for x in alloc:
+                  assert x['stake_yen'] % unit == 0
+                  assert x['stake_yen'] <= caps['ticket_cap_yen']
+                  by_type[x['bet_type']]=by_type.get(x['bet_type'],0)+x['stake_yen']
+                  by_corr[x['correlation_group']]=by_corr.get(x['correlation_group'],0)+x['stake_yen']
+              assert r['spent_yen'] <= budget
+              assert r['unspent_yen'] == budget-r['spent_yen']
+              assert all(v <= caps['bet_type_cap_yen'] for v in by_type.values())
+              assert all(v <= caps['correlation_group_cap_yen'] for v in by_corr.values())
+              assert all(x['ticket_id']!='BAD1' for x in alloc)
+              return True
+
+          checks={
+              'budget_1000_invariants': invariant(b1),
+              'budget_10000_invariants': invariant(b10),
+              'same_logic_scales_to_10x_budget': b10['race_budget_yen']==10*b1['race_budget_yen'] and b10['unit_yen']==b1['unit_yen'] and b10['method']==b1['method'],
+              'deploy_fraction_can_leave_budget_unused': invariant(eq) and eq['spent_yen'] <= 5000 and eq['unspent_yen'] >= 5000,
+              'no_edge_means_no_bet': nb['status']=='NO_BET' and nb['spent_yen']==0 and nb['unspent_yen']==10000,
+              'full_budget_not_forced': b1['safety']['full_budget_spend_not_forced'] is True and b10['safety']['full_budget_spend_not_forced'] is True,
+              'real_bet_placement_false': all(r['safety']['real_bet_placement'] is False for r in [b1,b10,eq,nb]),
+              'validation_oos_closed': all(r['safety']['validation_oos_opened'] is False for r in [b1,b10,eq,nb]),
+          }
+          out={
+              'test_id':'KEIBA_EXOTICS_BUDGET_ALLOCATOR_V1_SYNTHETIC',
+              'commit_sha_under_test':os.environ.get('GITHUB_SHA'),
+              'allocator_sha256':hashlib.sha256(Path('scripts/keiba_exotics_budget_allocator_v1.py').read_bytes()).hexdigest(),
+              'checks':checks,
+              'budget_1000_summary':{'spent_yen':b1['spent_yen'],'unspent_yen':b1['unspent_yen'],'allocations':len(b1['allocations'])},
+              'budget_10000_summary':{'spent_yen':b10['spent_yen'],'unspent_yen':b10['unspent_yen'],'allocations':len(b10['allocations'])},
+              'status':'PASS' if all(checks.values()) else 'FAIL',
+              'real_bet_placement':False,
+              'validation_oos_opened':False,
+          }
+          Path('.magi/keiba_exotics_budget_allocator_v1_synthetic.json').write_text(json.dumps(out,ensure_ascii=False,indent=2),encoding='utf-8')
+          if not all(checks.values()):
+              raise SystemExit(2)
+          PY
+
+      - name: Commit allocator evidence
+        run: |
+          git config user.name 'magi-exotics-allocator-bot'
+          git config user.email 'magi-exotics-allocator-bot@users.noreply.github.com'
+          git add .magi/keiba_exotics_budget_allocator_v1_synthetic.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Freeze exotic budget allocator synthetic evidence'
+          for attempt in 1 2 3; do git pull --rebase origin main && git push origin HEAD:main && exit 0; sleep $((attempt*2)); done
+          exit 1
