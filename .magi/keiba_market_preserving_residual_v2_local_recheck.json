@@ -1,0 +1,21 @@
+{
+  "test_id":"KEIBA-MARKET-PRESERVING-RESIDUAL-V2-LOCAL-RECHECK",
+  "status":"PASS",
+  "checks":{
+    "alpha_zero_exact_market":true,
+    "constant_residual_exact_market":true,
+    "entropy_zero_alpha_equals_base":true,
+    "entropy_half_linear":true,
+    "entropy_one_alpha_zero":true,
+    "higher_entropy_reduces_market_deviation":true,
+    "probabilities_positive":true,
+    "probabilities_sum_one":true
+  },
+  "uncertainty_input":"normalized_entropy only",
+  "alpha_rule":"alpha_eff = alpha_base * (1 - normalized_entropy)",
+  "scope":"synthetic logic recheck only; no model fit; no VALIDATION/OOS",
+  "github_actions_status":"NOT_CLAIMED",
+  "real_money_bet":false,
+  "validation_opened":false,
+  "oos_opened":false
+}
