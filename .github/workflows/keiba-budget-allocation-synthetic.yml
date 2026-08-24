@@ -1,0 +1,114 @@
+name: Keiba dynamic race budget allocator synthetic test
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/keiba-budget-allocation-synthetic.yml'
+      - 'scripts/keiba_allocate_race_budget_v1.py'
+
+permissions:
+  contents: write
+
+jobs:
+  allocation-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Test B=1000 and B=10000 across three allocation methods
+        run: |
+          set -euo pipefail
+          python3 -m py_compile scripts/keiba_allocate_race_budget_v1.py
+          python3 - <<'PY'
+          import hashlib, importlib.util, json, os
+          from pathlib import Path
+
+          p=Path('scripts/keiba_allocate_race_budget_v1.py')
+          spec=importlib.util.spec_from_file_location('allocmod', p)
+          m=importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+
+          tickets=[
+            {'ticket_id':'Q1','bet_type':'QUINELLA_UMA_REN','model_probability':0.35,'market_odds':4.0,'correlation_group':'CORE_A','liquidity_ok':True},
+            {'ticket_id':'E1','bet_type':'EXACTA_UMA_TAN','model_probability':0.20,'market_odds':7.0,'correlation_group':'CORE_A','liquidity_ok':True},
+            {'ticket_id':'T3P1','bet_type':'TRIO_3REN_PUKU','model_probability':0.12,'market_odds':12.0,'correlation_group':'CORE_B','liquidity_ok':True},
+            {'ticket_id':'T3T1','bet_type':'TRIFECTA_3REN_TAN','model_probability':0.06,'market_odds':25.0,'correlation_group':'CORE_B','liquidity_ok':True},
+            {'ticket_id':'WEAK','bet_type':'QUINELLA_UMA_REN','model_probability':0.10,'market_odds':9.0,'correlation_group':'OTHER','liquidity_ok':True},
+            {'ticket_id':'ILLIQ','bet_type':'TRIFECTA_3REN_TAN','model_probability':0.05,'market_odds':30.0,'correlation_group':'OTHER','liquidity_ok':False},
+          ]
+
+          methods=['equal_among_qualified_tickets','edge_proportional_with_caps','fractional_kelly_with_race_cap']
+          budgets=[1000,10000]
+          cases={}
+          checks={}
+          for method in methods:
+            for budget in budgets:
+              kw=dict(unit_yen=100,min_ev=0.05,deploy_fraction=0.70,
+                      per_ticket_cap_fraction=0.35,per_bet_type_cap_fraction=0.60,
+                      correlation_group_cap_fraction=0.65,
+                      kelly_fraction=1.0)
+              out=m.allocate(tickets,budget,method,**kw)
+              key=f'{method}__B{budget}'
+              cases[key]=out
+              stakes=[r['stake_yen'] for r in out['allocation']]
+              rejected={r['ticket_id']:r['reason'] for r in out['rejected']}
+              checks[key]={
+                'budget_not_exceeded':out['total_stake_yen']<=budget,
+                'all_stakes_100yen_units':all(x%100==0 for x in stakes),
+                'unspent_nonnegative':out['unspent_yen']>=0,
+                'weak_ev_rejected':rejected.get('WEAK')=='EV_BELOW_GATE',
+                'illiquid_rejected':rejected.get('ILLIQ')=='LIQUIDITY_FAIL',
+                'four_supported_qualified_tickets':len(out['allocation'])==4,
+                'no_real_bet_flag':out['place_bets'] is False,
+                'validation_oos_closed':out['validation_oos_opened'] is False,
+              }
+              if method in {'equal_among_qualified_tickets','edge_proportional_with_caps'}:
+                checks[key]['does_not_force_full_budget']=out['total_stake_yen']<=int(budget*0.70)
+              else:
+                checks[key]['kelly_can_leave_cash_unspent']=out['unspent_yen']>0
+
+          # Budget scaling sanity: larger B must never produce a smaller total stake under the same method/config.
+          for method in methods:
+            checks[f'{method}__scale']={
+              'B10000_stake_gte_B1000':cases[f'{method}__B10000']['total_stake_yen']>=cases[f'{method}__B1000']['total_stake_yen'],
+              'same_allocator_id':cases[f'{method}__B10000']['allocator_id']==cases[f'{method}__B1000']['allocator_id']=='KEIBA_RACE_BUDGET_ALLOCATOR_V1',
+            }
+
+          flat=[v for d in checks.values() for v in d.values()]
+          status='PASS' if all(flat) else 'FAIL'
+          sha=hashlib.sha256(p.read_bytes()).hexdigest()
+          evidence={
+            'test_id':'KEIBA_DYNAMIC_RACE_BUDGET_ALLOCATOR_SYNTHETIC_V1',
+            'commit_sha_under_test':os.environ.get('GITHUB_SHA'),
+            'allocator_sha256':sha,
+            'budgets_tested_yen':budgets,
+            'methods_tested':methods,
+            'minimum_unit_yen':100,
+            'checks':checks,
+            'case_summary':{k:{'budget_yen':v['budget_yen'],'target_deploy_yen':v['target_deploy_yen'],'total_stake_yen':v['total_stake_yen'],'unspent_yen':v['unspent_yen'],'budget_utilization':v['budget_utilization']} for k,v in cases.items()},
+            'status':status,
+            'synthetic_only':True,
+            'real_odds_used':False,
+            'real_bets_placed':False,
+            'validation_oos_opened':False,
+            'method_selected_for_live_use':False,
+          }
+          Path('.magi/keiba_budget_allocator_synthetic_v1.json').write_text(json.dumps(evidence,ensure_ascii=False,indent=2),encoding='utf-8')
+          print(json.dumps(evidence,ensure_ascii=False,indent=2))
+          if status!='PASS': raise SystemExit(2)
+          PY
+
+      - name: Commit synthetic allocator evidence
+        run: |
+          git config user.name 'magi-budget-bot'
+          git config user.email 'magi-budget-bot@users.noreply.github.com'
+          git add .magi/keiba_budget_allocator_synthetic_v1.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Freeze dynamic race budget allocator synthetic evidence'
+          for attempt in 1 2 3; do
+            git pull --rebase origin main && git push origin HEAD:main && exit 0
+            sleep $((attempt*2))
+          done
+          exit 1
