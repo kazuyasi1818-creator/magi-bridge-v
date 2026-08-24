@@ -1,0 +1,28 @@
+name: keiba-capture-handoff-v2-selftest
+
+on:
+  push:
+    paths:
+      - 'scripts/keiba_make_capture_handoff_v2.py'
+      - 'scripts/keiba_jvlink_first_capture_v2.ps1'
+      - 'tests/keiba_capture_handoff_v2_selftest.py'
+      - '.github/workflows/keiba-capture-handoff-v2-selftest.yml'
+  workflow_dispatch:
+
+jobs:
+  selftest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run redacted handoff selftest
+        run: python tests/keiba_capture_handoff_v2_selftest.py | tee /tmp/keiba_capture_handoff_v2_selftest.json
+      - name: Assert PASS
+        run: grep -q '"status": "PASS"' /tmp/keiba_capture_handoff_v2_selftest.json
+      - name: Upload selftest evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: keiba-capture-handoff-v2-selftest
+          path: /tmp/keiba_capture_handoff_v2_selftest.json
