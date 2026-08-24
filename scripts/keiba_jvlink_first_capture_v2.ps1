@@ -12,7 +12,7 @@ $ScriptDir = $PSScriptRoot
 if (-not $ScriptDir) { $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path }
 $Collector = Join-Path $ScriptDir 'keiba_jvlink_realtime_capture_v3.py'
 $Verifier = Join-Path $ScriptDir 'keiba_verify_first_capture_v1.py'
-$HandoffMaker = Join-Path $ScriptDir 'keiba_make_capture_handoff_v1.py'
+$HandoffMaker = Join-Path $ScriptDir 'keiba_make_capture_handoff_v2.py'
 
 Write-Host "=== KEIBA JV-Link first forward capture / Gate v5 semantics ==="
 Write-Host "Date: $Date"
@@ -29,7 +29,17 @@ New-Item -ItemType Directory -Force -Path $Root | Out-Null
 $clockDir = Join-Path $Root 'LOG'; New-Item -ItemType Directory -Force -Path $clockDir | Out-Null
 $clockFile = Join-Path $clockDir ("clock_audit_" + (Get-Date -Format 'yyyyMMdd_HHmmss') + '.json')
 $tz = [System.TimeZoneInfo]::Local
-@{recorded_at_local=(Get-Date).ToString('o');recorded_at_utc=(Get-Date).ToUniversalTime().ToString('o');timezone_id=$tz.Id;utc_offset=(Get-Date).ToString('zzz');computer_name=$env:COMPUTERNAME;date_key=$Date;gate_contract='KEIBA_PRE_RACE_SNAPSHOT_CONTRACT_V5';provenance_builder='keiba_build_snapshot_provenance_v4.py';gate_checker='keiba_snapshot_gate_check_v5.py'} | ConvertTo-Json | Set-Content -Encoding UTF8 $clockFile
+@{
+  recorded_at_local=(Get-Date).ToString('o')
+  recorded_at_utc=(Get-Date).ToUniversalTime().ToString('o')
+  timezone_id=$tz.Id
+  utc_offset=(Get-Date).ToString('zzz')
+  computer_name=$env:COMPUTERNAME
+  date_key=$Date
+  gate_contract='KEIBA_PRE_RACE_SNAPSHOT_CONTRACT_V5'
+  provenance_builder='keiba_build_snapshot_provenance_v4.py'
+  gate_checker='keiba_snapshot_gate_check_v5.py'
+} | ConvertTo-Json | Set-Content -Encoding UTF8 $clockFile
 
 Write-Host '[1/4] Capturing official 0B11 / 0B14 once...'
 & py -3.14 $Collector --date $Date --root $Root --sid $Sid --once
@@ -40,16 +50,23 @@ $reportPath = Join-Path $clockDir ("first_capture_verify_" + (Get-Date -Format '
 & py -3.14 $Verifier --root $Root --date $Date --out $reportPath
 $verifyExit = $LASTEXITCODE
 
-Write-Host '[3/4] Creating redacted handoff JSON (no raw JV-Data values)...'
+Write-Host '[3/4] Creating Gate-v5 redacted handoff JSON (no raw JV-Data values)...'
 $handoffDir = Join-Path $Root 'HANDOFF'; New-Item -ItemType Directory -Force -Path $handoffDir | Out-Null
 $handoffPath = Join-Path $handoffDir ("KEIBA_REAL_CAPTURE_HANDOFF_" + $Date + '_' + (Get-Date -Format 'yyyyMMdd_HHmmss') + '.json')
 & py -3.14 $HandoffMaker --root $Root --date $Date --out $handoffPath
 if ($LASTEXITCODE -ne 0) { Fail "handoff generator exited $LASTEXITCODE" }
+try {
+  $handoffObj = Get-Content -Raw $handoffPath | ConvertFrom-Json
+  if (-not $handoffObj.gate_v5_lineage_verified) { Fail 'Handoff does not prove Gate v5 lineage.' }
+  if ($handoffObj.raw_jvdata_included -or $handoffObj.parsed_feature_values_included) { Fail 'Redacted handoff unexpectedly includes prohibited data.' }
+} catch {
+  Fail "handoff validation failed: $($_.Exception.Message)"
+}
 
 Write-Host '[4/4] Result'; Get-Content $reportPath
 Write-Host ''
 Write-Host "Handoff file to send ChatGPT: $handoffPath" -ForegroundColor Cyan
 Write-Host 'RAW_APPEND_ONLY remains local and is not included in the handoff.'
-if ($verifyExit -eq 0) { Write-Host '[PASS] First real capture plumbing verified. Next: local snapshot provenance v4 + Gate v5.' -ForegroundColor Green; exit 0 }
-if ($verifyExit -eq 3) { Write-Host '[WAIT] Plumbing works but no usable realtime records were available. Retry for a JRA race date within the realtime retention window.' -ForegroundColor Yellow; exit 3 }
+if ($verifyExit -eq 0) { Write-Host '[PASS] First real capture plumbing verified with Gate v5 lineage. Next: local snapshot provenance v4 + Gate v5.' -ForegroundColor Green; exit 0 }
+if ($verifyExit -eq 3) { Write-Host '[WAIT] Plumbing worked but no usable realtime records were available. Retry for a JRA race date within the realtime retention window.' -ForegroundColor Yellow; exit 3 }
 Fail "verification exited $verifyExit"
