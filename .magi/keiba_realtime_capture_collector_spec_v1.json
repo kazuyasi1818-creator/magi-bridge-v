@@ -1,0 +1,34 @@
+{
+  "spec_id":"KEIBA_JVLINK_REALTIME_CAPTURE_COLLECTOR_V1",
+  "status":"DESIGN_READY_FOR_AUDIT__NOT_EXECUTED_ON_WINDOWS",
+  "goal":"Capture genuinely pre-race current-state data with machine-verifiable announcement/acquisition times so Race-time Snapshot Gate V2 can be evaluated without using post-race JVD current-state fields.",
+  "platform":{"os":"Windows","api":"JRA-VAN Data Lab JV-Link ActiveX COM","runtime":"x86 process required unless local JV-Link installation proves otherwise","local_execution_required":true},
+  "dataspecs":[
+    {"dataspec":"0B11","purpose":"速報馬体重","record_ids":["WH"],"required_fields":["race key","horse number","発表月日時分","body weight","body weight change"]},
+    {"dataspec":"0B14","purpose":"速報開催情報 一括","record_ids":["WE","AV","JC","TC","CC"],"required_fields":["race/event key","発表月日時分","changed state"]}
+  ],
+  "capture_modes":{
+    "POLLING_BASELINE":{"required":true,"method":"At a fixed cadence on race days, call JVRTOpen for 0B11 and 0B14 using the current date key; read all available records; preserve each raw response snapshot.","cadence_seconds":60,"reason":"Simple, auditable baseline. One-minute polling is sufficient for proving availability before EARLY/LATE snapshots while avoiding excessive local complexity."},
+    "EVENT_PUSH_OPTIONAL":{"required":false,"method":"Use JVWatchEvent to receive jockey/weather/course/avoid/time/weight events, then retrieve/persist the referenced record immediately.","promotion_condition":"Enable only after the polling baseline has a successful real capture and local stability test."}
+  },
+  "storage":{"root":"C:\\MAGI\\KEIBA\\REALTIME","raw_dir":"RAW_APPEND_ONLY","state_dir":"STATE_SNAPSHOTS","ledger_dir":"PROVENANCE_LEDGER","log_dir":"LOG","rule":"Never overwrite raw captures. Each poll/event gets a unique capture_id and raw file SHA-256 before parsing."},
+  "capture_record_schema":["capture_id","local_capture_time_jst","dataspec","record_id","raw_record","raw_file","raw_file_sha256","record_sequence","jv_status_code","source_announcement_time_jst","race_id_or_key","horse_no_if_applicable"],
+  "state_rules":[
+    "Maintain an append-only raw event/capture ledger separately from a derived current-state snapshot.",
+    "For 0B14, a later poll may withdraw/change prior information; the current-state snapshot must be rebuilt from the newest official poll response and must not silently preserve withdrawn change-state as current truth.",
+    "Never edit prior raw captures; derived current state may be regenerated but must cite the exact raw capture SHA used.",
+    "At EARLY/LATE prediction time, freeze a provenance snapshot and do not backfill it later."
+  ],
+  "time_rules":[
+    "source_announcement_time_jst comes from the official realtime record's 発表月日時分 when present.",
+    "local_capture_time_jst is recorded immediately on receipt using an offset-aware JST timestamp.",
+    "For a feature to pass Gate V2, source_announcement_time_jst (or a stricter approved source time) must be <= prediction_snapshot_time_jst and the raw capture containing it must have been acquired no later than that snapshot.",
+    "If official source time is absent/ambiguous for a feature, do not infer it from final-state JVD; classify the feature as unavailable for that snapshot."
+  ],
+  "prediction_snapshot_freeze":{"EARLY":"existing prediction snapshot time for that race","LATE":"existing prediction snapshot time for that race","output":"long-form provenance CSV matching KEIBA_PRE_RACE_SNAPSHOT_CONTRACT_V1"},
+  "fail_closed_conditions":["JV-Link unavailable or initialization fails","JVRTOpen/JVRead/JVGets error","raw hash cannot be produced","announcement timestamp cannot be parsed","capture time occurs after prediction snapshot","duplicate contradictory feature values cannot be deterministically ordered by official source time","post-race/final JVD source detected","system clock is not offset-aware JST or cannot be validated"],
+  "clock_audit":{"required":true,"startup_record":["local time","UTC time","timezone offset","monotonic process start time"],"per_capture":"record offset-aware JST and UTC equivalents","rule":"Clock-audit failure blocks Gate PASS for the affected capture."},
+  "first_real_capture_scope":{"minimum":"one JRA race day","preferred":"all races available that day","purpose":"plumbing/timing validation only; not model performance evaluation","validation_oos_opened":false},
+  "promotion_sequence":["real local capture","raw SHA archive","build provenance ledger","run keiba_snapshot_gate_check_v1.py","Bridge audit capture evidence","only if PASS: create a new DEV-family prereg","hash prereg and commit external anchor before execution","then mark EXECUTABLE"],
+  "explicit_non_goals":["No DEV v6 before a real capture passes Gate V2","No VALIDATION/OOS opening","No retrospective laundering of old DEV periods using short-retention realtime feeds","No parameter/model sweep during data-plumbing validation"]
+}
