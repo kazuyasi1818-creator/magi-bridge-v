@@ -1,0 +1,48 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import math
+from typing import Iterable
+
+
+def market_preserving_residual(
+    market_p: Iterable[float],
+    residual_score: Iterable[float],
+    alpha_eff: float,
+    residual_clip: float,
+) -> list[float]:
+    p = [float(x) for x in market_p]
+    r = [float(x) for x in residual_score]
+    if len(p) != len(r) or not p:
+        raise ValueError("market_p and residual_score must have the same non-zero length")
+    if not math.isfinite(alpha_eff) or alpha_eff < 0:
+        raise ValueError("alpha_eff must be finite and >= 0")
+    if not math.isfinite(residual_clip) or residual_clip <= 0:
+        raise ValueError("residual_clip must be finite and > 0")
+    if any((not math.isfinite(x)) or x <= 0 for x in p):
+        raise ValueError("market probabilities must be finite and > 0")
+    if any(not math.isfinite(x) for x in r):
+        raise ValueError("residual scores must be finite")
+
+    ps = sum(p)
+    p = [x / ps for x in p]
+    # Weighted centering makes a constant residual exactly neutral.
+    mean_r = sum(pi * ri for pi, ri in zip(p, r))
+    rc = [max(-residual_clip, min(residual_clip, ri - mean_r)) for ri in r]
+
+    # Stable exponentiation; the common shift cancels after normalization.
+    z = [alpha_eff * x for x in rc]
+    zmax = max(z)
+    w = [pi * math.exp(zi - zmax) for pi, zi in zip(p, z)]
+    ws = sum(w)
+    return [x / ws for x in w]
+
+
+def uncertainty_shrunk_alpha(alpha_base: float, normalized_uncertainty: float, shrink_strength: float) -> float:
+    if not (math.isfinite(alpha_base) and alpha_base >= 0):
+        raise ValueError("alpha_base must be finite and >= 0")
+    if not (math.isfinite(normalized_uncertainty) and 0 <= normalized_uncertainty <= 1):
+        raise ValueError("normalized_uncertainty must be in [0,1]")
+    if not (math.isfinite(shrink_strength) and 0 <= shrink_strength <= 1):
+        raise ValueError("shrink_strength must be in [0,1]")
+    return alpha_base * (1.0 - shrink_strength * normalized_uncertainty)
