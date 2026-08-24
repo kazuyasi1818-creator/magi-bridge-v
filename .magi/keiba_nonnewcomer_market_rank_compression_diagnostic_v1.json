@@ -1,0 +1,60 @@
+{
+  "diagnostic_id": "KEIBA-NONNEWCOMER-MARKET-RANK-COMPRESSION-DIAG-V1",
+  "scope": "DEV diagnostic only; non-newcomer races only; no validation/OOS opened",
+  "eval_races": 813,
+  "source_models": ["DEV_v4", "DEV_v5"],
+  "posthoc_diagnostic_only": true,
+  "promotion_or_live_rule_change_allowed": false,
+  "core_finding": "Both v4 and v5 systematically move probability mass away from market rank 1 and rank 7+ horses toward market ranks 2-6. This creates a structural dependency on which market-rank band contains the eventual winner and may contribute to month-to-month instability.",
+  "pre_race_probability_shift_by_market_rank": {
+    "v4": {
+      "rank_1": {"n_horse_rows": 813, "mean_probability_delta": -0.010094, "mean_log_ratio": -0.020700},
+      "rank_2_3": {"n_horse_rows": 1626, "mean_probability_delta": 0.008439, "mean_log_ratio": 0.058157},
+      "rank_4_6": {"n_horse_rows": 2439, "mean_probability_delta": 0.002208, "mean_log_ratio": 0.023425},
+      "rank_7_plus": {"n_horse_rows": 6637, "mean_probability_delta": -0.001643, "mean_log_ratio": -0.180399}
+    },
+    "v5": {
+      "rank_1": {"n_horse_rows": 813, "mean_probability_delta": -0.011097, "mean_log_ratio": -0.023286},
+      "rank_2_3": {"n_horse_rows": 1626, "mean_probability_delta": 0.008663, "mean_log_ratio": 0.060684},
+      "rank_4_6": {"n_horse_rows": 2439, "mean_probability_delta": 0.002453, "mean_log_ratio": 0.028404},
+      "rank_7_plus": {"n_horse_rows": 6637, "mean_probability_delta": -0.001664, "mean_log_ratio": -0.198737}
+    }
+  },
+  "winner_rank_diagnostic_post_outcome": {
+    "warning": "Uses eventual winner rank and is therefore diagnosis-only; forbidden for race selection, betting, or promotion.",
+    "v4_mean_logloss_improvement": {
+      "winner_market_rank_1": {"races": 243, "mean": -0.03200, "bootstrap95": [-0.03809, -0.02577]},
+      "winner_market_rank_2_3": {"races": 264, "mean": 0.05421, "bootstrap95": [0.04690, 0.06153]},
+      "winner_market_rank_4_6": {"races": 193, "mean": 0.03794, "bootstrap95": [0.02865, 0.04731]},
+      "winner_market_rank_7_plus": {"races": 113, "mean": -0.09082, "bootstrap95": [-0.11413, -0.06887]}
+    },
+    "v5_mean_logloss_improvement": {
+      "winner_market_rank_1": {"races": 243, "mean": -0.03390, "bootstrap95": [-0.03906, -0.02866]},
+      "winner_market_rank_2_3": {"races": 264, "mean": 0.05236, "bootstrap95": [0.04686, 0.05829]},
+      "winner_market_rank_4_6": {"races": 193, "mean": 0.03236, "bootstrap95": [0.02625, 0.03861]},
+      "winner_market_rank_7_plus": {"races": 113, "mean": -0.08495, "bootstrap95": [-0.10832, -0.06350]}
+    }
+  },
+  "market_uncertainty_diagnostic": {
+    "highest_entropy_quartile": {
+      "v4": {"races": 203, "mean_improvement": -0.00515, "bootstrap95": [-0.01883, 0.00797]},
+      "v5": {"races": 203, "mean_improvement": -0.00593, "bootstrap95": [-0.01740, 0.00418]}
+    },
+    "interpretation": "The most diffuse-market quartile is negative on average for both models, but confidence intervals cross zero. Treat as a forward-test weakness hypothesis, not a filter."
+  },
+  "next_research_hypothesis": {
+    "name": "uncertainty-adaptive shrinkage toward market",
+    "status": "DRAFT_ONLY_NOT_EXECUTABLE",
+    "idea": "When pre-race market uncertainty is high, reduce the magnitude of candidate-model probability redistribution instead of applying the same correction strength across all races.",
+    "guardrails": [
+      "Do not use eventual winner rank as an input.",
+      "Do not tune thresholds on validation/OOS.",
+      "Do not execute a new DEV trial until Race-time Snapshot Gate v4 real forward provenance passes and a new prereg is externally anchored.",
+      "Until then, use only shadow diagnostic tags in forward operation."
+    ]
+  },
+  "bootstrap": {"unit": "race", "replicates": 5000, "seed": 20260824},
+  "real_money_bet": false,
+  "validation_opened": false,
+  "oos_opened": false
+}
