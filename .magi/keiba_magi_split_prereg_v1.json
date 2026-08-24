@@ -1,0 +1,19 @@
+{
+  "version": "1.0",
+  "status": "PERIOD_BOUNDARIES_FIXED_BEFORE_OUTCOME_JOIN",
+  "dataset_canonical_file": "keiba_magi_available_20250823_20260816_canonical.csv",
+  "dataset_canonical_sha256": "60ac66375ccfac56cc10795ed4f2548951873e20d67b5edd15bcca85735c9522",
+  "rationale": "Chronological separation is fixed before joining race outcomes/payouts to reduce adaptive leakage.",
+  "splits": {
+    "DEV": {"planned_start": "2025-08-23","planned_end": "2026-03-31","actual_first_race_date": "2025-08-23","actual_last_race_date": "2026-03-29","races": 2082,"snapshot_rows": 4164,"venue_days": 174},
+    "VALIDATION": {"planned_start": "2026-04-01","planned_end": "2026-06-30","actual_first_race_date": "2026-04-04","actual_last_race_date": "2026-06-28","races": 864,"snapshot_rows": 1728,"venue_days": 72},
+    "OOS_LOCKED": {"planned_start": "2026-07-01","planned_end": "2026-08-16","actual_first_race_date": "2026-07-04","actual_last_race_date": "2026-08-16","races": 504,"snapshot_rows": 1008,"venue_days": 42}
+  },
+  "rules": [
+    "DEV may be used for feature construction and exploratory analysis.",
+    "VALIDATION is used only after candidate rules/models are frozen for that evaluation cycle.",
+    "OOS_LOCKED must not be joined/opened for confirmatory evaluation without explicit user approval tied to a preregistered trial_id.",
+    "No period boundary may be moved after observing outcome/ROI results; a change requires a new preregistration/version.",
+    "2026-08-22 and 2026-08-23 are outside this v1 dataset and must not be silently appended to an existing locked OOS evaluation."
+  ]
+}
