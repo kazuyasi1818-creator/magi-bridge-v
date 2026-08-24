@@ -1,0 +1,18 @@
+{
+  "packet_id":"KEIBA_SNAPSHOT_GATE_V4_FINAL_AUDIT_PACKET",
+  "scope":"Gate v4 official semantics and first-real-capture readiness only.",
+  "lineage":"v3 synthetic/semantic audit had PASS, but subsequent re-reading of official JV-Data specification found that v3 incorrectly mapped WH change code 000 to numeric zero. v3 is therefore superseded before any real capture/model execution. No v3 result is used to justify v4.",
+  "v4_corrections":[
+    "WH body-weight change 000 means no previous race, not 0 kg. It must not emit numeric body_weight_change_kg.",
+    "WH valid change codes 001-998 remain numeric with sign; 999/blank are non-numeric.",
+    "WE initial state may carry raw announcement code 00000000. No fake official timestamp is created; when that initial state comes from the latest complete 0B14 capture acquired by the prediction snapshot, its timing basis is LOCAL_ACQUISITION and feature source time equals capture time.",
+    "Existing v3 corrections remain: AV scratch/exclusion separate from historical abnormal_code, WE turf/dirt separate, CC full parse, latest complete 0B14 capture prevents withdrawn old event carry-forward."
+  ],
+  "machine_evidence":{
+    "gate_v4_e2e":{"status":"PASS","violation_count":0,"checks":{"wh_000_not_numeric_change":true,"wh_valid_010_emits_plus10":true,"we_initial_state_included":true,"we_initial_uses_local_acquisition":true,"withdrawn_old_av_not_carried":true,"gate_pass":true}},
+    "collector_v3_fixed_width":{"status":"PASS","checks":{"wh_000_is_no_previous_not_zero":true,"wh_010_is_plus10":true,"we_00000000_has_no_fake_official_time":true,"we_states_separate":true,"av_2_is_exclusion":true,"cc_full_parse":true}}
+  },
+  "current_shas":{"contract_v4":"06adb471b192c9c1806216ab3955caa164122cf6ab7193b787f37a8c448a4cb7","collector_v3":"b133c47b0c5fc29cfa43dc45a06e47855ddd2e510fed83af7363a8846775b81a","builder_v3":"28631c5e8385ad79a1539d08d26a60a60c4fe5925546d09b6b64d1e83d99ad93","checker_v4":"6ef47c6a4189b18e07972650dfead805270b59ed1a45ee89df0d982784e20060"},
+  "governance":{"real_capture_executed":false,"model_executed":false,"result_driven_change":false,"validation_opened":false,"oos_opened":false,"dev_v6_allowed":false},
+  "requested_verdict":"PASS only means proceed to first real Windows/JV-Link forward-capture plumbing test. It must not authorize DEV v6, VALIDATION, or OOS until real capture provenance passes Gate v4."
+}
