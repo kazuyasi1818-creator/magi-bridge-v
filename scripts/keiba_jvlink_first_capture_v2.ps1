@@ -11,7 +11,7 @@ function Fail($msg) { Write-Host "[FAIL] $msg" -ForegroundColor Red; exit 2 }
 $ScriptDir = $PSScriptRoot
 if (-not $ScriptDir) { $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path }
 $Collector = Join-Path $ScriptDir 'keiba_jvlink_realtime_capture_v3.py'
-$Verifier = Join-Path $ScriptDir 'keiba_verify_first_capture_v1.py'
+$Verifier = Join-Path $ScriptDir 'keiba_verify_first_capture_v2.py'
 $HandoffMaker = Join-Path $ScriptDir 'keiba_make_capture_handoff_v2.py'
 
 Write-Host "=== KEIBA JV-Link first forward capture / Gate v5 semantics ==="
@@ -39,15 +39,17 @@ $tz = [System.TimeZoneInfo]::Local
   gate_contract='KEIBA_PRE_RACE_SNAPSHOT_CONTRACT_V5'
   provenance_builder='keiba_build_snapshot_provenance_v4.py'
   gate_checker='keiba_snapshot_gate_check_v5.py'
+  verifier='keiba_verify_first_capture_v2.py'
+  handoff_maker='keiba_make_capture_handoff_v2.py'
 } | ConvertTo-Json | Set-Content -Encoding UTF8 $clockFile
 
 Write-Host '[1/4] Capturing official 0B11 / 0B14 once...'
 & py -3.14 $Collector --date $Date --root $Root --sid $Sid --once
 if ($LASTEXITCODE -ne 0) { Fail "collector exited $LASTEXITCODE" }
 
-Write-Host '[2/4] Verifying append-only raw bytes / SHA / JV status...'
+Write-Host '[2/4] Verifying current-run append-only raw bytes / SHA / JV status...'
 $reportPath = Join-Path $clockDir ("first_capture_verify_" + (Get-Date -Format 'yyyyMMdd_HHmmss') + '.json')
-& py -3.14 $Verifier --root $Root --date $Date --out $reportPath
+& py -3.14 $Verifier --root $Root --date $Date --clock-file $clockFile --out $reportPath
 $verifyExit = $LASTEXITCODE
 
 Write-Host '[3/4] Creating Gate-v5 redacted handoff JSON (no raw JV-Data values)...'
@@ -67,6 +69,6 @@ Write-Host '[4/4] Result'; Get-Content $reportPath
 Write-Host ''
 Write-Host "Handoff file to send ChatGPT: $handoffPath" -ForegroundColor Cyan
 Write-Host 'RAW_APPEND_ONLY remains local and is not included in the handoff.'
-if ($verifyExit -eq 0) { Write-Host '[PASS] First real capture plumbing verified with Gate v5 lineage. Next: local snapshot provenance v4 + Gate v5.' -ForegroundColor Green; exit 0 }
-if ($verifyExit -eq 3) { Write-Host '[WAIT] Plumbing worked but no usable realtime records were available. Retry for a JRA race date within the realtime retention window.' -ForegroundColor Yellow; exit 3 }
+if ($verifyExit -eq 0) { Write-Host '[PASS] Current-run 0B11 and 0B14 plumbing verified with Gate v5 lineage. Next: local snapshot provenance v4 + Gate v5.' -ForegroundColor Green; exit 0 }
+if ($verifyExit -eq 3) { Write-Host '[WAIT] Capture plumbing ran, but both required realtime dataspecs did not yet contain records in this run. Retry at an appropriate JRA race-time window.' -ForegroundColor Yellow; exit 3 }
 Fail "verification exited $verifyExit"
