@@ -1,0 +1,71 @@
+{
+  "a_b_implementation_started": false,
+  "artifacts": {
+    "binding_report": {
+      "file": "T009R_checker_C_v3_1_1_v06r2_binding_report.json",
+      "sha256": "be34f0ee60409301da59950a8cd5bde0e359d34c7900ac77c2230a2b8843566b"
+    },
+    "checker_report": {
+      "file": "T009R_checker_C_v3_1_1_selftest_report.json",
+      "sha256": "1592a046bd25caa762f21d9c07f3251603ad5bc0b77fffa040b07a6b64060af6"
+    },
+    "checker_v3_1_1": {
+      "file": "T009R_checker_C_v3_1_1_candidate.py",
+      "sha256": "2ea44436f1c6bbe2d74b293c97c6b99348e70ab44e2b2b5f4e36d288b69bb218"
+    },
+    "prereg_r2": {
+      "file": "T009R_Confirmatory_Prereg_DRAFT_v0.6_preanchor_r2.json",
+      "sha256": "edece57be2a2b0be5c52216ac276591fc365cd3c3f6c687c646a84e75d5915b8"
+    },
+    "selfcheck_report": {
+      "file": "T009R_expected_manifest_selfcheck_v1_1_selftest_report.json",
+      "sha256": "501ca04120a175886c7b2c96f4eb38ad4e1f9795212f399e3a22920a8a79e7a2"
+    },
+    "selfcheck_test": {
+      "file": "test_T009R_expected_manifest_selfcheck_v1_1_adversarial.py",
+      "sha256": "5feb1eb4ac464190a938862783d3c642b9fe1d40c85d9b4d9b64ffcccfbafea9"
+    },
+    "selfcheck_v1_1": {
+      "file": "T009R_expected_manifest_selfcheck_v1_1.py",
+      "sha256": "70c48e722df9704ba2976111ce44d5e02b5775fddedab33f44b1d78e81c31833"
+    }
+  },
+  "checker_v3_1_1": {
+    "binding_case_count": 26,
+    "binding_regression_all_passed": true,
+    "case_count": 26,
+    "change": "noniterable machine_reconciliation.partition_set now records partition_set_invalid_type and exits 2 rather than TypeError/internal exception",
+    "local_regression_all_passed": true,
+    "status": "CANDIDATE_PENDING_INDEPENDENT_REAUDIT_NOT_LOCKED"
+  },
+  "created_at_jst": "2026-08-24T08:08:00+09:00",
+  "lock_status": "PROHIBITED",
+  "next_action": "Independent Bridge/Claude code re-audit of selfcheck v1.1 and Checker C v3.1.1. Even if PASS, wait for actual prospective expected manifest; then selfcheck -> human-controlled hash anchor -> new final prereg artifact -> real binding -> only then A/B.",
+  "prereg": {
+    "artifact": "T009R_Confirmatory_Prereg_DRAFT_v0.6_preanchor_r2.json",
+    "expected_manifest_locked_sha256": "TBD_PRE_UNLOCK_MUST_BE_FILLED_BEFORE_LOCK",
+    "note": "Unique r2 draft artifact used; prior preanchor not overwritten.",
+    "status": "PREANCHOR_NOT_FINAL_OR_LOCKED"
+  },
+  "record_id": "T009R-SELFCHECK-V1.1-HARDENING-20260824",
+  "scientific_thresholds_or_gates_changed": false,
+  "scope": "Expected manifest selfcheck fail-closed/evidence preservation + minor Checker C malformed partition_set classification; no scientific rule changes.",
+  "selfcheck_v1_1": {
+    "case_count": 12,
+    "exit_codes": {
+      "0": "PASS",
+      "2": "PROTOCOL_INVALID invalid input/structure/arithmetic with JSON evidence",
+      "3": "unexpected internal exception with PROTOCOL_INVALID JSON evidence when out path writable"
+    },
+    "local_adversarial_all_passed": true,
+    "real_manifest_use_status": "PROHIBITED_UNTIL_INDEPENDENT_REAUDIT_AND_REAL_MANIFEST_EXISTS",
+    "user_required_cases": [
+      "top_level_list",
+      "top_level_number",
+      "top_level_string",
+      "top_level_null",
+      "partitions_list",
+      "feasibility_null"
+    ]
+  }
+}

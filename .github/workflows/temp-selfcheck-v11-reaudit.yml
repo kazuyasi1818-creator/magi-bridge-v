@@ -1,0 +1,38 @@
+name: temp-selfcheck-v11-machine-only
+on:
+  pull_request:
+    branches:
+      - main
+permissions:
+  contents: read
+jobs:
+  machine-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run base and exit3 supplemental tests without model calls
+        shell: bash
+        run: |
+          set -euo pipefail
+          D=.magi/temp_bridge_audit/selfcheck_v11
+          echo '70c48e722df9704ba2976111ce44d5e02b5775fddedab33f44b1d78e81c31833  '$D'/T009R_expected_manifest_selfcheck_v1_1.py' | sha256sum -c -
+          echo '5feb1eb4ac464190a938862783d3c642b9fe1d40c85d9b4d9b64ffcccfbafea9  '$D'/test_T009R_expected_manifest_selfcheck_v1_1_adversarial.py' | sha256sum -c -
+          python "$D/test_T009R_expected_manifest_selfcheck_v1_1_adversarial.py" > selfcheck_v11_actions_stdout.txt
+          python "$D/test_T009R_selfcheck_v1_1_exit3_supplemental.py" | tee selfcheck_v11_exit3_stdout.txt
+          grep -q '"all_passed": true' "$D/T009R_expected_manifest_selfcheck_v1_1_selftest_report.json"
+          grep -q '"all_passed": true' "$D/T009R_selfcheck_v1_1_exit3_supplemental_report.json"
+          sha256sum "$D/test_T009R_selfcheck_v1_1_exit3_supplemental.py" "$D/T009R_selfcheck_v1_1_exit3_supplemental_report.json" | tee selfcheck_v11_exit3_sha256.txt
+          printf '%s\n' 'BASE_12_OF_12=PASS' 'EXIT3_SUPPLEMENTAL_3_OF_3=PASS' 'NO_MODEL_CALLS=true' 'A_B_IMPLEMENTATION_STARTED=false' 'LOCK=PROHIBITED'
+      - name: Upload machine results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: selfcheck-v11-exit3-machine-only
+          path: |
+            selfcheck_v11_actions_stdout.txt
+            selfcheck_v11_exit3_stdout.txt
+            selfcheck_v11_exit3_sha256.txt
+            .magi/temp_bridge_audit/selfcheck_v11/T009R_selfcheck_v1_1_exit3_supplemental_report.json
+          if-no-files-found: error
+          retention-days: 30

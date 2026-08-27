@@ -1,0 +1,11 @@
+{
+  "artifact":"T009R_Confirmatory_Prereg_DRAFT_v0.6_preanchor_r2.json",
+  "sha256":"edece57be2a2b0be5c52216ac276591fc365cd3c3f6c687c646a84e75d5915b8",
+  "status":"PREANCHOR_NOT_FINAL_OR_LOCKED",
+  "expected_manifest_locked_sha256":"TBD_PRE_UNLOCK_MUST_BE_FILLED_BEFORE_LOCK",
+  "selfcheck":{"artifact":"T009R_expected_manifest_selfcheck_v1_1.py","sha256":"70c48e722df9704ba2976111ce44d5e02b5775fddedab33f44b1d78e81c31833","required_before_anchor":true},
+  "checker":{"artifact":"T009R_checker_C_v3_1_1_candidate.py","sha256":"2ea44436f1c6bbe2d74b293c97c6b99348e70ab44e2b2b5f4e36d288b69bb218","local_regression":"26/26 PASS pending independent re-audit"},
+  "scientific_thresholds_or_gates_changed":false,
+  "A_B_implementation_started":false,
+  "lock_status":"PROHIBITED"
+}

@@ -1,0 +1,112 @@
+--- /mnt/data/T009R_checker_C_v3_1_candidate.py	2026-08-23 23:02:09.253368929 +0000
++++ /mnt/data/T009R_checker_C_v3_1_1_candidate.py	2026-08-23 23:07:46.418546885 +0000
+@@ -1,6 +1,6 @@
+ #!/usr/bin/env python3
+ """
+-T009R deterministic reconciliation checker C v3.1 CANDIDATE.
++T009R deterministic reconciliation checker C v3.1.1 CANDIDATE.
+ 
+ Hardening scope only. Statistical thresholds and confirmatory conditions are
+ read from the supplied preregistration and checked against the preregistered
+@@ -150,8 +150,19 @@
+ 
+     invalid_policy = inference.get("invalid_bootstrap_replicate_policy") or {}
+     float_cmp = recon.get("float_comparison") or {}
++    raw_partition_set = recon.get("partition_set")
++    if raw_partition_set is None:
++        partitions = ()
++    elif isinstance(raw_partition_set, (list, tuple)):
++        partitions = tuple(raw_partition_set)
++    else:
++        partitions = ()
++        errors.append({
++            "scope": "prereg_binding", "error": "partition_set_invalid_type",
++            "actual_type": type(raw_partition_set).__name__
++        })
+     rules = {
+-        "partitions": tuple(recon.get("partition_set") or ()),
++        "partitions": partitions,
+         "bootstrap_replications": inference.get("bootstrap_replications"),
+         "minimum_valid_replicates": invalid_policy.get("minimum_valid_replicates"),
+         "minimum_valid_fraction": invalid_policy.get("minimum_valid_fraction"),
+@@ -598,7 +609,7 @@
+         errors.append({"scope": "expected_manifest", "error": "sha256_mismatch", "expected": args.expected_manifest_sha256, "actual": actual_expected_sha})
+     if errors:
+         return {
+-            "checker_id": "T009R_CHECKER_C_V3_1_CANDIDATE", "status": "REPORT_MISMATCH",
++            "checker_id": "T009R_CHECKER_C_V3_1_1_CANDIDATE", "status": "REPORT_MISMATCH",
+             "protocol_effect": "PROTOCOL_INVALID", "trial_disposition": None,
+             "error_count": len(errors), "errors": errors, "warnings": warnings,
+             "bindings": {"prereg_actual_sha256": actual_prereg_sha, "expected_manifest_actual_sha256": actual_expected_sha}
+@@ -609,7 +620,7 @@
+     rules = extract_rules(prereg, errors)
+     if rules is None or errors:
+         return {
+-            "checker_id": "T009R_CHECKER_C_V3_1_CANDIDATE", "status": "REPORT_MISMATCH",
++            "checker_id": "T009R_CHECKER_C_V3_1_1_CANDIDATE", "status": "REPORT_MISMATCH",
+             "protocol_effect": "PROTOCOL_INVALID", "trial_disposition": None,
+             "error_count": len(errors), "errors": errors, "warnings": warnings
+         }, 2
+@@ -625,7 +636,7 @@
+                        "prereg_locked_sha256": rules["expected_manifest_locked_sha256"]})
+     if errors:
+         return {
+-            "checker_id": "T009R_CHECKER_C_V3_1_CANDIDATE", "status": "REPORT_MISMATCH",
++            "checker_id": "T009R_CHECKER_C_V3_1_1_CANDIDATE", "status": "REPORT_MISMATCH",
+             "protocol_effect": "PROTOCOL_INVALID", "trial_disposition": None,
+             "error_count": len(errors), "errors": errors, "warnings": warnings
+         }, 2
+@@ -636,7 +647,7 @@
+         errors.append({"scope": "result_bundle_schema", "error": "checker_schema_allowlist_diff", "diff": schema_diff})
+     if errors:
+         return {
+-            "checker_id": "T009R_CHECKER_C_V3_1_CANDIDATE", "status": "REPORT_MISMATCH",
++            "checker_id": "T009R_CHECKER_C_V3_1_1_CANDIDATE", "status": "REPORT_MISMATCH",
+             "protocol_effect": "PROTOCOL_INVALID", "trial_disposition": None,
+             "error_count": len(errors), "errors": errors, "warnings": warnings,
+             "schema_allowlist_diff": schema_diff
+@@ -646,7 +657,7 @@
+     manifest_errors: list[dict] = []
+     if not validate_expected_manifest(expected, rules["partitions"], manifest_errors):
+         return {
+-            "checker_id": "T009R_CHECKER_C_V3_1_CANDIDATE", "status": "REPORT_MISMATCH",
++            "checker_id": "T009R_CHECKER_C_V3_1_1_CANDIDATE", "status": "REPORT_MISMATCH",
+             "protocol_effect": "PROTOCOL_INVALID", "trial_disposition": None,
+             "error_count": len(manifest_errors), "errors": manifest_errors, "warnings": warnings,
+             "expected_manifest_validation_stopped_before_bundle_validation": True,
+@@ -657,7 +668,7 @@
+                                 "manifest": expected.get("prereg_id"), "prereg": prereg.get("prereg_id")})
+     if manifest_errors:
+         return {
+-            "checker_id": "T009R_CHECKER_C_V3_1_CANDIDATE", "status": "REPORT_MISMATCH",
++            "checker_id": "T009R_CHECKER_C_V3_1_1_CANDIDATE", "status": "REPORT_MISMATCH",
+             "protocol_effect": "PROTOCOL_INVALID", "trial_disposition": None,
+             "error_count": len(manifest_errors), "errors": manifest_errors, "warnings": warnings,
+             "expected_manifest_validation_stopped_before_bundle_validation": True,
+@@ -689,7 +700,7 @@
+         exit_code = 0
+ 
+     result = {
+-        "checker_id": "T009R_CHECKER_C_V3_1_CANDIDATE",
++        "checker_id": "T009R_CHECKER_C_V3_1_1_CANDIDATE",
+         "status": status,
+         "protocol_effect": protocol_effect,
+         "trial_disposition": trial_disposition,
+@@ -747,7 +758,7 @@
+         for supplied, name in ((args.prereg_sha256, "prereg_sha256"), (args.expected_manifest_sha256, "expected_manifest_sha256")):
+             if not valid_sha(supplied):
+                 result = {
+-                    "checker_id": "T009R_CHECKER_C_V3_1_CANDIDATE", "status": "REPORT_MISMATCH",
++                    "checker_id": "T009R_CHECKER_C_V3_1_1_CANDIDATE", "status": "REPORT_MISMATCH",
+                     "protocol_effect": "PROTOCOL_INVALID", "trial_disposition": None,
+                     "error_count": 1, "errors": [{"scope": "cli", "error": "invalid_sha256_argument", "field": name, "value": supplied}],
+                     "warnings": []
+@@ -761,7 +772,7 @@
+         raise
+     except Exception as e:
+         result = {
+-            "checker_id": "T009R_CHECKER_C_V3_1_CANDIDATE",
++            "checker_id": "T009R_CHECKER_C_V3_1_1_CANDIDATE",
+             "status": "REPORT_MISMATCH",
+             "protocol_effect": "PROTOCOL_INVALID",
+             "trial_disposition": None,
