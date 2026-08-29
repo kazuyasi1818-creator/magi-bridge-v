@@ -1,0 +1,33 @@
+{
+  "audit_id": "T009R_CHECKER_C_V1_SELF_AUDIT_20260823",
+  "status": "V1_NOT_SUITABLE_FOR_LOCK_V2_CANDIDATE_PREPARED",
+  "v1_sha256": "8348619f021221c38e32aa5eb434be09c2b821484840a56eb4cac1d9b964c7c0",
+  "v2_candidate_sha256": "bdb5f5a40bb8bb877c0424e65012327ec2e632d3387bef724dfba1878155bc07",
+  "v1_holes": [
+    "Required exact fields could be absent in both bundles and compare equal as None because v1 did not perform strict schema validation.",
+    "v1 compared reported derived Rc/Ra/D values but did not independently recompute them from primitive counts/probability sums; a shared arithmetic bug could pass.",
+    "v1 compared reported confirmatory_verdict but did not independently recompute the frozen verdict conditions, including temporal D direction, Rc<1 directional gate, bootstrap valid-fraction gate, and full-D CI lower>0.",
+    "v1 only required A/B identity hashes to equal each other; a shared hashing/canonicalization error could pass without comparison to a separately locked pre-outcome expected manifest.",
+    "Point-estimate zero-event behavior was not frozen: observed_wins=0 makes log(R) undefined."
+  ],
+  "v2_candidate_changes": [
+    "Strict allowlist/required-field validation and SHA-256 format checks.",
+    "Distinct implementation IDs A/B required.",
+    "Anchors input/race/split and partition identity/race/subgroup hashes to a separately locked expected pre-outcome manifest, not merely A==B.",
+    "Recomputes observed rate, means, Rc, Ra, D from primitive counts and probability sums.",
+    "Recomputes bootstrap seed from prereg_id and implementation ID; verifies 20,000 reps, valid count/fraction, RNG and quantile method.",
+    "Independently recomputes each implementation verdict from temporal D, Rc<1, CI lower>0 and bootstrap validity.",
+    "Zero observed wins => no continuity correction, D=null, implementation verdict INCONCLUSIVE."
+  ],
+  "adversarial_self_tests": [
+    "valid independent A/B CI endpoints -> PASS",
+    "same missing required field in both -> FAIL",
+    "shared inconsistent D in both -> FAIL",
+    "both falsely report SUPPORTED when CI lower<=0 -> FAIL",
+    "shared wrong row identity hash -> FAIL against expected manifest",
+    "A/B deterministic float mismatch -> FAIL",
+    "zero-event point estimate with D=null and INCONCLUSIVE -> PASS",
+    "shared wrong input hash -> FAIL against expected manifest"
+  ],
+  "lock_policy": "DO_NOT_LOCK_V2_CANDIDATE_UNTIL_CLAUDE_INDEPENDENT_CODE_AUDIT_AND_DRY_RUN"
+}

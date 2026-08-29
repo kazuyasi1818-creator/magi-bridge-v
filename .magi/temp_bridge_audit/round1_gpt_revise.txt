@@ -1,0 +1,100 @@
+## MAGI監査 — 修正版: T009R Checker C v3修正方針/攻撃面/指摘答え合わせ
+
+**監査主担当: MAGI**
+**証拠のみで判定**  
+**科学的Gate・閾値・判定条件は“不変”.**
+
+---
+
+### 1. 『確認済み』（証拠で限定的に検証できる事実）
+
+#### 1.1 主要仕様（数値などは全て根拠と突き合わせ）
+
+- **BOOTSTRAP_REPS = 20000, MIN_VALID_REPS = 19980, MIN_VALID_FRAC = 0.999**
+    - 根拠: `T009R_checker_C_v3_candidate.py`, `T009R_CheckerC_Audit_Context_from_Prereg_v0.4.json`
+- **blind feasibility (12日, 各halfで120レース, 300サブグループ行以上)**
+    - 根拠: Prereg v0.4 `"blind_feasibility"`
+- **Seed, RNG, quantile_method指定とseed算法、D/Ra/Rc算式**
+    - 根拠: コード・Prereg文書
+- **zero-event時の判定・連鎖的INCONCLUSIVE**
+    - 根拠: Prereg, コード一致
+- **判定条件/科学的gateは今後も変更不可**
+    - 根拠: 全証拠に“判定式不変”が明記、監査要件
+
+#### 1.2 監査阻害点/必須修正のリスト（C-1～C-3, M-4～M-7, m-8～m-12, note-13）
+- 根拠: `Claude_independent_audit_v2_LOCK_BLOCKERS.json`
+
+#### 1.3 「会議でLOCK宣言不可」「adversarial self-test, 再監査必須」  
+- 明文化されている (`lock_policy`等)。  
+- 文章修正のみでGate、verdict解除は認められない。
+
+---
+
+### 2. 『新たな攻撃面・弱点分析』
+
+証拠ファイルのみから、「従来指摘に頼らず」新たな攻撃or脆弱点を分離します。 **既存リスト補足**の形です。
+
+#### 2.1 expected manifest “hash-bypass”の実定攻撃モデル
+
+- **バンドル作成者が、アウトカムを全て見てからexpected manifestを「逆算」または「後出しで生成」してpassさせる**
+  - なぜ成立?  
+    - v3 checkerは`--expected-manifest`で任意json読込むのみ。マニフェスト本体が事前hashまたはregistryにバインドされていない。
+  - 攻撃例:
+    1. “失敗する”成果物バンドル×2を作る。
+    2. それに合わせるようexpected manifestを書いて検査器にかけるとPASSになる。
+    3. 逆に、不正な期待manifestでも現バンドルが通過する限り、protocol上のバージン性・非事後性は守れていない。
+
+- **SHA-256 hash collision攻撃“ではなく”**、「事後的に望み通りのmanifestを作れる」点こそが根本リスク。
+  - SHA-256自体のcollision難は論点外。  
+  - **未解決:** manifest–prereg–バンドルの三者間でSHA256 hashを確実にCLIやファイル名等で相互バインドせよという運用が、今は存在しない。
+
+#### 2.2 evidence欠損・例外でjson不出力問題
+
+- malformed partition/manifest入力時に**クラッシュ(exit=1)し、reconciliation JSON自体が出力されない**ため、「失敗証拠が丸ごとロスト」しうる
+  - 例: partitions.Aがdict型でなければTypeError⇒例外捕捉なし
+  - 例: expected manifestのpartitions無ければKeyError⇒同上
+
+#### 2.3 FULL=A+B加法的不一致の検知不能
+
+- **計数的加法一致（row_count, race_count, subgroup_membership_count, observed_wins, sum_predicted_probability_control, sum_predicted_probability_ablation）**が明示チェックされていない
+    - hash型(例: race_set_sha256)は加法ではなく合同性検査が必要。「合計」概念が誤り
+    - 計数型/数値型のみを加算検査する必要
+- **副攻撃面**: A/Bが互いにdisjointなサブセットを使った場合、合計値がズレてもFAILしない。
+
+#### 2.4 blind feasibility“未強制適用”
+
+- 12日/half毎に120レース/300行未満でもINCONCLUSIVE等にせず、不正即FAILにもならない
+- **副次攻撃面**: outcome見た後、「ギリギリ条件未満」のデータを除外→検証突破、など
+
+#### 2.5 A/B inferenceブロック未比較
+
+- A/BのCI endpoint等が**完全一致(util/seed漏洩やコピペ疑惑)**でも特別な警報を出さない
+  - マニュアル指示: “exact equality → SUSPECT_NON_INDEPENDENT_EXECUTION”診断を追加せよ
+
+#### 2.6 tolerance誤差の独立管理/rel+abs設計未導入・浮動小数点不備
+
+- abs+relative併用チェック（例: `max(1e-10, 1e-9*値)`）未達成
+- 現状、絶対誤差のみ（TOL=1e-10）の判定
+- 副次的に、“拡張必要”な攻撃面: ごく大きい/小さい数値に対して許容誤差が不釣合いになる
+
+#### 2.7 exit code/エラー発見メカニズム不十分
+
+- exit 0, 2, 3設計が未明示（例外=3, fail=2, pass=0で分けるべき）
+- 失敗でもJSON出力させる仕組み必要
+
+#### 2.8 note-13 Ra>1“異常だが争点外”警告未出力
+
+- verdict影響しないが、「各partitionでRa>1の診断フラグ」を診断目的で返すべき
+
+---
+
+### 3. 証拠・攻撃面・未解決/新規弱点リスト
+
+| 証拠ID | 指摘                  | 主要攻撃面                           | GPT案取込 | 補強／明確化必要                |
+|--------|-----------------------|--------------------------------------|-------|--------------------------|
+| C-1    | hash binding欠如      | 事後manifestでPASSが得られる             | △    | hash collision“誤解”を廃し「事後生成できる」構造と明言 |
+| C-2,3  | evidence欠損          | malformed入力でJSON生成不能・証拠消失 | ○    | exit=3/2/0明示＋徹底    |
+| M-5    | FULL=A+B加法性       | 集計型フィールドは加算一致要；hash不可 | △    | hash型/集計型の区分     |
+| M-6    | blind feasibility未強制 | 要件未満データを「フィルタ or通過」しうる       | ○    | N/A                    |
+| M-7    | A/B inference未比較   | seed漏洩疑索監視不可                  | ○    | N/A                    |
+| m-8-12 | 再計算

@@ -1,0 +1,13 @@
+{
+  "incident_id": "T009R-BRIDGE-TRANSFER-FAIL-32639578452",
+  "github_actions_run_id": 32639578452,
+  "job_id": 97194483783,
+  "step": "Reconstruct and verify coherent v3 audit snapshot",
+  "actual_failure_class": "TRANSPORT_DECODE_FAIL_BEFORE_HASH_CHECK",
+  "raw_log_excerpt": "base64: invalid input",
+  "hash_check_executed": false,
+  "bridge_submission_executed": false,
+  "security_effect": "Fail-closed: no evidence was submitted to Bridge/Claude after reconstruction failed.",
+  "correction_to_prior_verbal_report": "Prior wording called this a transfer hash verification failure. That was too strong; SHA-256 comparison was scheduled after base64 decode and was never reached.",
+  "preservation_policy": "Retain this failure record together with later successful transfer evidence; do not delete or supersede it."
+}

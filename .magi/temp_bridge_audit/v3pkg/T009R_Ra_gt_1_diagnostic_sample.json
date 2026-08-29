@@ -1,0 +1,12 @@
+{
+  "sample_source": "T009R_checker_C_v3_selftest_report.json",
+  "sample_case_id": "valid",
+  "checker_status": "PASS",
+  "trial_disposition": "SUPPORTED",
+  "secondary_diagnostics": {
+    "A": {"A": false, "B": false, "FULL": false},
+    "B": {"A": false, "B": false, "FULL": false},
+    "note": "Ra>1 is diagnostic only and never changes the confirmatory verdict."
+  },
+  "assertion": "FULL/A/B keys are emitted for both implementation A and implementation B. Values are booleans and are diagnostic-only."
+}

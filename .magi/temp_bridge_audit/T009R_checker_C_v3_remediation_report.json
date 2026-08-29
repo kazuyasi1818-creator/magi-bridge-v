@@ -1,0 +1,37 @@
+{
+  "remediation_id": "T009R_CHECKER_C_V3_REMEDIATION_AFTER_CLAUDE_AUDIT",
+  "source_claude_audit": "Bridge run 32635485127 / claude_audit turn",
+  "v2_audited_sha256": "c556dbbe33e3503f3b451cd54ac57cbba22ec2e22d28951a6730a6015eae7e4c",
+  "v3_candidate_sha256": "02232a4dd3db1d3f2773e41b1b2b3e0b31551bbe4fe43a52f0ed8a1d04bc400b",
+  "changes": [
+    "Bug #1 fixed: removed ternary-precedence seed check; expected_seed is computed explicitly only after implementation_id is validated.",
+    "Bug #2 fixed: invalid implementation_id now fail-closes immediately with one primary error and no downstream cascade.",
+    "Bug #3 hardened: partition and inference schemas now stop that scope immediately after missing/extra-field errors instead of continuing into arithmetic.",
+    "Additional ChatGPT self-found hole fixed: invalid expected_manifest now fail-closes before bundle validation, preventing downstream access to malformed expected partitions."
+  ],
+  "machine_tests": {
+    "py_compile": "PASS",
+    "existing_adversarial_cases": {
+      "valid": "PASS",
+      "missing_required": "REPORT_MISMATCH",
+      "shared_arithmetic_bug": "REPORT_MISMATCH",
+      "false_supported": "REPORT_MISMATCH",
+      "shared_identity_bug": "REPORT_MISMATCH",
+      "A_B_mismatch": "REPORT_MISMATCH",
+      "wrong_input_anchor": "REPORT_MISMATCH",
+      "zero_event_inconclusive": "PASS"
+    },
+    "new_cases": {
+      "invalid_implementation_id": "REPORT_MISMATCH with single invalid_implementation_id error",
+      "malformed_expected_manifest_missing_partitions": "REPORT_MISMATCH without crash",
+      "missing_partition_required_field": "REPORT_MISMATCH without downstream arithmetic",
+      "missing_inference_required_field": "REPORT_MISMATCH without downstream inference"
+    },
+    "seed_numeric_verification": {
+      "A": 15750943858760389252,
+      "B": 10062759489719105277,
+      "matches_prereg_v0_4": true
+    }
+  },
+  "lock_policy": "STILL_NOT_LOCKED. Require Claude review of v3 candidate and later synthetic dry-run before lock."
+}

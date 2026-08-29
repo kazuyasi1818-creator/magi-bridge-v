@@ -1,0 +1,21 @@
+{
+  "mapping_id": "T009R-V2-AUDIT-TO-V3-SELFTEST-ID-SET-V1",
+  "source_v2_audit": "Claude_independent_audit_v2_LOCK_BLOCKERS.json",
+  "source_v2_verdict": "LOCK_NOT_ALLOWED",
+  "source_required_adversarial_test_count": 8,
+  "ninth_required_case_basis": "m-8 schema allowlist zero-diff proof; promoted to an explicit negative self-test",
+  "required_id_set": [
+    {"v2_id":"ADV-01/C-1","v2_requirement":"expected manifest hash mismatch -> FAIL","v3_selftest_id":"expected_manifest_hash_mismatch"},
+    {"v2_id":"ADV-02/M-4","v2_requirement":"prereg hash mismatch -> FAIL","v3_selftest_id":"prereg_hash_mismatch"},
+    {"v2_id":"ADV-03/C-2","v2_requirement":"partition non-dict -> no crash; reconciliation JSON with PROTOCOL_INVALID","v3_selftest_id":"partition_A_nondict"},
+    {"v2_id":"ADV-04/C-3","v2_requirement":"expected manifest partitions missing -> no crash; reconciliation JSON with PROTOCOL_INVALID","v3_selftest_id":"expected_manifest_partitions_missing"},
+    {"v2_id":"ADV-05/M-5-counts","v2_requirement":"FULL != A+B counts -> FAIL","v3_selftest_id":"FULL_count_not_A_plus_B"},
+    {"v2_id":"ADV-06/M-5-prob-sums","v2_requirement":"FULL != A+B probability sums -> FAIL","v3_selftest_id":"FULL_probability_sum_not_A_plus_B"},
+    {"v2_id":"ADV-07/M-7","v2_requirement":"A/B CI endpoints exactly equal -> SUSPECT_NON_INDEPENDENT_EXECUTION recorded","v3_selftest_id":"AB_CI_endpoints_identical_warning"},
+    {"v2_id":"ADV-08/M-6","v2_requirement":"feasibility minimum unmet -> INCONCLUSIVE_INSUFFICIENT_DATA","v3_selftest_id":"feasibility_minimum_not_met"},
+    {"v2_id":"ADV-09/m-8","v2_requirement":"Checker allowlist vs bound result schema must have zero-diff proof; mismatched legacy schema must fail","v3_selftest_id":"schema_v1_allowlist_mismatch"}
+  ],
+  "required_v3_selftest_id_set_sorted": ["AB_CI_endpoints_identical_warning","FULL_count_not_A_plus_B","FULL_probability_sum_not_A_plus_B","expected_manifest_hash_mismatch","expected_manifest_partitions_missing","feasibility_minimum_not_met","partition_A_nondict","prereg_hash_mismatch","schema_v1_allowlist_mismatch"],
+  "additional_v3_selftests_not_counted_in_required_9": ["AB_deterministic_float_mismatch_fails","both_false_SUPPORTED_fails","expected_manifest_not_bound_to_prereg","internal_exception_invalid_bundle_json","shared_wrong_D_fails","shared_wrong_identity_fails","shared_wrong_input_hash_fails","valid","zero_event_D_null_INCONCLUSIVE"],
+  "set_match_rule": "Compare IDs as sets; do not use count equality as proof."
+}
